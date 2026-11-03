@@ -105,7 +105,7 @@ JDK 17, Android SDK 35 und die vorhandene Gradle-Version 8.11.1 verwenden.
 
 Ein Release wird mit `WOHNPIT_KEYSTORE` und `WOHNPIT_SIGNING_PASSWORD` signiert, Alias `wohnpit`. Ohne diese Variablen entsteht eine unsignierte Release-APK und eine gewöhnliche Debug-APK. Signierschlüssel gehören nicht in das Repository.
 
-Die GitHub-Automatik prüft und baut. Sie veröffentlicht keine Releases automatisch.
+Die normale GitHub-Automatik prüft und baut. Ein Release wird gezielt über `releases/current.json` freigegeben. Die Veröffentlichungsroutine übernimmt ausschließlich die bereits signierte, geprüfte APK, kontrolliert ihre SHA-256-Prüfsumme und den erfolgreichen Android-Prüflauf und hängt APK und Prüfsumme an das GitHub-Release an. Signierschlüssel werden dafür nicht auf GitHub benötigt.
 
 ## Herkunft und Lizenz
 

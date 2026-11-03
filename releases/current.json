@@ -1,0 +1,12 @@
+{
+  "tag": "v0.0.2",
+  "tested_commit": "a008eb655628e7a964dbeff86250f5185ae80b3a",
+  "tested_workflow_run": 41617632611,
+  "asset_name": "WohnPit-v0.0.2.apk",
+  "asset_blob_sha": "28b05635a844d67b53a6876713862d9a311f7ec9",
+  "asset_sha256": "5db6a54bb2160c1897cead79da0a342a7189892935458796abd7934b5a6a0e34",
+  "asset_size": 193705,
+  "unit_tests": 261,
+  "integration_checks": 190,
+  "android_ui_checks": 12
+}
