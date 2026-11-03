@@ -11,6 +11,7 @@ import android.content.pm.ServiceInfo;
 import android.os.*;
 import java.util.Collections;
 import java.util.concurrent.*;
+import de.wattpit.app.core.ArchiveSchedule;
 
 /** Passive BLE monitor. No GATT writes, no changes to the Victron equipment. */
 public final class MonitorService extends Service {
@@ -22,6 +23,10 @@ public final class MonitorService extends Service {
     private boolean scanning;
     private final ScheduledExecutorService worker = Executors.newSingleThreadScheduledExecutor();
     private final Handler main = new Handler(Looper.getMainLooper());
+    private ScheduledFuture<?> archiveCheck;
+    private final SharedPreferences.OnSharedPreferenceChangeListener archivePreference=(prefs,key)->{
+        if("archiveIntervalMinutes".equals(key)&&repository.running)scheduleArchive(1000);
+    };
     private final BroadcastReceiver bluetoothReceiver = new BroadcastReceiver() {
         @Override public void onReceive(Context context, Intent intent) { restartScan(); }
     };
@@ -51,6 +56,7 @@ public final class MonitorService extends Service {
 
     @Override public void onCreate() {
         super.onCreate(); repository = Repository.get(this);roller=new RollerBle(this);
+        repository.prefs.registerOnSharedPreferenceChangeListener(archivePreference);
         ensureChannel(this);
         IntentFilter filter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
         if (Build.VERSION.SDK_INT >= 33) registerReceiver(bluetoothReceiver,filter,Context.RECEIVER_EXPORTED);
@@ -74,7 +80,7 @@ public final class MonitorService extends Service {
         restartScan();
         if (first) {
             CentralLog.add(this,"Aufzeichnung","Aufzeichnung gestartet");
-            worker.scheduleWithFixedDelay(this::automaticArchive,15,60,TimeUnit.SECONDS);
+            scheduleArchive(15000);
             worker.scheduleWithFixedDelay(() -> main.post(() -> {
             if (!repository.running) return;
             PresenceStore.get(this).tick();
@@ -86,11 +92,20 @@ public final class MonitorService extends Service {
     }
 
     /** Reuses the existing missing-data planner even while no console is open. */
+    private synchronized void scheduleArchive(long delay){
+        if(archiveCheck!=null)archiveCheck.cancel(false);
+        if(!worker.isShutdown()&&repository.running&&repository.archiveIntervalMinutes()!=0)archiveCheck=worker.schedule(this::automaticArchive,delay,TimeUnit.MILLISECONDS);
+    }
     private void automaticArchive(){
-        if(!repository.running||repository.archiveBusy||!repository.prefs.getBoolean("cockpitNotice-v1",false))return;
-        try{if(repository.automaticArchiveDevices(false).length()>0){
-            startForegroundService(new Intent(this,ArchiveService.class).putExtra("mac","AUTO"));
-        }}catch(Exception ignored){CentralLog.add(this,"Archiv","Automatischer Archivabruf wartet auf die nächste Gelegenheit");}
+        if(!repository.running||repository.archiveIntervalMinutes()==0)return;
+        long delay=ArchiveSchedule.intervalMillis(repository.archiveIntervalMinutes());
+        try{
+            if(repository.archiveBusy){delay=60000;return;}
+            if(!repository.prefs.getBoolean("cockpitNotice-v1",false))return;
+            if(repository.automaticArchiveDevices(false).length()>0)startForegroundService(new Intent(this,ArchiveService.class).putExtra("mac","AUTO"));
+            else delay=repository.automaticArchiveCheckDelay(System.currentTimeMillis());
+        }catch(Exception ignored){CentralLog.add(this,"Archiv","Automatischer Archivabruf wartet auf die nächste Gelegenheit");}
+        finally{scheduleArchive(delay);}
     }
 
     private boolean hasPermissions() {
@@ -147,6 +162,7 @@ public final class MonitorService extends Service {
             try { scanner.stopScan(callback); } catch (SecurityException | IllegalStateException ignored) { }
         }
         scanning = false; worker.shutdown();
+        repository.prefs.unregisterOnSharedPreferenceChangeListener(archivePreference);
         try { unregisterReceiver(bluetoothReceiver); } catch (IllegalArgumentException ignored) { }
         stopForeground(STOP_FOREGROUND_REMOVE); super.onDestroy();
     }

@@ -5,6 +5,7 @@ import android.annotation.SuppressLint;
 import android.app.*;
 import android.bluetooth.*;
 import android.content.*;
+import android.content.res.ColorStateList;
 import android.content.pm.PackageManager;
 import android.graphics.*;
 import android.graphics.drawable.GradientDrawable;
@@ -26,7 +27,7 @@ import java.util.zip.*;
 
 /** Small native host console. Measurements and the LAN outlive this Activity. */
 public final class MainActivity extends Activity {
-    private static final int PERMISSIONS=11,BLUETOOTH=12,IMPORT_SETTINGS=20,IMPORT_CSV=21,EXPORT_CSV=22,DIAGNOSTICS=23;
+    private static final int PERMISSIONS=11,BLUETOOTH=12,IMPORT_SETTINGS=20,IMPORT_CSV=21,EXPORT_CSV=22,DIAGNOSTICS=23,IMPORT_HISTORY=24;
     private static final int BG=0xff101822,CARD=0xff1a2634,TEXT=0xffedf4f8,MUTED=0xffa6b8c8,ACCENT=0xff65dbbd;
     private final Handler main=new Handler(Looper.getMainLooper());
     private final ExecutorService files=Executors.newSingleThreadExecutor();
@@ -35,6 +36,8 @@ public final class MainActivity extends Activity {
     private LanSync lan;
     private LinearLayout devices;
     private TextView recording,live,network,roller,archive,message;
+    private TextView historyHint,archivePolicy;
+    private Button startButton,pauseButton,archiveButton,cancelArchiveButton,pairButton,reconnectButton,historyButton;
     private boolean foreground,pendingStart;
     private String pendingArchive,lastDeviceList="";
     private final Runnable refresh=new Runnable(){@Override public void run(){if(!foreground)return;update();main.postDelayed(this,3000);}};
@@ -56,27 +59,49 @@ public final class MainActivity extends Activity {
         LinearLayout v=column();v.setPadding(dp(18),dp(12),dp(18),dp(16));GradientDrawable bg=new GradientDrawable();bg.setColor(CARD);bg.setCornerRadius(dp(16));v.setBackground(bg);
         LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.bottomMargin=dp(14);parent.addView(v,p);text(v,title,18,ACCENT).setTypeface(null,Typeface.BOLD);return v;
     }
-    private void button(LinearLayout parent,String label,Runnable action){Button b=new Button(this);b.setText(label);b.setAllCaps(false);b.setOnClickListener(v->action.run());parent.addView(b,new LinearLayout.LayoutParams(-1,-2));}
+    private Button button(LinearLayout parent,String label,Runnable action){
+        Button b=new Button(this);b.setText(label);b.setAllCaps(false);b.setOnClickListener(v->{action.run();update();});
+        tint(b,false);parent.addView(b,new LinearLayout.LayoutParams(-1,-2));return b;
+    }
+    private void tint(Button button,boolean primary){
+        int[][] states={new int[]{-android.R.attr.state_enabled},new int[]{}};
+        button.setBackgroundTintList(new ColorStateList(states,new int[]{0xff24313f,primary?ACCENT:0xff314357}));
+        button.setTextColor(new ColorStateList(states,new int[]{0xff8091a2,primary?BG:TEXT}));
+    }
     private void build(){
         ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.setFitsSystemWindows(true);scroll.setBackgroundColor(BG);
         LinearLayout root=column();root.setPadding(dp(18),dp(18),dp(18),dp(20));scroll.addView(root);setContentView(scroll);
-        text(root,"WohnPit",32,TEXT).setTypeface(null,Typeface.BOLD);text(root,"Version "+BuildConfig.VERSION_NAME+" · Deine Zentrale im Wohnwagen",14,MUTED);
+        LinearLayout header=new LinearLayout(this);header.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(-1,-2);hp.bottomMargin=dp(16);root.addView(header,hp);
+        ImageView icon=new ImageView(this);icon.setImageResource(getApplicationInfo().icon);icon.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        LinearLayout.LayoutParams ip=new LinearLayout.LayoutParams(dp(60),dp(60));ip.setMarginEnd(dp(12));header.addView(icon,ip);
+        LinearLayout brand=column();header.addView(brand,new LinearLayout.LayoutParams(0,-2,1));
+        text(brand,"WohnPit",30,TEXT).setTypeface(null,Typeface.BOLD);
+        TextView tagline=text(brand,"DEINE ZENTRALE IM WOHNWAGEN",10,ACCENT);tagline.setLetterSpacing(.08f);
+        text(brand,"Version "+BuildConfig.VERSION_NAME,12,MUTED);
         LinearLayout status=card(root,"Aufzeichnung");recording=text(status,"Bereit",21,TEXT);live=text(status,"Noch keine Messwerte",15,MUTED);
         text(status,"Sammelt und speichert auch bei ausgeschaltetem Display. Watt’n’Pit übernimmt die ausführliche Anzeige.",14,MUTED);
-        button(status,"Aufzeichnung starten",()->{repository.prefs.edit().putBoolean("cockpitNotice-v1",true).apply();requestStart(null);});
-        button(status,"Aufzeichnung pausieren",()->{pendingStart=false;pendingArchive=null;repository.prefs.edit().putBoolean("recording",false).apply();stopService(new Intent(this,MonitorService.class));});
+        startButton=button(status,"Aufzeichnung starten",()->{startButton.setEnabled(false);repository.prefs.edit().putBoolean("cockpitNotice-v1",true).apply();requestStart(null);});tint(startButton,true);startButton.setEnabled(false);
+        pauseButton=button(status,"Aufzeichnung pausieren",()->{pauseButton.setEnabled(false);pendingStart=false;pendingArchive=null;repository.prefs.edit().putBoolean("recording",false).apply();stopService(new Intent(this,MonitorService.class));});pauseButton.setEnabled(false);
         LinearLayout plant=card(root,"Energiegeräte");devices=column();plant.addView(devices);button(plant,"Victron-Gerät hinzufügen",()->editDevice(null));
-        archive=text(plant,"Gerätearchive werden bei Bedarf ergänzt.",14,MUTED);button(plant,"Fehlende Archivdaten abrufen",()->requestStart("MANUAL"));
-        button(plant,"Archivabruf abbrechen",()->{if(repository.archiveBusy)startService(new Intent(this,ArchiveService.class).setAction("CANCEL"));});
+        archive=text(plant,"Kein Archivabruf aktiv.",14,MUTED);archivePolicy=text(plant,"Automatischer Abruf: "+archiveIntervalLabel(),13,MUTED);
+        button(plant,"Automatischen Abruf einstellen",this::archiveSettings);
+        archiveButton=button(plant,"Fehlende Archivdaten abrufen",()->{archiveButton.setEnabled(false);requestStart("MANUAL");});archiveButton.setEnabled(false);
+        cancelArchiveButton=button(plant,"Archivabruf abbrechen",()->{cancelArchiveButton.setEnabled(false);if(repository.archiveBusy)startService(new Intent(this,ArchiveService.class).setAction("CANCEL"));});cancelArchiveButton.setEnabled(false);
         LinearLayout ride=card(root,"Roller und ScootPit");roller=text(ride,"Noch kein Roller eingerichtet",15,TEXT);
         text(ride,"Auf dem Fahrhandy arbeiten Watt’n’Pit und ScootPit wie bisher zusammen. Die bestehende BMS-Übergabe bleibt erhalten.",14,MUTED);
-        button(ride,"Roller-BMS einrichten",this::editRoller);button(ride,"BMS erneut verbinden",()->{RollerHandover.get(this).reconnect();notice("BMS-Verbindung wird geprüft.");});
+        button(ride,"Roller-BMS einrichten",this::editRoller);reconnectButton=button(ride,"BMS erneut verbinden",()->{RollerHandover.get(this).reconnect();notice("BMS-Verbindung wird geprüft.");});reconnectButton.setEnabled(false);
         LinearLayout lanCard=card(root,"Anlagenverbund");network=text(lanCard,"WLAN-Verbindung wird vorbereitet",15,TEXT);
-        button(lanCard,"Anzeigehandy koppeln",this::pairing);
+        pairButton=button(lanCard,"Anzeigehandy koppeln",this::pairing);pairButton.setEnabled(false);
         text(lanCard,"Alle Handys müssen im selben WLAN sein. Den Code in Watt’n’Pit unter Anlagenverbund einlesen oder einfügen.",14,MUTED);
         LinearLayout settings=card(root,"Einstellungen und Daten");button(settings,"Speicherintervall und Akkukapazität",this::settings);
         button(settings,"Watt’n’Pit-Einstellungen importieren",()->choose(IMPORT_SETTINGS,false,"application/json",null));
         button(settings,"Watt’n’Pit-Verlauf importieren",()->choose(IMPORT_CSV,false,"text/*",null));
+        historyButton=button(settings,"Historischen Verbrauch übernehmen",()->{
+            if(repository.running||repository.archiveBusy){notice("Bitte zuerst die Aufzeichnung pausieren und einen laufenden Archivabruf beenden.");return;}
+            choose(IMPORT_HISTORY,false,"application/zip",null);
+        });
+        historyButton.setEnabled(false);historyHint=text(settings,"Ergänzt frühere Anlagen- und Wetterdaten aus der Mess- und Lerndiagnose deiner bisherigen Watt’n’Pit-Zentrale. Dafür Aufzeichnung und Archivabruf pausieren.",13,MUTED);
         button(settings,"Verlauf als CSV sichern",()->choose(EXPORT_CSV,true,"text/csv","WohnPit-Verlauf.csv"));
         button(settings,"Diagnose speichern",()->choose(DIAGNOSTICS,true,"application/zip","WohnPit-Diagnose-"+BuildConfig.VERSION_NAME+".zip"));
         button(settings,"Android-App-Einstellungen",()->startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,Uri.parse("package:"+getPackageName()))));
@@ -87,14 +112,22 @@ public final class MainActivity extends Activity {
         files.execute(()->{try{
             JSONObject data=repository.centralState(),r=RollerHandover.view(this),n=lan.state();String sync=repository.syncState();
             runOnUiThread(()->{if(!foreground)return;try{
-                recording.setText(data.optBoolean("running")?"Aufzeichnung aktiv":"Aufzeichnung pausiert");
+                boolean active=data.optBoolean("running"),busy=new JSONObject(sync).optBoolean("busy");
+                recording.setText(active?"Aufzeichnung aktiv":pendingStart?"Start wird vorbereitet …":"Aufzeichnung pausiert");recording.setTextColor(active?ACCENT:0xffe8bb57);
+                startButton.setEnabled(!active&&!pendingStart);pauseButton.setEnabled(active||pendingStart);
                 StringBuilder values=new StringBuilder(data.optString("status"));JSONArray rows=data.optJSONArray("readings");
-                if(rows!=null)for(int i=0;i<rows.length();i++){JSONObject p=rows.getJSONObject(i);long age=Math.max(0,(System.currentTimeMillis()-p.optLong("timestamp"))/1000);values.append("\n").append(p.optString("kind").equals("solar")?"Solar":"Batterie").append(": ");
+                if(values.toString().equals(recording.getText().toString()))values.setLength(0);
+                if(rows!=null)for(int i=0;i<rows.length();i++){JSONObject p=rows.getJSONObject(i);long age=Math.max(0,(System.currentTimeMillis()-p.optLong("t"))/1000);if(values.length()>0)values.append("\n");values.append(p.optString("kind").equals("solar")?"Solar":"Batterie").append(": ");
                     if(p.optString("kind").equals("solar"))values.append(number(p,"solar")).append(" W");else values.append(number(p,"voltage")).append(" V · ").append(number(p,"current")).append(" A · ").append(number(p,"soc")).append(" %");
                     values.append(age>45?" · letzter Wert vor "+age+" s":" · aktuell");}
-                live.setText(values.toString());JSONObject progress=new JSONObject(sync).optJSONObject("archive");archive.setText(progress==null||progress.optString("text").isEmpty()?"Gerätearchive werden bei Bedarf ergänzt.":progress.optString("text"));
-                JSONArray peers=n.optJSONArray("peers");network.setText((n.optBoolean("hosting")?"Zentrale im WLAN erreichbar":"Zentrale wartet auf den Start")+"\nAnzeigehandys verbunden: "+(peers==null?0:peers.length())+(!n.optString("error").isEmpty()?"\n"+n.optString("error"):""));
+                live.setText(values.toString());live.setVisibility(values.length()==0?View.GONE:View.VISIBLE);JSONObject progress=new JSONObject(sync).optJSONObject("archive");String detail=progress==null?"":progress.optString("text");
+                archive.setText(busy?"Archivabruf läuft\n"+detail:"Kein Archivabruf aktiv."+(detail.isEmpty()?"\nArchivdaten werden nur bei Bedarf ergänzt.":"\nLetzter Abruf: "+detail));archive.setTextColor(busy?0xffe8bb57:MUTED);archivePolicy.setText("Automatischer Abruf: "+archiveIntervalLabel());
+                cancelArchiveButton.setEnabled(busy);archiveButton.setEnabled(!busy&&!pendingStart&&data.getJSONArray("devices").length()>0);
+                historyButton.setEnabled(!active&&!busy&&!pendingStart);
+                historyHint.setText(active||busy?"Für diesen Import zuerst die Aufzeichnung pausieren und den Archivabruf beenden.":"Diagnose-ZIP der bisherigen Watt’n’Pit-Zentrale auswählen. Ergänzt frühere Anlagen- und Wetterdaten für den historischen Verbrauch.");
+                JSONArray peers=n.optJSONArray("peers");network.setText((n.optBoolean("hosting")?"Zentrale im WLAN erreichbar":"Zentrale wartet auf den Start")+"\nAnzeigehandys verbunden: "+(peers==null?0:peers.length())+(!n.optString("error").isEmpty()?"\n"+n.optString("error"):""));pairButton.setEnabled(n.optBoolean("hosting"));
                 JSONObject profile=r.optJSONObject("profile"),h=r.optJSONObject("handover");roller.setText((profile==null?"Roller":profile.optString("name"))+"\n"+r.optString("status")+(h==null?"":"\n"+h.optString("status")));
+                reconnectButton.setEnabled(active&&profile!=null&&!profile.optString("mac").isEmpty()&&(h==null||h.optString("phase").equals("host")));
                 JSONArray list=data.getJSONArray("devices"),found=data.getJSONArray("found");String signature=list.toString()+found.toString();if(!signature.equals(lastDeviceList)){lastDeviceList=signature;showDevices(list,found);}
             }catch(Exception ignored){}});
         }catch(Exception ignored){}finally{reading.set(false);}});
@@ -130,6 +163,14 @@ public final class MainActivity extends Activity {
     private void settings(){LinearLayout f=form();EditText capacity=field(f,"Wohnwagenakku in Ah",String.valueOf(repository.prefs.getFloat("capacity",100)),true);text(f,"Messwerte speichern alle",14,MUTED);Spinner seconds=new Spinner(this);int[] choices={5,10,30,60};seconds.setAdapter(new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,new String[]{"5 Sekunden","10 Sekunden","30 Sekunden","60 Sekunden"}));for(int i=0;i<choices.length;i++)if(choices[i]==repository.prefs.getInt("sampleSeconds",10))seconds.setSelection(i);f.addView(seconds);
         dialog("Aufzeichnung",f,()->{repository.saveSettings(new JSONObject().put("capacity",Double.parseDouble(capacity.getText().toString().replace(',','.'))).put("sampleSeconds",choices[seconds.getSelectedItemPosition()]));notice("Aufzeichnungseinstellungen gespeichert.");},null);
     }
+    private String archiveIntervalLabel(){int minutes=repository.archiveIntervalMinutes();return minutes==0?"nur manuell":minutes==60?"stündlich":"alle "+minutes+" Minuten";}
+    private void archiveSettings(){
+        LinearLayout f=form();text(f,"Wie oft soll WohnPit fehlende Gerätedaten nachladen? Livewerte und BMS-Übergabe laufen unabhängig weiter.",14,MUTED);
+        int[] values={15,30,60,0};Spinner interval=new Spinner(this);interval.setAdapter(new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,new String[]{"Alle 15 Minuten","Alle 30 Minuten","Stündlich (60 Minuten)","Nur manuell"}));
+        for(int i=0;i<values.length;i++)if(values[i]==repository.archiveIntervalMinutes())interval.setSelection(i);f.addView(interval);
+        text(f,"Stündlich ist die Voreinstellung. Die nachladbare 30-Sekunden-Stufe reicht etwa zwei Stunden zurück; die 1-Sekunden-Stufe nur etwa zwei Minuten.",13,MUTED);
+        dialog("Automatischer Archivabruf",f,()->{repository.saveArchiveInterval(values[interval.getSelectedItemPosition()]);CentralLog.add(this,"Archiv","Automatischer Abruf: "+archiveIntervalLabel());notice("Automatischer Archivabruf: "+archiveIntervalLabel());},null);
+    }
     private void pairing(){try{
         if(!lan.state().optBoolean("hosting")){notice("Bitte zuerst die Aufzeichnung starten. Danach lässt sich das Anzeigehandy koppeln.");return;}
         String code=lan.pairingCode();LinearLayout f=form();text(f,"In Watt’n’Pit auf dem Anzeigehandy scannen oder den Verbindungscode einfügen.",14,TEXT);
@@ -151,6 +192,16 @@ public final class MainActivity extends Activity {
     @Override protected void onActivityResult(int request,int result,Intent data){super.onActivityResult(request,result,data);if(request==BLUETOOTH){if(result==RESULT_OK&&pendingStart)startReady();else{pendingStart=false;pendingArchive=null;}return;}if(result!=RESULT_OK||data==null||data.getData()==null)return;Uri uri=data.getData();files.execute(()->{try{
         if(request==IMPORT_SETTINGS){repository.importConfiguration(read(uri,ConfigurationBackup.MAX_BYTES));notice("Einstellungen übernommen. Bluetooth-Geräte und Schlüssel werden separat eingerichtet.");}
         if(request==IMPORT_CSV){CsvCodec.Table table=CsvCodec.parse(read(uri,25*1024*1024));Map<String,Integer> fields=CsvCodec.guess(table.headers);if(!fields.containsKey("timestamp")||!fields.containsKey("kind")||!fields.containsKey("device"))throw new IllegalArgumentException("Bitte eine vollständige Watt’n’Pit-Verlaufsdatei importieren.");int[] counts=repository.db.importTable(table,fields,"solar");repository.invalidateStats();notice(counts[0]+" Messwerte übernommen · "+counts[1]+" bereits vorhanden · "+counts[2]+" verworfen.");}
+        if(request==IMPORT_HISTORY){
+            notice("Historische Anlagen- und Wetterdaten werden übernommen …");
+            JSONObject input;try(InputStream in=getContentResolver().openInputStream(uri)){if(in==null)throw new IOException();input=HistoryMigration.readZip(in);}
+            SolarPlanning plan=new SolarPlanning(getApplicationContext(),repository,value->{});
+            try{
+                HistoryMigration.Result transfer=HistoryMigration.restore(repository,plan,RollerLedger.get(this),input);
+                CentralLog.add(this,"Umzug",transfer.inserted+" historische Berechnungsgrundlagen ergänzt · "+transfer.existing+" bereits vorhanden");
+                notice(transfer.inserted+" historische Berechnungsgrundlagen übernommen. In Watt’n’Pit den Verlauf neu öffnen.");
+            }finally{plan.shutdown();plan.close();}
+        }
         if(request==EXPORT_CSV)try(OutputStream out=getContentResolver().openOutputStream(uri,"wt")){if(out==null)throw new IOException();repository.db.exportTo(out);notice("Verlauf gespeichert.");}
         if(request==DIAGNOSTICS)try(OutputStream out=getContentResolver().openOutputStream(uri,"wt")){if(out==null)throw new IOException();JSONObject diagnostic=new JSONObject().put("app","WohnPit").put("version",BuildConfig.VERSION_NAME).put("at",System.currentTimeMillis()).put("sync",new JSONObject(repository.syncState())).put("archive",repository.diagnosticText()).put("roller",RollerHandover.view(this)).put("events",CentralLog.read(this));try(ZipOutputStream zip=new ZipOutputStream(out)){zip.putNextEntry(new ZipEntry("diagnose.json"));zip.write(diagnostic.toString(2).getBytes(StandardCharsets.UTF_8));zip.closeEntry();}notice("Diagnose gespeichert.");}
     }catch(Exception e){notice(Repository.safeError(e));}});}

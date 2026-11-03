@@ -106,7 +106,7 @@ public final class ArchiveService extends Service {
     private Notification notification(String text){
         PendingIntent open=PendingIntent.getActivity(this,2,new Intent(this,MainActivity.class),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
         PendingIntent cancel=PendingIntent.getService(this,3,new Intent(this,ArchiveService.class).setAction("CANCEL"),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
-        return new Notification.Builder(this,CHANNEL).setSmallIcon(R.drawable.ic_bolt).setContentTitle("Watt’n’Pit · Gerätearchiv").setContentText(text).setContentIntent(open).setOngoing(true).addAction(new Notification.Action.Builder(null,"Abbrechen",cancel).build()).build();
+        return new Notification.Builder(this,CHANNEL).setSmallIcon(R.drawable.ic_bolt).setContentTitle("WohnPit · Gerätearchiv").setContentText(text).setContentIntent(open).setOngoing(true).addAction(new Notification.Action.Builder(null,"Abbrechen",cancel).build()).build();
     }
     private void progress(String text){repository.archiveState(mac,true,text,processed,total);long now=SystemClock.elapsedRealtime();if(now-lastNotification>750){lastNotification=now;getSystemService(NotificationManager.class).notify(11,notification(text));}}
     private void check() throws IOException {if(cancelled||Thread.currentThread().isInterrupted())throw new IOException("cancelled");}

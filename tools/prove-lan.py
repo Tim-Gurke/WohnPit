@@ -20,7 +20,7 @@ android=generated/'android/os';android.mkdir(parents=True,exist_ok=True)
 (android/'SystemClock.java').write_text('package android.os; public final class SystemClock { public static long elapsedRealtime(){return System.nanoTime()/1000000;} public static long uptimeMillis(){return elapsedRealtime();} public static long elapsedRealtimeNanos(){return System.nanoTime();} }')
 (android/'Build.java').write_text('package android.os; public final class Build { public static final String MODEL="JVM test display"; public static final class VERSION { public static final int SDK_INT=35; } }')
 classes=out/'classes';classes.mkdir(exist_ok=True)
-sources=list((root/'app/src/main/java').rglob('*.java'))+list((root/'tools/testing').rglob('*.java'))+list(generated.rglob('*.java'))+[root/'tools/LanSyncProof.java',root/'tools/PresenceProof.java',root/'tools/ViewerAnalysisProof.java',root/'tools/SolarInputFixture.java',root/'tools/MobileReplicaProof.java',root/'tools/MobileDisplayProof.java']
+sources=list((root/'app/src/main/java').rglob('*.java'))+list((root/'tools/testing').rglob('*.java'))+list(generated.rglob('*.java'))+[root/'tools/LanSyncProof.java',root/'tools/PresenceProof.java',root/'tools/ViewerAnalysisProof.java',root/'tools/SolarInputFixture.java',root/'tools/MobileReplicaProof.java',root/'tools/MobileDisplayProof.java',root/'tools/MigrationProof.java',root/'tools/CentralArchiveProof.java']
 native_cp=os.pathsep.join(map(str,[a.android_jar.resolve(),*a.android_jar.resolve().parent.glob('zxing-*.jar')]))
 subprocess.run(['java','com.sun.tools.javac.Main','-cp',native_cp,'-d',str(classes),*map(str,sources)],check=True)
 classpath=os.pathsep.join(map(str,[classes,a.android_jar.resolve(),a.sqlite_jar.resolve(),a.slf4j_jar.resolve(),*a.android_jar.resolve().parent.glob('zxing-*.jar')]))
@@ -37,3 +37,9 @@ print(r3.stdout+r3.stderr,end='');(out/'viewer-results.log').write_text(r3.stdou
 r3.check_returncode()
 r4=subprocess.run(['java','-cp',classpath,'de.wattpit.app.MobileReplicaProof',str(out/'mobile-replicas')],capture_output=True,text=True,timeout=90)
 print(r4.stdout+r4.stderr,end='');(out/'mobile-viewer-results.log').write_text(r4.stdout+r4.stderr);r4.check_returncode()
+r5=subprocess.run(['java','-Xmx512m','-cp',classpath,'de.wattpit.app.MigrationProof',str(out/'migration')],capture_output=True,text=True,timeout=60)
+print(r5.stdout+r5.stderr,end='');(out/'migration-results.log').write_text(r5.stdout+r5.stderr)
+(out/'migration-report.json').write_text(json.dumps({'exit_code':r5.returncode,'checks':[line[5:] for line in r5.stdout.splitlines() if line.startswith('PASS ')],'scope':'Actual CSV and diagnosis export, separate SQLite databases and existing consumption calculations. No physical BMS or phone power measurement.'},indent=2)+'\n')
+r5.check_returncode()
+r6=subprocess.run(['java','-cp',classpath,'de.wattpit.app.CentralArchiveProof',str(out/'archive-cadence')],capture_output=True,text=True,timeout=30)
+print(r6.stdout+r6.stderr,end='');(out/'archive-cadence-results.log').write_text(r6.stdout+r6.stderr);r6.check_returncode()

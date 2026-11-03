@@ -36,7 +36,7 @@ jobs:
           python3 tools/prove-lan.py --output app/build/reports/lan-proof --android-jar "$deps/android-api35.jar" --sqlite-jar "$deps/sqlite-jdbc-3.46.1.0.jar" --slf4j-jar "$deps/slf4j-api-1.7.36.jar"
       - uses: actions/upload-artifact@v4
         with:
-          name: WohnPit-0.0.1-Testbuild
+          name: WohnPit-Testbuild
           path: |
             app/build/outputs/apk/debug/*.apk
             app/build/outputs/apk/release/*.apk
