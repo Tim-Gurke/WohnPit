@@ -1,0 +1,33 @@
+{
+  "version": "0.0.1",
+  "upstream": "Tim-Gurke/Watt-n-Pit@7aff6c831df84bfd1f23b548ad674ecf739cbf0c",
+  "unit_tests": {
+    "tests": 258,
+    "failures": 0,
+    "errors": 0
+  },
+  "jvm_integration_checks": {
+    "results.log": 55,
+    "presence-results.log": 18,
+    "viewer-results.log": 55,
+    "mobile-viewer-results.log": 27
+  },
+  "lint_debug": {
+    "errors": 0,
+    "warnings": 18
+  },
+  "unchanged_protocol_and_storage_files": 8,
+  "physical_hardware_tested": false,
+  "power_or_ram_savings_measured": false,
+  "apk": {
+    "filename": "WohnPit-v0.0.1.apk",
+    "applicationId": "de.wohnpit.app",
+    "versionCode": 1,
+    "versionName": "0.0.1",
+    "bytes": 189553,
+    "sha256": "2c07315d8c0821c88873c4b32988da863aff2eb878cd21b6f6a8349ca8b7743f",
+    "certificate_sha256": "c8ba23640dde63fd6de414c802bc96b1312bd5e2799cd6edf7db2402226c72e4"
+  },
+  "packaged_dashboard_assets": [],
+  "webview_class_reference_in_dex": false
+}

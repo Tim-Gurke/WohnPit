@@ -1,0 +1,48 @@
+name: WohnPit prüfen und bauen
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Übernommene BMS- und Speicherbausteine prüfen
+        run: python3 tools/check-upstream.py
+      - name: Tests, Lint und APKs
+        run: ./gradlew testDebugUnitTest lintDebug assembleDebug assembleRelease
+      - name: JVM-Prüfabhängigkeiten
+        run: |
+          deps="$RUNNER_TEMP/wohnpit-proof-deps"
+          mkdir -p "$deps"
+          curl --fail --location --retry 2 --max-time 180 https://repo.maven.apache.org/maven2/org/robolectric/android-all/15-robolectric-12468137/android-all-15-robolectric-12468137.jar -o "$deps/android-api35.jar"
+          curl --fail --location --retry 2 --max-time 120 https://repo.maven.apache.org/maven2/org/xerial/sqlite-jdbc/3.46.1.0/sqlite-jdbc-3.46.1.0.jar -o "$deps/sqlite-jdbc-3.46.1.0.jar"
+          curl --fail --location --retry 2 --max-time 120 https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/1.7.36/slf4j-api-1.7.36.jar -o "$deps/slf4j-api-1.7.36.jar"
+          curl --fail --location --retry 2 --max-time 120 https://repo.maven.apache.org/maven2/com/google/zxing/core/3.5.3/core-3.5.3.jar -o "$deps/zxing-core.jar"
+      - name: Datenverbund, BMS-Übergabe und Anzeigeauswertung
+        run: |
+          deps="$RUNNER_TEMP/wohnpit-proof-deps"
+          python3 tools/prove-lan.py --output app/build/reports/lan-proof --android-jar "$deps/android-api35.jar" --sqlite-jar "$deps/sqlite-jdbc-3.46.1.0.jar" --slf4j-jar "$deps/slf4j-api-1.7.36.jar"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WohnPit-0.0.1-Testbuild
+          path: |
+            app/build/outputs/apk/debug/*.apk
+            app/build/outputs/apk/release/*.apk
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: WohnPit-Pruefberichte
+          path: app/build/reports/
+

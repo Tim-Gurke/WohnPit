@@ -1,0 +1,4 @@
+WohnPit uses ZXing Core 3.5.3 for local pairing QR codes.
+ZXing is licensed under the Apache License, Version 2.0.
+Copyright 2007 ZXing authors.
+See APACHE-LICENSE-2.0.txt.

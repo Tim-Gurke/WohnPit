@@ -1,0 +1,44 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'de.wattpit.app'
+    compileSdk 35
+    buildFeatures { buildConfig true }
+    defaultConfig {
+        applicationId 'de.wohnpit.app'
+        minSdk 26
+        targetSdk 35
+        versionCode 1
+        versionName '0.0.1'
+        testInstrumentationRunner 'android.test.InstrumentationTestRunner'
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    signingConfigs {
+        localRelease {
+            if (System.getenv('WOHNPIT_KEYSTORE')) {
+                storeFile file(System.getenv('WOHNPIT_KEYSTORE'))
+                storePassword System.getenv('WOHNPIT_SIGNING_PASSWORD')
+                keyAlias 'wohnpit'
+                keyPassword System.getenv('WOHNPIT_SIGNING_PASSWORD')
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt')
+            if (System.getenv('WOHNPIT_KEYSTORE')) signingConfig signingConfigs.localRelease
+        }
+    }
+    lint { abortOnError true }
+}
+
+dependencies {
+    implementation 'com.google.zxing:core:3.5.3'
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.xerial:sqlite-jdbc:3.46.1.0'
+}
