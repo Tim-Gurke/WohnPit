@@ -39,6 +39,7 @@ public final class MainActivity extends Activity {
     private TextView historyHint,archivePolicy;
     private Button startButton,pauseButton,archiveButton,cancelArchiveButton,pairButton,reconnectButton,historyButton;
     private boolean foreground,pendingStart;
+    private volatile boolean restoringHistory;
     private String pendingArchive,lastDeviceList="";
     private final Runnable refresh=new Runnable(){@Override public void run(){if(!foreground)return;update();main.postDelayed(this,3000);}};
 
@@ -97,11 +98,11 @@ public final class MainActivity extends Activity {
         LinearLayout settings=card(root,"Einstellungen und Daten");button(settings,"Speicherintervall und Akkukapazität",this::settings);
         button(settings,"Watt’n’Pit-Einstellungen importieren",()->choose(IMPORT_SETTINGS,false,"application/json",null));
         button(settings,"Watt’n’Pit-Verlauf importieren",()->choose(IMPORT_CSV,false,"text/*",null));
-        historyButton=button(settings,"Historischen Verbrauch übernehmen",()->{
+        historyButton=button(settings,"Verbrauch und Lernstand übernehmen",()->{
             if(repository.running||repository.archiveBusy){notice("Bitte zuerst die Aufzeichnung pausieren und einen laufenden Archivabruf beenden.");return;}
             choose(IMPORT_HISTORY,false,"application/zip",null);
         });
-        historyButton.setEnabled(false);historyHint=text(settings,"Ergänzt frühere Anlagen- und Wetterdaten aus der Mess- und Lerndiagnose deiner bisherigen Watt’n’Pit-Zentrale. Dafür Aufzeichnung und Archivabruf pausieren.",13,MUTED);
+        historyButton.setEnabled(false);historyHint=text(settings,"Übernimmt frühere Anlagen- und Wetterdaten sowie vorhandene Lernabschnitte und Prognosevergleiche aus der Watt’n’Pit-Diagnose. Dafür Aufzeichnung und Archivabruf pausieren.",13,MUTED);
         button(settings,"Verlauf als CSV sichern",()->choose(EXPORT_CSV,true,"text/csv","WohnPit-Verlauf.csv"));
         button(settings,"Diagnose speichern",()->choose(DIAGNOSTICS,true,"application/zip","WohnPit-Diagnose-"+BuildConfig.VERSION_NAME+".zip"));
         button(settings,"Android-App-Einstellungen",()->startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,Uri.parse("package:"+getPackageName()))));
@@ -114,7 +115,7 @@ public final class MainActivity extends Activity {
             runOnUiThread(()->{if(!foreground)return;try{
                 boolean active=data.optBoolean("running"),busy=new JSONObject(sync).optBoolean("busy");
                 recording.setText(active?"Aufzeichnung aktiv":pendingStart?"Start wird vorbereitet …":"Aufzeichnung pausiert");recording.setTextColor(active?ACCENT:0xffe8bb57);
-                startButton.setEnabled(!active&&!pendingStart);pauseButton.setEnabled(active||pendingStart);
+                startButton.setEnabled(!active&&!pendingStart&&!restoringHistory);pauseButton.setEnabled((active||pendingStart)&&!restoringHistory);
                 StringBuilder values=new StringBuilder(data.optString("status"));JSONArray rows=data.optJSONArray("readings");
                 if(values.toString().equals(recording.getText().toString()))values.setLength(0);
                 if(rows!=null)for(int i=0;i<rows.length();i++){JSONObject p=rows.getJSONObject(i);long age=Math.max(0,(System.currentTimeMillis()-p.optLong("t"))/1000);if(values.length()>0)values.append("\n");values.append(p.optString("kind").equals("solar")?"Solar":"Batterie").append(": ");
@@ -122,9 +123,9 @@ public final class MainActivity extends Activity {
                     values.append(age>45?" · letzter Wert vor "+age+" s":" · aktuell");}
                 live.setText(values.toString());live.setVisibility(values.length()==0?View.GONE:View.VISIBLE);JSONObject progress=new JSONObject(sync).optJSONObject("archive");String detail=progress==null?"":progress.optString("text");
                 archive.setText(busy?"Archivabruf läuft\n"+detail:"Kein Archivabruf aktiv."+(detail.isEmpty()?"\nArchivdaten werden nur bei Bedarf ergänzt.":"\nLetzter Abruf: "+detail));archive.setTextColor(busy?0xffe8bb57:MUTED);archivePolicy.setText("Automatischer Abruf: "+archiveIntervalLabel());
-                cancelArchiveButton.setEnabled(busy);archiveButton.setEnabled(!busy&&!pendingStart&&data.getJSONArray("devices").length()>0);
-                historyButton.setEnabled(!active&&!busy&&!pendingStart);
-                historyHint.setText(active||busy?"Für diesen Import zuerst die Aufzeichnung pausieren und den Archivabruf beenden.":"Diagnose-ZIP der bisherigen Watt’n’Pit-Zentrale auswählen. Ergänzt frühere Anlagen- und Wetterdaten für den historischen Verbrauch.");
+                cancelArchiveButton.setEnabled(busy);archiveButton.setEnabled(!busy&&!pendingStart&&!restoringHistory&&data.getJSONArray("devices").length()>0);
+                historyButton.setEnabled(!active&&!busy&&!pendingStart&&!restoringHistory);
+                historyHint.setText(active||busy?"Für diesen Import zuerst die Aufzeichnung pausieren und den Archivabruf beenden.":"Diagnose-ZIP der bisherigen Watt’n’Pit-Zentrale auswählen. Ergänzt den historischen Verbrauch und den bereits gespeicherten Lernstand.");
                 JSONArray peers=n.optJSONArray("peers");network.setText((n.optBoolean("hosting")?"Zentrale im WLAN erreichbar":"Zentrale wartet auf den Start")+"\nAnzeigehandys verbunden: "+(peers==null?0:peers.length())+(!n.optString("error").isEmpty()?"\n"+n.optString("error"):""));pairButton.setEnabled(n.optBoolean("hosting"));
                 JSONObject profile=r.optJSONObject("profile"),h=r.optJSONObject("handover");roller.setText((profile==null?"Roller":profile.optString("name"))+"\n"+r.optString("status")+(h==null?"":"\n"+h.optString("status")));
                 reconnectButton.setEnabled(active&&profile!=null&&!profile.optString("mac").isEmpty()&&(h==null||h.optString("phase").equals("host")));
@@ -189,22 +190,22 @@ public final class MainActivity extends Activity {
     @Override public void onRequestPermissionsResult(int code,String[] names,int[] results){super.onRequestPermissionsResult(code,names,results);if(code==PERMISSIONS&&pendingStart)startReady();}
     private void choose(int code,boolean create,String type,String title){Intent i=new Intent(create?Intent.ACTION_CREATE_DOCUMENT:Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType(type);if(title!=null)i.putExtra(Intent.EXTRA_TITLE,title);try{startActivityForResult(i,code);}catch(Exception e){notice("Dateiauswahl konnte nicht geöffnet werden.");}}
     private String read(Uri uri,int limit)throws IOException{try(InputStream in=getContentResolver().openInputStream(uri);ByteArrayOutputStream out=new ByteArrayOutputStream()){if(in==null)throw new IOException();byte[] block=new byte[8192];int n;while((n=in.read(block))!=-1){if(out.size()+n>limit)throw new IOException("Datei zu groß");out.write(block,0,n);}return out.toString("UTF-8");}}
-    @Override protected void onActivityResult(int request,int result,Intent data){super.onActivityResult(request,result,data);if(request==BLUETOOTH){if(result==RESULT_OK&&pendingStart)startReady();else{pendingStart=false;pendingArchive=null;}return;}if(result!=RESULT_OK||data==null||data.getData()==null)return;Uri uri=data.getData();files.execute(()->{try{
+    @Override protected void onActivityResult(int request,int result,Intent data){super.onActivityResult(request,result,data);if(request==BLUETOOTH){if(result==RESULT_OK&&pendingStart)startReady();else{pendingStart=false;pendingArchive=null;}return;}if(result!=RESULT_OK||data==null||data.getData()==null)return;Uri uri=data.getData();if(request==IMPORT_HISTORY){restoringHistory=true;startButton.setEnabled(false);archiveButton.setEnabled(false);historyButton.setEnabled(false);}files.execute(()->{try{
         if(request==IMPORT_SETTINGS){repository.importConfiguration(read(uri,ConfigurationBackup.MAX_BYTES));notice("Einstellungen übernommen. Bluetooth-Geräte und Schlüssel werden separat eingerichtet.");}
         if(request==IMPORT_CSV){CsvCodec.Table table=CsvCodec.parse(read(uri,25*1024*1024));Map<String,Integer> fields=CsvCodec.guess(table.headers);if(!fields.containsKey("timestamp")||!fields.containsKey("kind")||!fields.containsKey("device"))throw new IllegalArgumentException("Bitte eine vollständige Watt’n’Pit-Verlaufsdatei importieren.");int[] counts=repository.db.importTable(table,fields,"solar");repository.invalidateStats();notice(counts[0]+" Messwerte übernommen · "+counts[1]+" bereits vorhanden · "+counts[2]+" verworfen.");}
         if(request==IMPORT_HISTORY){
-            notice("Historische Anlagen- und Wetterdaten werden übernommen …");
+            notice("Historische Anlagen-, Wetter- und Lerndaten werden übernommen …");
             JSONObject input;try(InputStream in=getContentResolver().openInputStream(uri)){if(in==null)throw new IOException();input=HistoryMigration.readZip(in);}
             SolarPlanning plan=new SolarPlanning(getApplicationContext(),repository,value->{});
             try{
                 HistoryMigration.Result transfer=HistoryMigration.restore(repository,plan,RollerLedger.get(this),input);
-                CentralLog.add(this,"Umzug",transfer.inserted+" historische Berechnungsgrundlagen ergänzt · "+transfer.existing+" bereits vorhanden");
-                notice(transfer.inserted+" historische Berechnungsgrundlagen übernommen. In Watt’n’Pit den Verlauf neu öffnen.");
+                CentralLog.add(this,"Umzug",transfer.inserted+" historische Grundlagen ergänzt · "+transfer.updated+" Wetterarchive vervollständigt · "+transfer.tables.optInt("observations")+" Lernabschnitte · "+transfer.tables.optInt("forecasts")+" Prognosevergleiche · "+transfer.existing+" bereits vorhanden");
+                notice(transfer.inserted+" Grundlagen ergänzt, davon "+transfer.tables.optInt("observations")+" Lernabschnitte und "+transfer.tables.optInt("forecasts")+" Prognosevergleiche. Watt’n’Pit danach neu öffnen.");
             }finally{plan.shutdown();plan.close();}
         }
         if(request==EXPORT_CSV)try(OutputStream out=getContentResolver().openOutputStream(uri,"wt")){if(out==null)throw new IOException();repository.db.exportTo(out);notice("Verlauf gespeichert.");}
         if(request==DIAGNOSTICS)try(OutputStream out=getContentResolver().openOutputStream(uri,"wt")){if(out==null)throw new IOException();JSONObject diagnostic=new JSONObject().put("app","WohnPit").put("version",BuildConfig.VERSION_NAME).put("at",System.currentTimeMillis()).put("sync",new JSONObject(repository.syncState())).put("archive",repository.diagnosticText()).put("roller",RollerHandover.view(this)).put("events",CentralLog.read(this));try(ZipOutputStream zip=new ZipOutputStream(out)){zip.putNextEntry(new ZipEntry("diagnose.json"));zip.write(diagnostic.toString(2).getBytes(StandardCharsets.UTF_8));zip.closeEntry();}notice("Diagnose gespeichert.");}
-    }catch(Exception e){notice(Repository.safeError(e));}});}
+    }catch(Exception e){notice(Repository.safeError(e));}finally{if(request==IMPORT_HISTORY){restoringHistory=false;runOnUiThread(this::update);}}});}
     private void notice(String value){runOnUiThread(()->{if(isDestroyed())return;if(message!=null)message.setText(value);Toast.makeText(this,value,Toast.LENGTH_LONG).show();});}
 }
 

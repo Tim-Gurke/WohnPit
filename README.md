@@ -1,4 +1,4 @@
-# WohnPit 0.0.2
+# WohnPit 0.0.3
 
 Die schlanke Android-Zentrale für den Wohnwagen. WohnPit übernimmt die vorhandene Aufzeichnung und den Anlagenverbund von Watt’n’Pit. Watt’n’Pit bleibt die Anzeige-App; ScootPit begleitet den Roller.
 
@@ -46,29 +46,37 @@ Alle Exporte auf der bisherigen G5-Zentrale in Watt’n’Pit erstellen. Auf dem
 | Einstellungen → Lokal. Ohne Konto. → CSV exportieren | Watt-n-Pit-Verlauf.csv |
 | Einstellungen → Energieplanung → Mess- und Lerndiagnose exportieren | Watt-n-Pit-Diagnose-VERSION.zip |
 
-Bei jeder Android-Dateiauswahl zum Beispiel den lokalen Ordner Download wählen und Speichern antippen. Die CSV enthält die gespeicherten Messwertzeilen aller Zeitbereiche. Erst die zusätzliche Diagnose enthält die vorhandenen historischen Anlagenzustände und archivierten Modelldaten, die der Verbrauch mit einem mobilen Panel benötigt.
+Bei jeder Android-Dateiauswahl zum Beispiel den lokalen Ordner Download wählen und Speichern antippen. Die CSV enthält die gespeicherten Messwertzeilen aller Zeitbereiche. Erst die zusätzliche Diagnose enthält die vorhandenen historischen Anlagenzustände, archivierten Modelldaten sowie die gespeicherten Lernabschnitte und Prognosevergleiche. Die CSV allein erhält diesen Lernstand nicht.
 
 1. Die alte Watt’n’Pit-Aufzeichnung in Übersicht über das Pausezeichen pausieren. Unter Einstellungen → Anlagenverbund → Geräte verknüpfen den Verbund beenden und die Nachfrage bestätigen. Die alte App und ihre Daten zunächst behalten.
 2. WohnPit installieren. Unter Einstellungen und Daten zuerst „Watt’n’Pit-Einstellungen importieren“ mit der JSON-Datei und dann „Watt’n’Pit-Verlauf importieren“ mit der CSV-Datei ausführen.
 3. SmartSolar und SmartShunt mit ihren bisherigen Bluetooth-Adressen und Instant-Readout-Schlüsseln einrichten. Die Einstellungssicherung enthält keine Geräteschlüssel oder Kopplungsgeheimnisse.
 4. Das Roller-BMS mit seiner bestehenden Bluetooth-Adresse einrichten. Erweiterte Rollerwerte lassen sich anschließend wie bisher vom Anzeigehandy aus einstellen.
-5. Bei pausierter WohnPit-Aufzeichnung und beendetem Archivabruf „Historischen Verbrauch übernehmen“ wählen und die Diagnose-ZIP aus der alten G5-App auswählen. Die Geräteadressen müssen zur bisherigen Anlage passen.
+5. Bei pausierter WohnPit-Aufzeichnung und beendetem Archivabruf „Verbrauch und Lernstand übernehmen“ wählen und die Diagnose-ZIP aus der alten G5-App auswählen. Die Geräteadressen müssen zur bisherigen Anlage passen.
 6. Aufzeichnung starten; Android-Berechtigungen erteilen. Unter Android 8–11 muss für die BLE-Suche der Standortdienst eingeschaltet sein.
 7. In WohnPit „Anzeigehandy koppeln“ öffnen. Auf S20/S10 den bisherigen Anlagenverbund verlassen und mit dem WohnPit-Code verbinden.
 8. Livewerte, historischen Verbrauch, Archivabruf und die bestehende BMS-Übernahme/Rückgabe mit ScootPit am Roller prüfen.
 
-## Historischen Verbrauch nach einem Umzug mit 0.0.1 ergänzen
+## Historischen Verbrauch und Lernstand nach einem Umzug ergänzen
 
-WohnPit 0.0.2 über 0.0.1 installieren, ohne die App zu deinstallieren. Geräte, Messwerte und die bestehende Kopplung bleiben dadurch erhalten; erneutes Verknüpfen der Anzeigehandys ist nicht erforderlich.
+WohnPit 0.0.3 über 0.0.1 oder 0.0.2 installieren, ohne die App zu deinstallieren. Geräte, Messwerte und die bestehende Kopplung bleiben dadurch erhalten; erneutes Verknüpfen der Anzeigehandys ist nicht erforderlich.
 
 1. Auf dem G5 in der alten Watt’n’Pit-App Einstellungen → Energieplanung → Mess- und Lerndiagnose exportieren aufrufen. Die alte Aufzeichnung pausiert lassen. Watt’n’Pit 1.8.1 unterstützt diesen Export bereits.
 2. In WohnPit die Aufzeichnung pausieren. Einen noch laufenden Archivabruf abwarten oder abbrechen.
-3. Unter Einstellungen und Daten „Historischen Verbrauch übernehmen“ antippen und die eben gespeicherte ZIP-Datei auswählen.
+3. Unter Einstellungen und Daten „Verbrauch und Lernstand übernehmen“ antippen und die eben gespeicherte ZIP-Datei auswählen.
 4. Nach erfolgreichem Import die WohnPit-Aufzeichnung wieder starten und auf dem Anzeigehandy den Verlauf neu öffnen.
 
-Der Import ergänzt vorhandene frühere Aufstellungen, archivierte Wetterwerte, Geräteprofile und beobachtete Roller-Ladeintervalle. Bestehende Datensätze werden erhalten; wiederholtes Importieren erzeugt keine doppelten Messungen. Heutige Einstellungen und BMS-Zuständigkeit werden nicht durch alte Werte ersetzt. Die bisherige Verbrauchsberechnung bleibt unverändert. Für diesen Fix benötigen Watt’n’Pit und ScootPit kein Update.
+Der Import ergänzt vorhandene frühere Aufstellungen, archivierte Wetterwerte, Geräteprofile, beobachtete Roller-Ladeintervalle, gespeicherte Lernabschnitte und ursprüngliche Prognosevergleiche. Bereits bestätigte frühere Aufstellungen werden samt Wetterarchiv übernommen. Fehlende Wetterwerte einer bereits installierten identischen Bestätigung werden mit dem vorhandenen Wetter-Merge ergänzt. Bestehende Datensätze werden erhalten; wiederholtes Importieren erzeugt keine doppelten Messungen. Heutige Einstellungen und BMS-Zuständigkeit werden nicht durch alte Werte ersetzt. Die bisherige Verbrauchsberechnung bleibt unverändert. Für diesen Fix benötigen Watt’n’Pit und ScootPit kein Update.
 
-Es bleibt ein gezielter Import der Verbrauchsgrundlagen, keine vollständige App-Wiederherstellung: Er übernimmt insbesondere keine vollständigen internen Lernstände, separaten Tagesarchive oder Roller-Bedieneinstellungen. Zeiträume, für die auch die alte Diagnose keine ausreichenden Grundlagen enthält, bleiben als Lücken erkennbar.
+Der Import übernimmt jetzt auch den vorhandenen Lernstand im unterstützten Diagnoseformat, einschließlich der älteren Version 1.6.10 mit demselben Version-2-Lernschema. Er ist weiterhin keine vollständige App-Wiederherstellung: Separate Tagesarchive und Roller-Bedieneinstellungen werden nicht kopiert. Zeiträume, für die auch die alte Diagnose keine ausreichenden Grundlagen enthält, bleiben als Lücken erkennbar.
+
+### Wenn nach 0.0.2 nur noch wenige Lernstunden angezeigt werden
+
+0.0.2 ergänzte die Verbrauchsgrundlagen, ließ gespeicherte Lernabschnitte und Prognosevergleiche aber aus. Deshalb konnten Messwerte vorhanden sein und trotzdem frühere Lernerfahrung fehlen. Es gibt keine Begrenzung auf 100 Stunden.
+
+Nach dem Update auf 0.0.3 denselben Diagnoseexport bei pausierter Aufzeichnung erneut mit „Verbrauch und Lernstand übernehmen“ einlesen. Ein erneuter CSV-Import oder eine neue Kopplung ist nicht nötig. Danach die Aufzeichnung starten und Watt’n’Pit vollständig neu öffnen. Bereits vorhandene und überlappende neuere Lernabschnitte werden erhalten; alte Exporte erzeugen keine doppelt gezählten Lernstunden. Der Import meldet die tatsächlich hinzugekommenen Lernabschnitte und Prognosevergleiche. Die Zahl ausgewerteter Stunden wird weiterhin von der bestehenden Anzeige-Berechnung ermittelt, einschließlich ihrer Abdeckung und Ausreißerfilter.
+
+Es lassen sich nur Lernabschnitte wiederherstellen, die im gewählten Export tatsächlich gespeichert sind. Die Auswertung auf dem Anzeigehandy bleibt dort; WohnPit führt für den Import keine neue Lernberechnung aus.
 
 Watt’n’Pit kann weiterhin ohne Zentrale direkt mit den Victron-Geräten arbeiten. WohnPit läuft als eigene App daneben; bestehende Daten werden nicht automatisch zwischen den App-Speichern verschoben.
 

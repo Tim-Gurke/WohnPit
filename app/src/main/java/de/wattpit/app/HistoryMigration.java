@@ -23,9 +23,9 @@ final class HistoryMigration {
         Table(String name){this.name=name;}
     }
     static final class Result {
-        final int inserted,existing;
+        final int inserted,existing,updated;
         final JSONObject tables;
-        Result(int inserted,int existing,JSONObject tables){this.inserted=inserted;this.existing=existing;this.tables=tables;}
+        Result(int inserted,int existing,int updated,JSONObject tables){this.inserted=inserted;this.existing=existing;this.updated=updated;this.tables=tables;}
     }
 
     static JSONObject readZip(InputStream input)throws Exception{
@@ -81,6 +81,24 @@ final class HistoryMigration {
     private static void paused(Repository repo){
         if(repo.running||repo.archiveBusy)throw new IllegalArgumentException("Bitte zuerst die Aufzeichnung pausieren und einen laufenden Archivabruf beenden.");
     }
+    private static double amount(JSONObject row,String key)throws JSONException{
+        Object raw=row.get(key);if(!(raw instanceof Number)||!Double.isFinite(((Number)raw).doubleValue()))throw new IllegalArgumentException("Ungültiger Wert im gespeicherten Lernstand.");
+        return ((Number)raw).doubleValue();
+    }
+    private static void usage(JSONObject value,long from,long to,long issued)throws Exception{
+        double duration=amount(value,"duration"),wh=amount(value,"wh"),estimated=amount(value,"estimatedDuration"),reconstructed=value.has("reconstructedDuration")?amount(value,"reconstructedDuration"):0;
+        long latest=time(value,"latest");
+        if(duration<0||duration>to-from||wh<0||estimated<0||estimated>duration||reconstructed<0||reconstructed>estimated||latest>to||latest>issued+300000||duration>0&&latest<from)throw new IllegalArgumentException("Ungültiger Messabschnitt im gespeicherten Lernstand.");
+    }
+    private static void observation(JSONObject row,long issued)throws Exception{
+        long from=time(row,"from"),to=time(row,"to");int slot=row.getInt("slot");java.time.LocalDate.parse(row.getString("day"));
+        // An unfinished day's slot ends in the future; only its actual latest measurement must be past.
+        if(from<=0||from>issued+300000||to<=from||to-from>27*3600000L||to>issued+27*3600000L||slot<0||slot>2)throw new IllegalArgumentException("Ungültiger Zeitraum im gespeicherten Lernstand.");
+        text(row,"key",200);
+        if(row.optInt("learningVersion",1)==2){usage(row.getJSONObject("usage"),from,to,issued);JSONObject presence=row.optJSONObject("usageByPresence");if(presence!=null)for(Iterator<String> keys=presence.keys();keys.hasNext();)usage(presence.getJSONObject(keys.next()),from,to,issued);}
+        else if(row.optInt("learningVersion",1)==1){if(!row.isNull("consumption")&&amount(row,"consumption")<0)throw new IllegalArgumentException("Ungültiger erlernter Verbrauch.");}
+        else throw new IllegalArgumentException("Dieser gespeicherte Lernstand wird noch nicht unterstützt.");
+    }
 
     static Result restore(Repository repo,SolarPlanning plan,RollerLedger ledger,JSONObject input)throws Exception{
         synchronized(repo){
@@ -90,11 +108,11 @@ final class HistoryMigration {
             if(!source.equals(input.optString("source"))||repo.configs().length()==0)throw new IllegalArgumentException("Die Diagnose gehört zu anderen Energiegeräten. Bitte SmartSolar und SmartShunt mit denselben Bluetooth-Adressen wie bisher einrichten.");
             long issued=time(input,"at");
             if(issued<=0||issued>System.currentTimeMillis()+300000)throw new IllegalArgumentException("Der Zeitpunkt dieser Diagnose ist ungültig.");
-            JSONObject mobile=input.getJSONObject("mobileDisplay");
+            JSONObject mobile=input.optJSONObject("mobileDisplay");if(mobile==null)mobile=new JSONObject().put("version",2);
             if(mobile.optInt("version")!=2)throw new IllegalArgumentException(INVALID);
 
-            Table contexts=new Table("contexts"),display=new Table("display_contexts"),weather=new Table("model_weather"),profiles=new Table("device_settings"),roller=new Table("input_intervals");
-            List<Table> tables=Arrays.asList(contexts,display,weather,profiles,roller);int[] count={0};
+            Table contexts=new Table("contexts"),display=new Table("display_contexts"),weather=new Table("model_weather"),profiles=new Table("device_settings"),roller=new Table("input_intervals"),observations=new Table("observations"),forecasts=new Table("forecasts"),confirmations=new Table("confirmed_setups");
+            List<Table> tables=Arrays.asList(contexts,display,weather,profiles,roller,observations,forecasts,confirmations);int[] count={0};
             JSONArray given=rows(input,"contexts");
             for(int i=0;i<given.length();i++){
                 JSONObject row=given.getJSONObject(i),payload=row.getJSONObject("payload");
@@ -110,7 +128,6 @@ final class HistoryMigration {
                 if(at<=0||at>issued+300000)throw new IllegalArgumentException("Eine historische Aufstellung liegt außerhalb des Diagnosezeitraums.");
                 ContentValues value=new ContentValues();value.put("source",source);value.put("at",at);value.put("payload",context(row.getJSONObject("payload")));add(display,value,count);
             }
-            if(contexts.rows.isEmpty()&&display.rows.isEmpty())throw new IllegalArgumentException("Diese Diagnose enthält keine früheren Aufstellungen. Bitte den Export auf der bisherigen G5-Zentrale durchführen.");
             given=rows(mobile,"weather");
             for(int i=0;i<given.length();i++){
                 JSONObject row=given.getJSONObject(i);long end=time(row,"end");double watts=row.getDouble("value");int slot=row.getInt("slot");
@@ -140,8 +157,32 @@ final class HistoryMigration {
                 ContentValues value=new ContentValues();value.put("source",source);value.put("start",from);value.put("end",to);value.put("wh",wh);value.put("mac","");value.put("session",0L);add(roller,value,count);
             }
 
+            given=rows(input,"observations");JSONArray predictions=rows(input,"forecasts");
+            // 1.6.10 used the same version-2 observation schema (algorithm 1690).
+            // Retain its recorded evidence; the existing viewer calculation evaluates it.
+            int algorithm=input.optInt("learningAlgorithm",-1);
+            if((given.length()>0||predictions.length()>0)&&algorithm!=1690&&algorithm!=SolarPlanning.ALGORITHM)throw new IllegalArgumentException("Der Lernstand verwendet eine andere Berechnungsversion. Bitte eine passende Mess- und Lerndiagnose der bisherigen Zentrale auswählen.");
+            for(int i=0;i<given.length();i++){
+                JSONObject row=given.getJSONObject(i);observation(row,issued);
+                ContentValues value=new ContentValues();value.put("source",source);value.put("start",time(row,"from"));value.put("end",time(row,"to"));value.put("payload",row.toString());add(observations,value,count);
+            }
+            for(int i=0;i<predictions.length();i++){
+                JSONObject row=predictions.getJSONObject(i);long from=time(row,"from"),to=time(row,"to"),at=time(row,"issued");double wh=amount(row,"wh");String key=text(row,"key",200);
+                if(!key.matches("k-[a-f0-9]{16}")||from<at||to<=from||to-from>13*3600000L||at>issued+300000||to>issued+17*DAY||wh<0||wh>10000000)throw new IllegalArgumentException("Ungültiger gespeicherter Prognosevergleich.");
+                ContentValues value=new ContentValues();value.put("key",key);value.put("start",from);value.put("end",to);value.put("issued",at);value.put("payload",row.toString());add(forecasts,value,count);
+            }
+            given=rows(input,"confirmedSetups");
+            for(int i=0;i<given.length();i++){
+                JSONObject row=given.getJSONObject(i);long from=time(row,"from"),to=time(row,"to");JSONObject cached=row.getJSONObject("weather");
+                if(from<=0||to<=from||to-from>93*DAY||to>issued+300000)throw new IllegalArgumentException("Ungültige bestätigte frühere Aufstellung.");
+                if(cached.has("timezone"))java.time.ZoneId.of(cached.getString("timezone"));
+                JSONObject place=cached.optJSONObject("place");if(place!=null&&place.length()>0)WeatherClient.checkedPlace(place);
+                ContentValues value=new ContentValues();value.put("source",source);value.put("id",text(row,"id",200));value.put("start",from);value.put("end",to);value.put("key",text(row,"key",200));value.put("solar_key",text(row,"solarKey",200));value.put("payload",context(row.getJSONObject("payload")));value.put("weather",cached.toString());add(confirmations,value,count);
+            }
+            if(contexts.rows.isEmpty()&&display.rows.isEmpty()&&observations.rows.isEmpty()&&confirmations.rows.isEmpty())throw new IllegalArgumentException("Diese Diagnose enthält keine historischen Anlagen- oder Lerndaten. Bitte den Export auf der bisherigen G5-Zentrale durchführen.");
+
             // Validate everything before touching any existing database.
-            List<SQLiteDatabase> transactions=new ArrayList<>();int inserted=0,existing=0;JSONObject counts=new JSONObject();
+            List<SQLiteDatabase> transactions=new ArrayList<>();int inserted=0,existing=0,updated=0;JSONObject counts=new JSONObject();
             try{
                 for(Table table:tables)if(!table.rows.isEmpty()){
                     SQLiteDatabase db=AnalysisExchange.database(table.name,repo,plan,ledger,true);
@@ -152,12 +193,14 @@ final class HistoryMigration {
                     if(!table.rows.isEmpty()){
                         SQLiteDatabase db=AnalysisExchange.database(table.name,repo,plan,ledger,true);
                         for(ContentValues row:table.rows){
-                            if(table.name.equals("input_intervals")){
-                                try(Cursor c=db.rawQuery("SELECT 1 FROM input_intervals WHERE source=? AND end>? AND start<? LIMIT 1",new String[]{source,row.get("start").toString(),row.get("end").toString()})){
+                            if(table.name.equals("input_intervals")||table.name.equals("observations")){
+                                try(Cursor c=db.rawQuery("SELECT 1 FROM "+table.name+" WHERE source=? AND end>? AND start<? LIMIT 1",new String[]{source,row.get("start").toString(),row.get("end").toString()})){
                                     if(c.moveToFirst()){existing++;continue;}
                                 }
                             }
-                            if(db.insertWithOnConflict(table.name,null,row,SQLiteDatabase.CONFLICT_IGNORE)==-1)existing++;else{inserted++;changed++;}
+                            if(db.insertWithOnConflict(table.name,null,row,SQLiteDatabase.CONFLICT_IGNORE)==-1){
+                                if(table.name.equals("confirmed_setups")&&PlanningConfirmation.restoreWeather(db,source,row)){updated++;changed++;}else existing++;
+                            }else{inserted++;changed++;}
                         }
                     }
                     counts.put(table.name,changed);
@@ -169,8 +212,8 @@ final class HistoryMigration {
                 for(int i=transactions.size()-1;i>=0;i--)try{transactions.get(i).endTransaction();}catch(RuntimeException e){if(failure==null)failure=e;else failure.addSuppressed(e);}
                 if(failure!=null)throw failure;
             }
-            if(inserted>0){repo.db.clearDisplayPrior();repo.invalidateStats();}
-            return new Result(inserted,existing,counts);
+            if(inserted>0||updated>0){repo.db.clearDisplayPrior();repo.invalidateStats();}
+            return new Result(inserted,existing,updated,counts);
         }
     }
     private HistoryMigration(){}

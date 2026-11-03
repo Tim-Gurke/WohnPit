@@ -62,6 +62,15 @@ final class PlanningConfirmation {
     private static boolean samePlace(JSONObject a,JSONObject b){
         if(a==null||b==null)return false;for(String k:new String[]{"latitude","longitude"}){double x=a.optDouble(k,Double.NaN),y=b.optDouble(k,Double.NaN);if(!Double.isFinite(x)||!Double.isFinite(y)||Math.round(x*1000)!=Math.round(y*1000))return false;}return true;
     }
+    /** Fill missing archived weather for the same confirmation using the normal bounded merge. */
+    static boolean restoreWeather(SQLiteDatabase db,String source,ContentValues restored)throws Exception{
+        try(Cursor c=db.rawQuery("SELECT id,start,end,key,solar_key,payload,weather FROM confirmed_setups WHERE source=? AND id=?",new String[]{source,restored.get("id").toString()})){
+            if(!c.moveToFirst())return false;Entry current=new Entry(c);JSONObject fresh=new JSONObject(restored.get("weather").toString());
+            if(current.weather.optBoolean("complete")||current.from!=Long.parseLong(restored.get("start").toString())||current.to!=Long.parseLong(restored.get("end").toString())||!current.key.equals(restored.get("key"))||!current.solarKey.equals(restored.get("solar_key"))||!samePlace(current.payload.optJSONObject("place"),fresh.optJSONObject("place")))return false;
+            JSONObject combined=merge(current,fresh);if(combined.toString().equals(current.weather.toString()))return false;
+            ContentValues value=new ContentValues();value.put("weather",combined.toString());db.update("confirmed_setups",value,"source=? AND id=?",new String[]{source,current.id});return true;
+        }
+    }
     private static JSONArray mergeTimes(JSONArray old,JSONArray fresh,long from,long to)throws Exception{
         TreeMap<Long,JSONObject> times=new TreeMap<>();
         for(JSONArray list:new JSONArray[]{old,fresh})if(list!=null)for(int i=0;i<list.length();i++){
