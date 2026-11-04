@@ -8,5 +8,6 @@
   "asset_name": "WohnPit-v0.0.4.apk",
   "unit_tests": 261,
   "integration_checks": 225,
-  "android_ui_checks": 2
+  "android_ui_checks": 2,
+  "notes_revision": 1
 }

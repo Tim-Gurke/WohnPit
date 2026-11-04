@@ -35,9 +35,14 @@ jobs:
           RELEASE_TITLE: ${{ steps.prepare.outputs.title }}
           RELEASE_APK: ${{ steps.prepare.outputs.apk }}
         run: |
-          gh release create "$RELEASE_TAG" "$RELEASE_APK" release-out/SHA256SUMS \
-            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
-            --title "$RELEASE_TITLE" --notes-file release-out/notes.md --latest
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+              --title "$RELEASE_TITLE" --notes-file release-out/notes.md --latest
+          else
+            gh release create "$RELEASE_TAG" "$RELEASE_APK" release-out/SHA256SUMS \
+              --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+              --title "$RELEASE_TITLE" --notes-file release-out/notes.md --latest
+          fi
       - name: Nur die drei neuesten Releases behalten
         env:
           GH_TOKEN: ${{ github.token }}
