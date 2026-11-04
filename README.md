@@ -56,7 +56,7 @@ Eine konkrete Einsparung von RAM, CPU oder Akkustrom auf dem G5 ist vor dem Verg
 
 ## BMS-Übergabe
 
-Die vorhandenen Produktionsdateien `RollerHandover`, `RollerBle`, `ScootLink`, `RollerStore`, `RollerLedger` und `LanSync` werden unverändert aus Watt’n’Pit übernommen. Es wird kein neues Übergabeprotokoll eingeführt.
+Die vorhandenen BMS-Bausteine `RollerHandover`, `RollerBle`, `ScootLink`, `RollerStore` und `RollerLedger` bleiben unverändert aus Watt’n’Pit übernommen. Der bestehende `LanSync`-Transport ergänzt ab 0.0.4 das Gas-/Wasserjournal im Bundle und in der Konfigurationsrevision; seine Herkunft und die geprüfte Änderung stehen in `UPSTREAM.json`. Es wird kein neues BMS-Übergabeprotokoll eingeführt.
 
 Auf dem Fahrhandy bleibt Watt’n’Pit die bestehende, signaturgeprüfte Brücke zu ScootPit. WohnPit übernimmt die Zentrale am anderen Ende des vorhandenen verschlüsselten Anlagenverbunds. ScootPit und die Brücke auf dem S20 werden nicht geändert.
 

@@ -1,12 +1,12 @@
 {
-  "tag": "v0.0.3",
-  "tested_commit": "8df0c8f4811cea0872f36a07fd1e5692d2889d45",
-  "tested_workflow_run": 41634990334,
-  "asset_name": "WohnPit-v0.0.3.apk",
-  "asset_blob_sha": "449664bb398b19e325cdad5cf5c048af9bad5a46",
-  "asset_sha256": "cf40eb3436ac16f63d02ccf78740910494111cd2f2df2066d36eca1569e65f37",
-  "asset_size": 197801,
+  "tag": "v0.0.4",
+  "tested_commit": "cd9cafd249a7aa944da11f41edbbd8aeabf85623",
+  "tested_workflow_run": 41933465801,
+  "asset_blob_sha": "24d5d66fed4bd2d51f4af96b0bd72d12fe77c655",
+  "asset_sha256": "5179672c67e1bb88a19054aba1a005bee869bb1be1b4d3b638636291976909a9",
+  "asset_size": 196944,
+  "asset_name": "WohnPit-v0.0.4.apk",
   "unit_tests": 261,
-  "integration_checks": 219,
-  "android_ui_checks": 7
+  "integration_checks": 225,
+  "android_ui_checks": 2
 }
