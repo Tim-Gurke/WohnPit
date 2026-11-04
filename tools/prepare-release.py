@@ -57,7 +57,7 @@ def prepare(manifest, repository, target, api, output):
              + str(manifest["android_ui_checks"]) + " Android-8-Prüfungen bestanden. "
              "Funkverbindungen und Stromverbrauch am echten Gerät wurden hier nicht gemessen.\n\n"
              "Die APK über die vorhandene WohnPit-Version installieren; nicht vorher deinstallieren. "
-             "Watt’n’Pit und ScootPit benötigen für dieses Update keine Aktualisierung.\n")
+             "Für Gas und Wasser zuerst WohnPit 0.0.4, danach Watt’n’Pit ab 1.9.0 auf den Anzeigen aktualisieren. ScootPit benötigt dafür kein Update.\n")
     output.mkdir(parents=True, exist_ok=True)
     destination = output / manifest["asset_name"]
     destination.write_bytes(apk)

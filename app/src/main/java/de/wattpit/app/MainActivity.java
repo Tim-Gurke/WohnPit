@@ -36,7 +36,7 @@ public final class MainActivity extends Activity {
     private LanSync lan;
     private LinearLayout devices;
     private TextView recording,live,network,roller,archive,message;
-    private TextView historyHint,archivePolicy;
+    private TextView historyHint,archivePolicy,suppliesStatus;
     private Button startButton,pauseButton,archiveButton,cancelArchiveButton,pairButton,reconnectButton,historyButton;
     private boolean foreground,pendingStart;
     private volatile boolean restoringHistory;
@@ -50,7 +50,7 @@ public final class MainActivity extends Activity {
         build();
     }
     @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);out.putBoolean("pendingStart",pendingStart);out.putString("pendingArchive",pendingArchive);}
-    @Override protected void onStart(){super.onStart();foreground=true;main.post(refresh);if(repository.prefs.getBoolean("recording",false)&&permissions())startReady();}
+    @Override protected void onStart(){super.onStart();foreground=true;SuppliesWeather.refresh(repository,false);main.post(refresh);if(repository.prefs.getBoolean("recording",false)&&permissions())startReady();}
     @Override protected void onStop(){foreground=false;main.removeCallbacks(refresh);super.onStop();}
     @Override protected void onDestroy(){main.removeCallbacksAndMessages(null);files.shutdown();super.onDestroy();}
     private int dp(int n){return Math.round(n*getResources().getDisplayMetrics().density);}
@@ -77,13 +77,14 @@ public final class MainActivity extends Activity {
         ImageView icon=new ImageView(this);icon.setImageResource(getApplicationInfo().icon);icon.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         LinearLayout.LayoutParams ip=new LinearLayout.LayoutParams(dp(60),dp(60));ip.setMarginEnd(dp(12));header.addView(icon,ip);
         LinearLayout brand=column();header.addView(brand,new LinearLayout.LayoutParams(0,-2,1));
-        text(brand,"WohnPit",30,TEXT).setTypeface(null,Typeface.BOLD);
+        text(brand,"WohnPit",20,TEXT).setTypeface(null,Typeface.BOLD);
         TextView tagline=text(brand,"DEINE ZENTRALE IM WOHNWAGEN",10,ACCENT);tagline.setLetterSpacing(.08f);
         text(brand,"Version "+BuildConfig.VERSION_NAME,12,MUTED);
-        LinearLayout status=card(root,"Aufzeichnung");recording=text(status,"Bereit",21,TEXT);live=text(status,"Noch keine Messwerte",15,MUTED);
+        LinearLayout status=card(root,"Aufzeichnung");recording=text(status,"Bereit",20,TEXT);live=text(status,"Noch keine Messwerte",15,MUTED);
         text(status,"Sammelt und speichert auch bei ausgeschaltetem Display. Watt’n’Pit übernimmt die ausführliche Anzeige.",14,MUTED);
         startButton=button(status,"Aufzeichnung starten",()->{startButton.setEnabled(false);repository.prefs.edit().putBoolean("cockpitNotice-v1",true).apply();requestStart(null);});tint(startButton,true);startButton.setEnabled(false);
         pauseButton=button(status,"Aufzeichnung pausieren",()->{pauseButton.setEnabled(false);pendingStart=false;pendingArchive=null;repository.prefs.edit().putBoolean("recording",false).apply();stopService(new Intent(this,MonitorService.class));});pauseButton.setEnabled(false);
+        LinearLayout supplies=card(root,"Gas, Wasser und Wetter");suppliesStatus=text(supplies,"Noch keine Einträge",15,TEXT);text(supplies,"WohnPit speichert Beschaffungen, Gaswechsel und Wetterdaten. Einträge, Verbrauchslernen und Reichweiten bedienst du in Watt’n’Pit ab 1.9.0.",14,MUTED);
         LinearLayout plant=card(root,"Energiegeräte");devices=column();plant.addView(devices);button(plant,"Victron-Gerät hinzufügen",()->editDevice(null));
         archive=text(plant,"Kein Archivabruf aktiv.",14,MUTED);archivePolicy=text(plant,"Automatischer Abruf: "+archiveIntervalLabel(),13,MUTED);
         button(plant,"Automatischen Abruf einstellen",this::archiveSettings);
@@ -111,9 +112,10 @@ public final class MainActivity extends Activity {
     private void update(){
         if(files.isShutdown()||!reading.compareAndSet(false,true))return;
         files.execute(()->{try{
-            JSONObject data=repository.centralState(),r=RollerHandover.view(this),n=lan.state();String sync=repository.syncState();
+            JSONObject supply=SuppliesStore.snapshot(repository);JSONObject data=repository.centralState(),r=RollerHandover.view(this),n=lan.state();String sync=repository.syncState();
             runOnUiThread(()->{if(!foreground)return;try{
                 boolean active=data.optBoolean("running"),busy=new JSONObject(sync).optBoolean("busy");
+                JSONObject weather=supply.optJSONObject("weather");long weatherAt=weather==null?0:weather.optLong("updated");suppliesStatus.setText(supply.getJSONArray("events").length()+" gespeicherte Einträge"+(weatherAt>0?" · Wetterstand "+android.text.format.DateFormat.format("dd.MM. HH:mm",weatherAt):" · Wetter noch nicht ergänzt")+(weather!=null&&weather.optBoolean("pending")?" · Abruf läuft …":"")+(weather!=null&&!weather.optString("error").isEmpty()?"\n"+weather.optString("error"):""));
                 recording.setText(active?"Aufzeichnung aktiv":pendingStart?"Start wird vorbereitet …":"Aufzeichnung pausiert");recording.setTextColor(active?ACCENT:0xffe8bb57);
                 startButton.setEnabled(!active&&!pendingStart&&!restoringHistory);pauseButton.setEnabled((active||pendingStart)&&!restoringHistory);
                 StringBuilder values=new StringBuilder(data.optString("status"));JSONArray rows=data.optJSONArray("readings");

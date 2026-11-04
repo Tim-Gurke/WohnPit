@@ -139,7 +139,7 @@ final class LanSync {
     }catch(Exception e){return "{}";}}
     private String fingerprint()throws Exception{
         JSONArray values=new JSONArray();Map<String,?> all=repository.prefs.getAll();
-        for(String key:new String[]{"devices","equipment-v1","solar-setup-v1","weatherPlace","capacity","sampleSeconds","recording",SpecialUses.KEY})values.put(all.get(key));
+        for(String key:new String[]{"devices","equipment-v1","solar-setup-v1","weatherPlace","capacity","sampleSeconds","recording",SpecialUses.KEY,SuppliesStore.KEY})values.put(all.get(key));
         ArchiveRun.State run=repository.archiveRun.state();values.put(run.id).put(run.startedAt).put(run.busy);
         values.put(RollerStore.get(context).snapshot().optJSONObject("profile"));values.put(context.getSharedPreferences("wattpit-presence",Context.MODE_PRIVATE).getLong("revision",0));return digest(values.toString());
     }
@@ -291,7 +291,7 @@ final class LanSync {
             backgroundInputs();
             JSONObject snapshot=repository.archiveBusy?new JSONObject(repository.backgroundSnapshot()):repository.snapshot();snapshot.remove("archiveDiagnostics");snapshot.remove("event");snapshot.remove("eventId");
             return new JSONObject().put("analysisProtocol",1).put("snapshot",snapshot).put("setup",planning.setup()).put("planning",new JSONObject().put("source",RollerLedger.source(repository.prefs))).put("roller",RollerHandover.view(context))
-                .put("specialUses",SpecialUses.snapshot(repository.prefs)).put("presence",PresenceStore.get(context).snapshot()).put("controlProtocol",1).put("controlRevision",currentControlRevision()).put("sync",new JSONObject(repository.syncState())).put("bonded",PlantCommands.bonded(context));
+                .put("supplies",SuppliesStore.snapshot(repository)).put("specialUses",SpecialUses.snapshot(repository.prefs)).put("presence",PresenceStore.get(context).snapshot()).put("controlProtocol",1).put("controlRevision",currentControlRevision()).put("sync",new JSONObject(repository.syncState())).put("bonded",PlantCommands.bonded(context));
         }
         long from=args.getLong(0);if(method.equals("sunsetSoc")){
             if(from<=0||from>System.currentTimeMillis())throw new IllegalArgumentException();String shunt="";JSONArray devices=repository.configs();

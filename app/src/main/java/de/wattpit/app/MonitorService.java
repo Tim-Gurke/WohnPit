@@ -73,6 +73,7 @@ public final class MonitorService extends Service {
             else if (Build.VERSION.SDK_INT >= 29) startForeground(NOTIFICATION,notification(),ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
             else startForeground(NOTIFICATION,notification());
         } catch (SecurityException e) { repository.status = "Aufzeichnung konnte nicht gestartet werden. App öffnen und Berechtigungen prüfen."; stopSelf(); return START_NOT_STICKY; }
+        SuppliesWeather.refresh(repository,false);
         boolean first = !repository.running;
         repository.running = true;
         roller.start();
@@ -84,6 +85,7 @@ public final class MonitorService extends Service {
             worker.scheduleWithFixedDelay(() -> main.post(() -> {
             if (!repository.running) return;
             PresenceStore.get(this).tick();
+            SuppliesWeather.refresh(repository,false);
             if (!scanning) startScan();
             getSystemService(NotificationManager.class).notify(NOTIFICATION,notification());
         }),30,30,TimeUnit.SECONDS);

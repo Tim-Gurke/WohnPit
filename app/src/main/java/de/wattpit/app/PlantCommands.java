@@ -29,6 +29,8 @@ final class PlantCommands {
             case "saveAbsence":arity(args,1);PresenceStore.get(context).save(args.getString(0));break;
             case "resolveAbsence":arity(args,2);PresenceStore.get(context).resolve(args.getString(0),args.getString(1));break;
             case "saveRoller":arity(args,1);RollerStore.get(context).configure(args.getString(0));break;
+            case "saveSupplies":arity(args,1);SuppliesStore.command(repo,args.getString(0));break;
+            case "refreshSuppliesWeather":arity(args,0);SuppliesWeather.refresh(repo,true);break;
             case "saveSpecialUses":arity(args,1);SpecialUses.save(repo.prefs,args.getString(0));planning.invalidateLearning(LearningWindow.since(System.currentTimeMillis()));break;
             case "rollerReconnect":arity(args,0);RollerHandover.get(context).reconnect();break;
             case "saveDevice":arity(args,1);repo.saveDevice(new JSONObject(args.getString(0)));break;
@@ -53,7 +55,7 @@ final class PlantCommands {
             case "backgroundArchive":arity(args,1);if(!repo.archiveRun.background(args.getLong(0)))throw new IllegalArgumentException("Dieser Synchronisationslauf ist bereits beendet. Bitte erneut versuchen.");break;
             default:throw new IllegalArgumentException("Diese Bedienaktion wird nicht unterstützt. Bitte beide Geräte aktualisieren.");
         }
-        if(changesSolar)planning.captureNative();
+        if(changesSolar){planning.captureNative();SuppliesWeather.refresh(repo,true);}
         repo.invalidateStats();planning.request();
     }
     private static void arity(JSONArray args,int count){if(args.length()!=count)throw new IllegalArgumentException("Ungültige Bedienanfrage.");}

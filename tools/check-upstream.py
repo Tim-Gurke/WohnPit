@@ -12,3 +12,9 @@ for path, expected in source['unchanged_sha256'].items():
         raise SystemExit(f'Inherited source changed: {path}. Review the change and its provenance explicitly.')
     print(f'PASS unchanged {path}')
 
+
+for path, review in source.get('reviewed_changes', {}).items():
+    actual = hashlib.sha256((root / path).read_bytes()).hexdigest()
+    if actual != review['sha256'] or not review.get('reason') or not review.get('upstream_sha256'):
+        raise SystemExit(f'Reviewed source changed: {path}. Review the change and its provenance explicitly.')
+    print(f"PASS reviewed {path}: {review['reason']}")

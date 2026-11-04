@@ -15,7 +15,7 @@ final class WeatherClient {
     private static final AtomicBoolean BUSY=new AtomicBoolean();
     static JSONObject get(String url) throws Exception {
         URL target=new URL(url);
-        if(!target.getProtocol().equals("https")||!(target.getHost().equals("api.open-meteo.com")||target.getHost().equals("geocoding-api.open-meteo.com")))throw new IOException();
+        if(!target.getProtocol().equals("https")||!(target.getHost().equals("api.open-meteo.com")||target.getHost().equals("geocoding-api.open-meteo.com")||target.getHost().equals("archive-api.open-meteo.com")))throw new IOException();
         HttpURLConnection c=(HttpURLConnection)target.openConnection();c.setConnectTimeout(12000);c.setReadTimeout(15000);c.setInstanceFollowRedirects(false);c.setRequestProperty("Accept","application/json");
         try {
             if(c.getResponseCode()!=200)throw new IOException();

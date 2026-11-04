@@ -46,3 +46,60 @@ jobs:
           name: WohnPit-Pruefberichte
           path: app/build/reports/
 
+  screenshots:
+    if: startsWith(github.ref, 'refs/heads/test/0.0.4')
+    needs: android
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: WohnPit-Testbuild
+          path: screenshot-apks
+      - name: KVM einschalten
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Android-8-Statusoberfläche prüfen und aufnehmen
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 26
+          arch: x86
+          profile: Nexus 5
+          disable-animations: true
+          script: |
+            mkdir -p docs/images
+            adb install -r "$(find screenshot-apks -name app-debug.apk -print -quit)"
+            adb shell wm size 1080x1920
+            adb shell wm density 320
+            adb shell am start -W -n de.wohnpit.app/de.wattpit.app.MainActivity
+            sleep 3
+            adb shell uiautomator dump /sdcard/wohnpit-ui.xml
+            adb pull /sdcard/wohnpit-ui.xml wohnpit-ui.xml
+            python3 -c "from pathlib import Path; s=Path('wohnpit-ui.xml').read_text(); assert '0.0.4' in s and 'Gas, Wasser und Wetter' in s"
+            adb shell screencap -p /sdcard/overview.png
+            adb pull /sdcard/overview.png docs/images/wohnpit-0.0.4-overview.png
+            adb shell input swipe 500 1600 500 900 300
+            sleep 1
+            adb shell screencap -p /sdcard/supplies.png
+            adb pull /sdcard/supplies.png docs/images/wohnpit-0.0.4-supplies.png
+      - name: Geprüfte Statusbilder bereitstellen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git switch -c assets/wohnpit-0.0.4
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add docs/images/wohnpit-0.0.4-*.png
+          git commit -m "Document WohnPit 0.0.4 on Android 8 with an empty example installation"
+          git push origin HEAD:refs/heads/assets/wohnpit-0.0.4
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: WohnPit-Android-8-Screenshots
+          path: |
+            docs/images/wohnpit-0.0.4-*.png
+            wohnpit-ui.xml

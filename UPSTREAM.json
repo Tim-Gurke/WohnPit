@@ -8,8 +8,14 @@
     "app/src/main/java/de/wattpit/app/ScootLink.java": "1769d2af543e4b4a58518fda33331be16f63e87d672a31d16419ded8e1395eea",
     "app/src/main/java/de/wattpit/app/RollerStore.java": "ab4fc43f51ad677c15d6e6f2c7df5b01a3eb779ba28a75148ff21c58cecc5932",
     "app/src/main/java/de/wattpit/app/RollerLedger.java": "2cadc413af150a941aaa6b6dcd510e6a27b700a16b0b4757ee600537d1cf457a",
-    "app/src/main/java/de/wattpit/app/LanSync.java": "602c18d07390215423f01fdd698a2ceb528cd3a113bcd8738aa4c54a7e9b3856",
     "app/src/main/java/de/wattpit/app/HistoryDb.java": "22eaedb64d063902fd7ba9b9c6e43f97203cdcf3f6fcc7c2b280c71595191e51",
     "app/src/main/java/de/wattpit/app/HistoryExchange.java": "5b765f6570e8b928be558f3e75ac77f57011a908927bbc31928dc63332a33b24"
+  },
+  "reviewed_changes": {
+    "app/src/main/java/de/wattpit/app/LanSync.java": {
+      "upstream_sha256": "602c18d07390215423f01fdd698a2ceb528cd3a113bcd8738aa4c54a7e9b3856",
+      "sha256": "a753ad0a8e36afc14625e7d42c4e206e7cca85ba8abeca0cddadb522c37e9652",
+      "reason": "0.0.4: Gas-/Wasserjournal zum vorhandenen Bundle und zur Konfigurationsrevision ergänzen. Verschlüsselung, Befehlsbestätigung und BMS-Übergabe bleiben im bestehenden Protokoll."
+    }
   }
 }

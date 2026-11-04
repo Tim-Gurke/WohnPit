@@ -126,6 +126,21 @@ public final class LanSyncProof {
             viewer.control("resolveAbsence",new JSONArray().put(absenceId).put("cancel"),viewer.controlRevision());
             check(new JSONObject(viewer.part("presence")).getJSONArray("plans").getJSONObject(0).getString("status").equals("cancelled"),"remote cancellation removes the planned absence from forecasting on every viewer");
             viewer.control("weatherPlace",new JSONArray().put("{\"off\":true}"),viewer.controlRevision());
+            JSONObject supplyEvent=new JSONObject().put("id","supply-proof-0001").put("kind","water").put("type","supply").put("amount",20).put("at",now-86400000L).put("site",new JSONObject());
+            JSONObject supplyCommand=new JSONObject().put("op","add").put("event",supplyEvent);
+            viewer.control("saveSupplies",new JSONArray().put(supplyCommand.toString()),viewer.controlRevision());
+            check(new JSONObject(viewer.part("supplies")).getJSONArray("events").length()==1,"manual water entry reaches the viewer only after durable host acknowledgement");
+            viewer.control("saveSupplies",new JSONArray().put(supplyCommand.toString()),viewer.controlRevision());
+            check(SuppliesStore.read(source.prefs).getJSONArray("events").length()==1,"a repeated journal event id cannot duplicate water procurement");
+            LanSync supplyViewer=sync(new TestContext(root.resolve("supplies-second-display")));
+            try{supplyViewer.join(LanWire.encodeInvitation(invitation.toString()));check(new JSONObject(supplyViewer.part("supplies")).getJSONArray("events").getJSONObject(0).getDouble("amount")==20,"a second encrypted LAN display receives the same supply journal");}finally{close(supplyViewer);}
+            supplyEvent.put("amount",30);viewer.control("saveSupplies",new JSONArray().put(new JSONObject().put("op","edit").put("event",supplyEvent).toString()),viewer.controlRevision());
+            check(SuppliesStore.read(source.prefs).getJSONArray("events").getJSONObject(0).getDouble("amount")==30,"editing a procurement replaces its quantity without a second purchase");
+            rejected=false;try{viewer.control("saveSupplies",new JSONArray().put(new JSONObject().put("op","add").put("event",new JSONObject(supplyEvent.toString()).put("id","supply-proof-0002").put("amount",-2)).toString()),viewer.controlRevision());}catch(IllegalArgumentException expected){rejected=true;}
+            check(rejected&&SuppliesStore.read(source.prefs).getJSONArray("events").length()==1,"invalid supply quantities cannot alter the stored journal");
+            viewer.control("saveSupplies",new JSONArray().put(new JSONObject().put("op","delete").put("id","supply-proof-0001").toString()),viewer.controlRevision());
+            check(SuppliesStore.read(source.prefs).getJSONArray("events").length()==0,"deleting an entry is acknowledged by the data host");
+
             check(!source.prefs.contains("weatherPlace"),"the viewer can disable shared weather at the host");
             source.prefs.edit().putString("theme","dark").putString("dashboard-v1","host-layout").commit();
             JSONObject backup=new JSONObject().put("format","wattnpit-settings").put("version",1).put("dashboard",new JSONObject(preset)).put("equipment",groups).put("solarSetup",setup).put("weatherPlace",new JSONObject()).put("settings",new JSONObject().put("theme","light").put("palette","blue").put("miniRange","today").put("capacity",130).put("sampleSeconds",10));

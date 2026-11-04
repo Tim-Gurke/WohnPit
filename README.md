@@ -1,4 +1,30 @@
-# WohnPit 0.0.3
+# WohnPit 0.0.4
+**[WohnPit 0.0.4 herunterladen](https://github.com/Tim-Gurke/WohnPit/releases/download/v0.0.4/WohnPit-v0.0.4.apk)** · [Ausführliche Gas-/Wasseranleitung](docs/GAS-WASSER.md) · [Versionshistorie](CHANGELOG.md)
+
+## Neu: Datenbasis für Gas, Wasser und Wetter
+
+WohnPit speichert Wasserbeschaffungen, Gaswechsel und bekannte Restvorräte. Es sammelt Wettervorhersagen sowie historische Temperatur-/Winddaten. **Watt’n’Pit ab 1.9.0 übernimmt sämtliche Einträge und Einstellungen sowie Berechnungen, Verbrauchslernen und Anzeige auf S20/S10.** Reichweiten erscheinen dort beispielsweise als **1 Tag 17 Stunden**. [Alle Änderungen und Prüfgrenzen](docs/changes-0.0.4.md).
+
+**Update-Reihenfolge:** zuerst WohnPit 0.0.4, danach Watt’n’Pit 1.9.0. Vorhandene Installationen aktualisieren; Messdaten und Kopplungen bleiben erhalten. ScootPit benötigt hierfür kein Update.
+
+## Screenshots der Zentrale
+
+Android-8-Emulator ohne eingerichtete Geräte oder persönliche Messdaten. Die Versorgungsberechnungen und deren Screenshots stehen in der [Gas-/Wasseranleitung](docs/GAS-WASSER.md).
+
+| Übersicht | Journal- und Wetterstatus |
+|---|---|
+| ![WohnPit 0.0.4 – native Statusübersicht](https://raw.githubusercontent.com/Tim-Gurke/WohnPit/assets/wohnpit-0.0.4/docs/images/wohnpit-0.0.4-overview.png) | ![WohnPit – Gas-/Wasserjournal und Wetterstand](https://raw.githubusercontent.com/Tim-Gurke/WohnPit/assets/wohnpit-0.0.4/docs/images/wohnpit-0.0.4-supplies.png) |
+
+## Zusammenpassende Versionen
+
+| WohnPit | Watt’n’Pit | Nutzung |
+|---|---|---|
+| 0.0.4 | ab 1.9.0 | Energie sowie gemeinsame Gas-/Wassereinträge, Wetter und Versorgungsauswertung |
+| 0.0.4 | 1.8.x | Bestehende Energiedaten und bisherige Bedienung; Gas/Wasser nach Anzeige-Update |
+| 0.0.3 | 1.9.0 | Bestehende Energienutzung; Gas-/Wassererfassung verlangt zuerst das Zentralen-Update |
+
+Je Repository bleiben die drei neuesten Releases veröffentlicht. Die vollständige dokumentierte Versionshistorie bleibt erhalten.
+
 
 Die schlanke Android-Zentrale für den Wohnwagen. WohnPit übernimmt die vorhandene Aufzeichnung und den Anlagenverbund von Watt’n’Pit. Watt’n’Pit bleibt die Anzeige-App; ScootPit begleitet den Roller.
 
@@ -101,7 +127,7 @@ Die standardmäßige stündliche Prüfung lässt übliche Empfangslücken noch i
 
 Das Datenbankschema, die genaue Messwertspeicherung, der Wetterabruf mit Cache und die Erfassung von Anlagen-/Wetterkontexten bleiben in 0.0.1 erhalten. Wetter kommt wie bisher von Open-Meteo, sofern ein Wetterort eingerichtet ist. Das verhindert einen zusätzlichen Umbau der bereits funktionierenden Anzeige- und Lernlogik.
 
-Die geplante Verdichtung auf Tagesübersichten mit 15-Minuten-Abschnitten ist noch nicht aktiviert. In dieser ersten Version werden keine alten Rohdaten zugunsten neuer Zusammenfassungen gelöscht. Wasserstand, Gasfüllstand und weitere Sensoren folgen später.
+Die geplante Verdichtung auf Tagesübersichten mit 15-Minuten-Abschnitten ist noch nicht aktiviert. In dieser ersten Version werden keine alten Rohdaten zugunsten neuer Zusammenfassungen gelöscht. Gas und Wasser werden ab 0.0.4 manuell erfasst; zusätzliche Füllstandssensoren folgen später.
 
 ## Bauen
 

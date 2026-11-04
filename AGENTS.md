@@ -1,0 +1,7 @@
+# Gemeinsame Entwicklung und Veröffentlichung
+
+WohnPit und Watt’n’Pit werden gemeinsam abgestimmt: WohnPit ist Datenbasis und Sammelstelle, Watt’n’Pit übernimmt Bedienung, Berechnungen und Anzeige. Gemeinsame Einstellungen und Versorgungseinträge müssen von den Anzeigehandys aus bedienbar sein. Aufwendiges Verbrauchslernen gehört auf die Anzeigehandys. Wetterabruf und Rohdatenarchiv gehören auf die Zentrale.
+
+Bei jeder Veröffentlichung APK mit der vorhandenen Updatesignatur bereitstellen, passende Prüfungen ausführen, aktuelle Screenshots sichtbar im README verlinken, ausführliche Anleitungen und eine vollständige dokumentierte Versionshistorie pflegen. Die kompatiblen App-Versionen und die Update-Reihenfolge nennen. Nach erfolgreicher Veröffentlichung höchstens die drei neuesten veröffentlichten Releases je Repository behalten; Quellhistorie und Änderungsdokumentation erhalten.
+
+Vorhandene Messdaten, Kopplungen und die eigenen Kachelanordnungen je Gerät und Ausrichtung erhalten. Neue Kacheln sind frei wählbar und verwenden das bestehende Raster. Reichweiten für Gas und Wasser in Tagen und Stunden anzeigen, etwa „1 Tag 17 Stunden“. Fehlende Werte bleiben unbekannt; manuelle Angaben und daraus berechnete Vorräte als Schätzung kennzeichnen. Tatsächliche Hardwaretests nicht aus Softwareprüfungen ableiten. Private Signierschlüssel, Geräteschlüssel und persönliche Beispielmessungen gehören nicht in öffentliche Repositories.
