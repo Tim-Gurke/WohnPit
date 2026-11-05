@@ -96,7 +96,7 @@ public final class MainActivity extends Activity {
         LinearLayout lanCard=card(root,"Anlagenverbund");network=text(lanCard,"WLAN-Verbindung wird vorbereitet",15,TEXT);
         pairButton=button(lanCard,"Anzeigehandy koppeln",this::pairing);pairButton.setEnabled(false);
         text(lanCard,"Alle Handys müssen im selben WLAN sein. Den Code in Watt’n’Pit unter Anlagenverbund einlesen oder einfügen.",14,MUTED);
-        LinearLayout settings=card(root,"Einstellungen und Daten");button(settings,"Speicherintervall und Akkukapazität",this::settings);
+        LinearLayout settings=card(root,"Einstellungen und Daten");button(settings,"Vollständige Übernahmesicherung",()->startActivity(new Intent(this,MigrationActivity.class).putExtra("export",true)));button(settings,"Speicherintervall und Akkukapazität",this::settings);
         button(settings,"Watt’n’Pit-Einstellungen importieren",()->choose(IMPORT_SETTINGS,false,"application/json",null));
         button(settings,"Watt’n’Pit-Verlauf importieren",()->choose(IMPORT_CSV,false,"text/*",null));
         historyButton=button(settings,"Verbrauch und Lernstand übernehmen",()->{

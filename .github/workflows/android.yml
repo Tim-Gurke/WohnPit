@@ -20,6 +20,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: Übernommene BMS- und Speicherbausteine prüfen
         run: python3 tools/check-upstream.py
+      - name: Private Dateien vor Veröffentlichung ausschließen
+        run: python3 tools/check-public-files.py
       - name: Tests, Lint und APKs
         run: ./gradlew testDebugUnitTest lintDebug assembleDebug assembleRelease
       - name: JVM-Prüfabhängigkeiten
@@ -79,13 +81,13 @@ jobs:
             sleep 3
             adb shell uiautomator dump /sdcard/wohnpit-ui.xml
             adb pull /sdcard/wohnpit-ui.xml wohnpit-ui.xml
-            python3 -c "from pathlib import Path; s=Path('wohnpit-ui.xml').read_text(); assert '0.0.4' in s and 'Gas, Wasser und Wetter' in s"
+            python3 -c "from pathlib import Path; s=Path('wohnpit-ui.xml').read_text(); assert '0.0.5' in s and 'Gas, Wasser und Wetter' in s"
             adb shell screencap -p /sdcard/overview.png
-            adb pull /sdcard/overview.png docs/images/wohnpit-0.0.4-overview.png
+            adb pull /sdcard/overview.png docs/images/wohnpit-0.0.5-overview.png
             adb shell input swipe 500 1600 500 900 300
             sleep 1
             adb shell screencap -p /sdcard/supplies.png
-            adb pull /sdcard/supplies.png docs/images/wohnpit-0.0.4-supplies.png
+            adb pull /sdcard/supplies.png docs/images/wohnpit-0.0.5-supplies.png
       - name: Geprüfte Statusbilder bereitstellen
         env:
           GH_TOKEN: ${{ github.token }}
@@ -93,7 +95,7 @@ jobs:
           git switch -c assets/wohnpit-0.0.4
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add docs/images/wohnpit-0.0.4-*.png
+          git add docs/images/wohnpit-0.0.5-*.png
           git commit -m "Document WohnPit 0.0.4 on Android 8 with an empty example installation"
           git push origin HEAD:refs/heads/assets/wohnpit-0.0.4
       - uses: actions/upload-artifact@v4
@@ -101,5 +103,5 @@ jobs:
         with:
           name: WohnPit-Android-8-Screenshots
           path: |
-            docs/images/wohnpit-0.0.4-*.png
+            docs/images/wohnpit-0.0.5-*.png
             wohnpit-ui.xml

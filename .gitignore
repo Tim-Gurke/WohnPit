@@ -10,3 +10,13 @@ local.properties
 node_modules/
 test-results/
 .release/
+
+# Private backups and signing material must never enter source or releases.
+*.wohnpit
+*.p12
+*.jks
+*.keystore
+signing.json
+*Signatur-privat*
+*Signierung-Backup*
+private-*/

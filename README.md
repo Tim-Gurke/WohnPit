@@ -1,7 +1,11 @@
-# WohnPit 0.0.4
-**[WohnPit 0.0.4 herunterladen](https://github.com/Tim-Gurke/WohnPit/releases/download/v0.0.4/WohnPit-v0.0.4.apk)** · [Ausführliche Gas-/Wasseranleitung](docs/GAS-WASSER.md) · [Versionshistorie](CHANGELOG.md)
+# WohnPit 0.0.5 · Übernahmeversion
+**[WohnPit 0.0.5 herunterladen](https://github.com/Tim-Gurke/WohnPit/releases/download/v0.0.5/WohnPit-v0.0.5.apk)** · [Ausführliche Gas-/Wasseranleitung](docs/GAS-WASSER.md) · [Versionshistorie](CHANGELOG.md)
 
-## Neu: Datenbasis für Gas, Wasser und Wetter
+## Neu: Private Sicherung vor dem Umzug
+
+Die bisherige Zentrale erhält eine vollständige **verschlüsselte Übernahmesicherung** für den Wechsel zur gemeinsamen WohnPit-App. Aufzeichnungen, Wetter, Journal, Lernstände und Einstellungen sichern; Geräte bei Bedarf neu verknüpfen. **Die persönliche .wohnpit-Datei bleibt privat und gehört niemals auf GitHub.** [Schritt-für-Schritt-Anleitung](docs/changes-0.0.5.md).
+
+## Datenbasis für Gas, Wasser und Wetter
 
 WohnPit speichert Wasserbeschaffungen, Gaswechsel und bekannte Restvorräte. Es sammelt Wettervorhersagen sowie historische Temperatur-/Winddaten. **Watt’n’Pit ab 1.9.0 übernimmt sämtliche Einträge und Einstellungen sowie Berechnungen, Verbrauchslernen und Anzeige auf S20/S10.** Reichweiten erscheinen dort beispielsweise als **1 Tag 17 Stunden**. [Alle Änderungen und Prüfgrenzen](docs/changes-0.0.4.md).
 
