@@ -85,3 +85,35 @@ test('chunk progress extends the pending request and retains the last complete c
  b.progress({id:requests[0].id,message:'wrong source'});assert.match(JSON.parse(b.read('history',[0,100000,'power','all'],'day')).progress,/Messdaten/);
  b.result({id:requests[1].id,data:{points:[{v:45}]}});assert.equal(JSON.parse(b.read('history',[0,100000,'power','all'],'day')).progress,undefined);
 });
+
+test('a cold viewer displays its first complete scoped result while live readings keep advancing',()=>{
+ const {b,requests,reply}=viewer();
+ b.read('energyHistoryWindow',[0,100000,'all',0,100000],'overview-energy');
+ for(let i=0;i<5;i++){b.invalidate();b.read('energyHistoryWindow',[0,100000,'all',0,100000],'overview-energy');}
+ reply({accountingVersion:2,solar:{summary:{last:20}},consumption:{summary:{last:30}},balance:{summary:{last:-10}}});
+ const value=JSON.parse(b.read('energyHistoryWindow',[0,100000,'all',0,100000],'overview-energy'));
+ assert.equal(value.solar.summary.last,20,'an overtaken but complete first result must not leave the viewer empty');
+ assert.equal(value.solar.stale,true);assert.equal(value.solar.pending,true);
+ assert.equal(requests.length,2,'refresh the completed result instead of accumulating duplicate native reads');
+});
+
+test('continuous revisions cannot starve the other visible chart queries during initial loading',()=>{
+ const {b,requests}=viewer(),metrics=['solar','power','voltage','soc'];
+ const paint=()=>metrics.map(metric=>JSON.parse(b.read('dashboardHistory',[0,100000,metric],'tile-'+metric)));
+ paint();
+ for(let i=0;i<4;i++){
+  b.invalidate();paint();
+  const request=requests.at(-1);
+  b.result({id:request.id,data:{points:[{v:i+1}],summary:{last:i+1}}});
+  paint();
+ }
+ assert.deepEqual(requests.slice(0,4).map(request=>request.args[2]),metrics,'each visible chart must receive a turn despite newer live snapshots');
+ for(const value of paint())assert.ok(value.points.length,'all four first results must remain visible while refreshing');
+});
+
+test('an import boundary rejects an overtaken scoped first result',()=>{
+ const {b,requests}=viewer();b.state({busy:false,runId:1});b.read('history',[0,100000,'power','all'],'day');
+ const before=requests[0];b.state({busy:true,runId:2});b.read('history',[0,100000,'power','all'],'day');
+ b.result({id:before.id,data:{points:[{v:999}]}});
+ assert.deepEqual(JSON.parse(b.read('history',[0,100000,'power','all'],'day')).points,[]);
+});

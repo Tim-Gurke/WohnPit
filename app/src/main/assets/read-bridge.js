@@ -7,7 +7,7 @@
   const pending=method=>method==='dailyEnergy'?{days:[],pending:true}:method.startsWith('energy')?{solar:missing(),consumption:missing(),balance:missing(),mobile:missing(),pending:true}:missing();
   return class {
     constructor(raw,ready){
-      this.raw=raw;this.ready=ready;this.cache=new Map();this.queue=new Map();this.nextId=0;this.generation=0;this.busy=false;this.active=true;
+      this.raw=raw;this.ready=ready;this.cache=new Map();this.queue=new Map();this.nextId=0;this.generation=0;this.epoch=0;this.busy=false;this.active=true;
       this.bridge=new Proxy(raw,{get:(target,name)=>{const value=target[name];if(typeof value!=='function')return value;return methods.has(name)?(...args)=>this.read(name,args):(...args)=>target[name](...args);}});
     }
     source(){
@@ -18,7 +18,7 @@
     }
     state(state){
       this.source();const changed=this.busy!==!!state.busy||this.runId!==state.runId;
-      if(changed){this.invalidate();this.runId=state.runId;}
+      if(changed){this.invalidate();this.epoch++;this.queue.clear();this.runId=state.runId;}
       this.busy=!!state.busy;
     }
     key(method,args,scope){
@@ -32,7 +32,12 @@
       this.cache.delete(key);if(this.cache.size>=128)this.cache.delete(this.cache.keys().next().value);this.cache.set(key,value);
     }
     // A new revision invalidates freshness, not the last successfully displayed values.
-    invalidate(drop=false){this.generation++;if(drop)this.cache.clear();this.queue.clear();}
+    invalidate(drop=false){
+      this.generation++;
+      // New live readings make results older, but must not restart the first
+      // transfer or remove the other visible charts from the waiting queue.
+      if(drop){this.epoch++;this.cache.clear();this.queue.clear();}
+    }
     previous(method,args,scope){
       return [...this.cache.values()].reverse().find(x=>{
         if(!x.data||x.method!==method||x.scope!==scope)return false;
@@ -57,10 +62,10 @@
     accept(query,data){
       const error=data?.error||(!data||typeof data!=='object'?'Zeitraum konnte nicht geladen werden.':'');
       const old=error?this.previous(query.method,query.args,query.scope):null;
-      this.remember(query.key,{...query,data:error?old?.data:data,at:error?old?.at:Date.now(),error,generation:this.generation,retryAt:error?Date.now()+5000:0});
+      this.remember(query.key,{...query,data:error?old?.data:data,at:error?old?.at:Date.now(),error,generation:query.generation,retryAt:error?Date.now()+5000:0});
     }
     read(method,args,scope){
-      this.source();const key=this.key(method,args,scope),query={key,method,args,scope,generation:this.generation};
+      this.source();const key=this.key(method,args,scope),query={key,method,args,scope,generation:this.generation,epoch:this.epoch};
       // Local model/history reads can be just as expensive as LAN queries. Keep
       // them off the WebView's JavaScript thread whenever the worker is available.
       if(!this.raw.requestHistory){
@@ -70,17 +75,19 @@
       }
       const cached=this.cache.get(key);
       if(cached?.generation===this.generation&&(!cached.error||cached.retryAt>Date.now()))return this.value(cached,method);
-      if(!this.queue.has(key)&&!(this.inflight?.key===key&&this.inflight?.generation===this.generation)){
-        if(scope!=null)for(const [oldKey,old] of this.queue)if(old.method===method&&old.scope===scope)this.queue.delete(oldKey);
-        if(this.queue.size>=24)this.queue.delete(this.queue.keys().next().value);
-        this.queue.set(key,query);this.pump();
+      const running=this.inflight?.key===key&&(this.inflight.generation===this.generation||scope!=null&&this.inflight.epoch===this.epoch);
+      if(!running){
+        // Updating a tile's window keeps its position behind the other tiles.
+        const slot=scope==null?key:JSON.stringify([method,scope]);
+        if(!this.queue.has(slot)&&this.queue.size>=24)this.queue.delete(this.queue.keys().next().value);
+        this.queue.set(slot,query);this.pump();
       }
       return this.value(this.previous(method,args,scope),method,true);
     }
     pump(){
       if(!this.active||this.inflight||!this.queue.size)return;
       const [key,query]=this.queue.entries().next().value;this.queue.delete(key);
-      const request={...query,id:++this.nextId};this.inflight=request;
+      const request={...query,generation:this.generation,id:++this.nextId};this.inflight=request;
       this.armTimeout(request.id);
       try{this.raw.requestHistory(JSON.stringify(request));}
       catch(_){this.result({id:request.id,data:{error:'Zeitraum konnte nicht geladen werden.'}});}
@@ -89,9 +96,17 @@
     progress(response){if(this.inflight?.id!==response.id)return;this.inflight.progress=String(response.message||'Daten werden abgeglichen …');this.armTimeout(response.id);if(this.active)this.ready(this.inflight.method);}
     setActive(active){this.active=!!active;if(!this.active){clearTimeout(this.timer);return;}if(this.inflight)this.armTimeout(this.inflight.id);this.ready('resume');this.pump();}
     result(response){
+      this.source();
       const query=this.inflight;if(!query||query.id!==response.id)return;
       clearTimeout(this.timer);this.inflight=null;
-      if(query.generation===this.generation){this.accept(query,response.data||{error:response.error||'Zeitraum konnte nicht geladen werden.'});if(this.active)this.ready(query.method);}
+      const data=response.data||{error:response.error||'Zeitraum konnte nicht geladen werden.'};
+      const completed=data&&typeof data==='object'&&!data.error&&!data.pending&&!data.syncing;
+      // A complete first result from this same plant is useful while recording
+      // continues. Keep its original revision so it is visibly stale and a new
+      // read follows. Plant changes and import transitions still reject it.
+      if(query.epoch===this.epoch&&(query.generation===this.generation||query.scope!=null&&completed)){
+        this.accept(query,data);if(this.active)this.ready(query.method);
+      }
       this.pump();
     }
   };

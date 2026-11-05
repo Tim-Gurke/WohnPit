@@ -4,6 +4,7 @@ Die Dokumentation bleibt vollständig erhalten, auch wenn ältere GitHub-Release
 
 | Version | Änderungen |
 |---|---|
+| [2.0.1](docs/changes-2.0.1.md) | Ersten Statistikabruf auf Anzeigehandys bei laufender Aufzeichnung repariert; vollständige Ergebnisse sichtbar behalten und wartende Diagramme gleichmäßig laden. |
 | [2.0.0](docs/changes-2.0.0.md) | WohnPit und Watt’n’Pit zusammengeführt; Zentrale, Anzeigehandy und eigenständiger Victron-Betrieb, private Vollsicherung, gemeinsame Messwertfarben und belegter Wetterrückblick. |
 | [0.0.5](docs/changes-0.0.5.md) | Private vollständige Übernahmesicherung für den Wechsel zur gemeinsamen WohnPit-App. |
 | [0.0.4](docs/changes-0.0.4.md) | Gemeinsames Gas-/Wasserjournal, Wetterrückblicke, Temperatur-/Winddaten und Statusanzeige; Bedienung und Auswertung in Watt’n’Pit ab 1.9.0. |
