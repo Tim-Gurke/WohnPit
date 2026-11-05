@@ -2,9 +2,9 @@
 
 ## Update auf 2.0.1
 
-Bei WohnPit 2.0.0 konnten Livewerte sichtbar sein, während der erste Statistikabruf immer wieder von neu eintreffenden Messwerten überholt wurde. WohnPit 2.0.1 hält vollständige Ergebnisse sichtbar und lässt auch weitere wartende Diagramme laden.
+Bereits in Watt’n’Pit 1.8.4 und auch in WohnPit 2.0.0 konnten Livewerte sichtbar sein, während der erste Statistikabruf immer wieder von neu eintreffenden Messwerten überholt wurde. WohnPit 2.0.1 hält vollständige Ergebnisse sichtbar und lässt auch weitere wartende Diagramme laden.
 
-1. Die aktuelle APK auf dem Anzeigehandy über die bestehende WohnPit-App installieren. Nicht vorher deinstallieren oder deren Daten löschen.
+1. Die aktuelle APK auf dem Anzeigehandy über die bestehende Watt’n’Pit- oder WohnPit-App installieren. Ein direktes Update von Watt’n’Pit 1.8.4 auf WohnPit 2.0.1 ist möglich; Zwischenversionen müssen nicht installiert werden. Nicht vorher deinstallieren oder deren Daten löschen.
 2. Anzeige öffnen und die Verbindung zur Zentrale abwarten. Bei mehreren Handys jedes Anzeigehandy aktualisieren. Eine Zentrale mit WohnPit 2.0.0 kann für diese Korrektur weiterlaufen.
 3. Die Übersicht geöffnet lassen, während der erste Abgleich läuft. Die Zentrale darf dabei weiter aufzeichnen. Umfang und WLAN-Geschwindigkeit beeinflussen die Dauer.
 4. Solarertrag und Geräteverbrauch sowie ein Leistungsdiagramm prüfen. Unter **Verlauf** einen aufgezeichneten Zeitraum wählen. Die Kacheln behalten ihre eingestellten eigenen Zeiträume.
