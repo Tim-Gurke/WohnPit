@@ -1,5 +1,7 @@
 # WohnPit ab 2.0.0 – Zentrale und Cockpit in einer App
 
+**Bereits WohnPit 2.0.0 installiert?** Für die Statistik-Korrektur genügt das Update auf 2.0.1 auf den Anzeigehandys. Ein abgeschlossener Umzug muss nicht wiederholt werden. [Update und Statistikprüfung](ANZEIGE-STATISTIK.md).
+
 WohnPit führt die bisherigen Funktionen von Watt’n’Pit und der schlanken WohnPit-Zentrale in einer Anwendung zusammen. Der Name beschreibt ein lokales Cockpit für Energie, Gas und Wasser – im Wohnwagen, Ferienhaus, Gartenhaus oder an einer passenden Balkonanlage.
 
 ## Drei Betriebsarten
@@ -24,13 +26,13 @@ Für das Cockpit ist ein aktuelles Android-System-WebView erforderlich. Die schl
 
 ## Bestehendes Watt’n’Pit auf S20/S10 weiterverwenden
 
-Die gemeinsame WohnPit-App behält technisch die bisherige Watt’n’Pit-Updatekennung und ihre Signatur. **WohnPit 2.0.0 über die vorhandene Watt’n’Pit-App installieren**, ohne vorher zu deinstallieren. Der sichtbare App-Name wird WohnPit. Vorhandene lokale Daten, Einstellungen und Verbundkopplungen bleiben dadurch im selben App-Speicher. Die ausdrücklich gewünschte Anordnung mit 20 Kacheln wird beim Update einmal auf diesem Gerät übernommen; spätere eigene Änderungen bleiben erhalten. Bei Bedarf das bisherige Layout vorher mit dem normalen Einstellungsexport sichern.
+Die gemeinsame WohnPit-App behält technisch die bisherige Watt’n’Pit-Updatekennung und ihre Signatur. **Die aktuelle WohnPit-Version (mindestens 2.0.1) über die vorhandene Watt’n’Pit-App installieren**, ohne vorher zu deinstallieren. Der sichtbare App-Name wird WohnPit. Vorhandene lokale Daten, Einstellungen und Verbundkopplungen bleiben dadurch im selben App-Speicher. Die ausdrücklich gewünschte Anordnung mit 20 Kacheln wird beim Update einmal auf diesem Gerät übernommen; spätere eigene Änderungen bleiben erhalten. Bei Bedarf das bisherige Layout vorher mit dem normalen Einstellungsexport sichern.
 
 ## Bisherige WohnPit-Zentrale umziehen
 
 1. **WohnPit 0.0.5 · Übernahme** über die alte WohnPit-Zentrale installieren. Vorher nichts deinstallieren.
 2. Aufzeichnung pausieren, Archivabruf beenden und einen Wetterabruf abwarten. Unter **Einstellungen und Daten → Vollständige Übernahmesicherung** eine lokale **.wohnpit-Datei** mit eigenem langem Kennwort erstellen. [Ausführliche Sicherungsanleitung](changes-0.0.5.md).
-3. Falls auf dem G5 noch eine alte Watt’n’Pit-Aufzeichnung läuft, auch diese pausieren. Danach **WohnPit 2.0.0** auf diesem Handy installieren. Ist das alte Watt’n’Pit noch vorhanden, aktualisiert diese APK dessen Installation; sonst wird die gemeinsame App neu installiert. Die App **WohnPit · Übernahme** bleibt daneben zunächst erhalten.
+3. Falls auf dem G5 noch eine alte Watt’n’Pit-Aufzeichnung läuft, auch diese pausieren. Danach **die aktuelle gemeinsame WohnPit-App** auf diesem Handy installieren. Ist das alte Watt’n’Pit noch vorhanden, aktualisiert diese APK dessen Installation; sonst wird die gemeinsame App neu installiert. Die App **WohnPit · Übernahme** bleibt daneben zunächst erhalten.
 4. In WohnPit **Übernahmesicherung einlesen** öffnen – beim Erststart oder später in den Einstellungen. Die .wohnpit-Datei wählen und das zugehörige Kennwort eingeben. Der Import ersetzt die Daten der Zielinstallation; deshalb einen dort benötigten eigenen Stand vorher ebenfalls vollständig sichern.
 5. Die App prüft zuerst die Sicherung und ihre Datenbanken. Bei falschem Kennwort oder beschädigter Datei wird nichts eingespielt. Nach erfolgreicher Prüfung **Übernehmen und schließen** bestätigen und erneut öffnen. **Verwerfen** behält den bisherigen Stand. Erst der folgende Neustart übernimmt Datenbanken und Einstellungen; zusätzlich bleibt der vorherige Zielzustand intern gesichert. Bei einem unterbrochenen Einspielen erneut öffnen und die Meldung beachten.
 6. Betriebsart **Zentrale** prüfen, Aufzeichnung starten und Anzeigehandys verbinden. Messwerte, Verlauf, Journal, Wetterrückblick und Lernstände vergleichen. Übernommene Kopplungen werden weiterverwendet; falls nötig Geräte und Anzeigehandys neu verknüpfen. Android-Berechtigungen, systemweite Bluetooth-Kopplungen und WLAN-Zugangsdaten lassen sich nicht als App-Einstellung übertragen; diese bei Bedarf erneut einrichten. Aufzeichnung und Lernstände haben Vorrang.
