@@ -42,6 +42,21 @@ Die gemeinsame WohnPit-App behält technisch die bisherige Watt’n’Pit-Update
 
 **Die Umzugsdatei enthält private Verknüpfungen und Zugangsdaten. Sie darf auch verschlüsselt niemals in öffentliche Repositories, Releases, Prüfartefakte oder auf die Projektseite geladen werden.** Die App lädt sie nicht auf einen Server. Das Sicherungskennwort wird nicht gespeichert. Öffentliche Downloads enthalten ausschließlich die signierte Anwendung; alle veröffentlichten Screenshots und Tests verwenden künstliche Daten.
 
+## Nach Übernahme aus 0.0.5: Victron-Schlüssel neu speichern
+
+Beim Wechsel von der separaten WohnPit-Zentrale zur gemeinsamen App kann WohnPit 2.0.1 die aus 0.0.5 kopierten Victron-Schlüssel nicht entschlüsseln: Ihre gespeicherte Verschlüsselung gehört zum AndroidKeyStore der alten App. Die neue App hat eine andere Android-App-Kennung. Ein gestarteter Bluetooth-Suchdienst allein bedeutet deshalb noch keinen frischen Messwertempfang.
+
+Nach dem Import auf der neuen Zentrale:
+
+1. Aufzeichnung pausieren.
+2. Unter **Energiegeräte** den vorhandenen **SmartSolar**-Eintrag bearbeiten. Dessen **Instant-Readout-Schlüssel (32 Zeichen)** erneut eingeben und speichern.
+3. Dasselbe beim vorhandenen **SmartShunt**-Eintrag mit dessen eigenem Schlüssel durchführen.
+4. Aufzeichnung starten. Bei Empfang in Bluetooth-Reichweite muss „letzter Wert vor …“ wieder auf wenige Sekunden zurückgehen; anschließend die Livewerte auf den Anzeigehandys kontrollieren.
+
+Die Geräteeinträge mit derselben Bluetooth-Adresse weiterverwenden. Die erneute Schlüsseleingabe verändert die gespeicherten Messwertarchive nicht. Gemeint ist der 32-stellige Sofortanzeige-Schlüssel aus VictronConnect, nicht die Bluetooth-PIN. Schlüssel ausschließlich lokal in der App eingeben.
+
+**Die Schlüssel nach dem letzten Sicherungsimport speichern.** Ein erneuter Import der alten Sicherung würde die dort enthaltenen alten Schlüsselverschlüsselungen wieder einsetzen. Für diesen Schritt ist kein erneuter Import nötig. Die private Sicherung und die beendete alte Übernahme-App bis zur Kontrolle aufbewahren.
+
 ## Geeignete Anlagen und Orte
 
 WohnPit ist nicht auf Wohnwagen beschränkt. Entscheidend sind passende Datenquellen: unterstützte Victron SmartSolar-/SmartShunt-Geräte mit Bluetooth-Sofortanzeige und den richtigen Geräteschlüsseln. Auch am Ferienhaus, Gartenhaus oder Balkonkraftwerk lassen sich so die tatsächlich verfügbaren Werte verfolgen. Beliebige Wechselrichter, Netzstromzähler oder fremde Sensoren werden durch die neue Bezeichnung nicht automatisch unterstützt. Gas und Wasser lassen sich manuell erfassen.
