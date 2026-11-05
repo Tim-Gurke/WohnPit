@@ -1,5 +1,7 @@
 # WohnPit ab 2.0.0 – Zentrale und Cockpit in einer App
 
+**Noch Watt’n’Pit 1.8.4 auf dem Anzeigehandy?** Direkt die aktuelle WohnPit-App (mindestens 2.0.1) über die vorhandene Installation installieren. Die Zwischenversionen 1.9.0 und 2.0.0 müssen nicht einzeln installiert werden. Die App-Kennung, Updatesignatur und bisherige Messwertdatenbank werden weiterverwendet. Vorher nicht deinstallieren. Beim ersten Wechsel wird die ausdrücklich gewünschte 20-Kachel-Anordnung einmal übernommen; bei Bedarf das bisherige Layout vorher exportieren. Der Umzug einer separaten WohnPit-Zentrale ist ein eigener Vorgang und hängt von deren tatsächlichem Versionsstand ab.
+
 **Bereits WohnPit 2.0.0 installiert?** Für die Statistik-Korrektur genügt das Update auf 2.0.1 auf den Anzeigehandys. Ein abgeschlossener Umzug muss nicht wiederholt werden. [Update und Statistikprüfung](ANZEIGE-STATISTIK.md).
 
 WohnPit führt die bisherigen Funktionen von Watt’n’Pit und der schlanken WohnPit-Zentrale in einer Anwendung zusammen. Der Name beschreibt ein lokales Cockpit für Energie, Gas und Wasser – im Wohnwagen, Ferienhaus, Gartenhaus oder an einer passenden Balkonanlage.
