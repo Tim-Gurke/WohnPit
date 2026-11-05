@@ -136,10 +136,12 @@ jobs:
       - uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 26
+          target: google_apis
           arch: x86
           profile: Nexus 5
           disable-animations: true
           script: |
+            adb shell dumpsys webviewupdate
             adb install -r app/build/outputs/apk/debug/app-debug.apk
             adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
             adb shell am instrument -w -e class de.wattpit.app.UnifiedSmokeTest de.wattpit.app.test/androidx.test.runner.AndroidJUnitRunner | tee unified-emulator.log
