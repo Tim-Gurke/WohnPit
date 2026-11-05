@@ -30,3 +30,11 @@ WohnPit als lokales Android-Cockpit für Energie, Gas und Wasser im Wohnwagen, F
 Die vollständige Umzugsdatei enthält private Verknüpfungen, Geräteschlüssel und Kennwörter. Sie darf auch verschlüsselt niemals öffentlich auf GitHub, in Releases, Prüfartefakten oder auf der Projektseite erscheinen. Nur lokal auswählen/speichern, mit eigenem Kennwort authentifiziert verschlüsseln; das Kennwort nicht speichern oder protokollieren. Signierschlüssel und echte private Einstellungs-/Messdaten ebenfalls ausschließen. Vor jedem Hochladen die vorgemerkte Dateiliste mit tools/check-public-files.py prüfen; nur neutrale Testdaten veröffentlichen.
 
 Wenn ein altes Übernahme-Release später aus den letzten drei Releases fällt, die notwendige signierte Übernahme-APK als zusätzliches Hilfsprogramm in den aktuellen Releases weiter anbieten; private Umzugsdateien niemals anhängen.
+
+## Bekannte Grenze der Übernahme aus 0.0.5
+
+Die Sicherung aus 0.0.5 kopiert die Geräte-Konfiguration einschließlich der `secret`-Felder, überträgt aber nicht den AndroidKeyStore der alten App. Beim Wechsel `de.wohnpit.app` → `de.wattpit.app` sind diese verschlüsselten Victron-Schlüssel für WohnPit 2.0.1 nicht lesbar. Aktueller Wiederherstellungsweg: nach dem Import beide 32-stelligen Instant-Readout-Schlüssel in den vorhandenen Geräteeinträgen der neuen Zentrale erneut speichern. Messwertarchive und Geräteadressen dabei erhalten. Die Umzugsanleitung nennt diesen Schritt ausdrücklich.
+
+Eine künftige automatische Schlüsselübernahme muss die Schlüssel in der Quell-App entschlüsseln, ausschließlich innerhalb der kennwortgeschützten vollständigen Sicherung übertragen und für den AndroidKeyStore der Ziel-App neu verschlüsseln. Keine ungeschützten öffentlichen Schlüsseldateien oder Protokolle erzeugen. Der Import muss auf nicht übertragbare Schlüssel hinweisen, statt allein aus dem vorhandenen verschlüsselten Feld einen funktionsfähigen Schlüssel abzuleiten.
+
+Dafür einen Android-Test mit tatsächlich getrennten App-UIDs beziehungsweise Installationen und echten AndroidKeyStore-Schlüsseln verwenden. Ein ContextWrapper mit verändertem Paketnamen und ein synthetischer Klartext-Einstellungswert prüfen die UID-Grenze nicht. Erst nach dieser Prüfung eine automatische Übernahme der Victron-Schlüssel zusagen.
