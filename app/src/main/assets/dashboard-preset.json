@@ -1,0 +1,971 @@
+{
+  "version": 1,
+  "blockOrder": [
+    "tiles",
+    "roller",
+    "history",
+    "record"
+  ],
+  "tiles": [
+    {
+      "id": "default-soc",
+      "metric": "soc",
+      "title": "",
+      "unit": "%",
+      "type": "gauge",
+      "digits": 1,
+      "fontSize": 20,
+      "color": "#65cbb0",
+      "colorMid": "#81baf4",
+      "colorEnd": "#e8bb57",
+      "adaptiveColor": true,
+      "multicolor": false,
+      "invert": false,
+      "min": 0,
+      "max": 100,
+      "scaleMode": "auto",
+      "valueMode": "history",
+      "reverseSign": false,
+      "background": "auto",
+      "opacity": 100,
+      "period": {
+        "mode": "live",
+        "amount": 6,
+        "unit": "h",
+        "aggregate": "avg",
+        "resetAt": 0,
+        "from": 0,
+        "to": 0
+      },
+      "layouts": {
+        "compact": {
+          "x": 0,
+          "y": 0,
+          "w": 3,
+          "h": 5.5
+        },
+        "wide": {
+          "x": 0,
+          "y": 0,
+          "w": 2,
+          "h": 4
+        }
+      },
+      "colorSource": "value"
+    },
+    {
+      "id": "default-solar",
+      "metric": "solar",
+      "title": "",
+      "unit": "W",
+      "type": "chart",
+      "digits": 0,
+      "fontSize": 20,
+      "color": "#e8bb57",
+      "colorMid": "#81baf4",
+      "colorEnd": "#e8bb57",
+      "adaptiveColor": true,
+      "multicolor": false,
+      "invert": false,
+      "min": 0,
+      "max": 300,
+      "scaleMode": "auto",
+      "valueMode": "live",
+      "reverseSign": false,
+      "background": "auto",
+      "opacity": 100,
+      "period": {
+        "mode": "sunrise",
+        "amount": 3,
+        "unit": "h",
+        "aggregate": "avg",
+        "resetAt": 0,
+        "from": 0,
+        "to": 0
+      },
+      "layouts": {
+        "compact": {
+          "x": 3,
+          "y": 0,
+          "w": 4.5,
+          "h": 8
+        },
+        "wide": {
+          "x": 2,
+          "y": 0,
+          "w": 2,
+          "h": 8
+        }
+      },
+      "colorSource": "value"
+    },
+    {
+      "id": "default-energyBalance",
+      "metric": "energyBalance",
+      "title": "",
+      "unit": "Wh",
+      "type": "chart",
+      "digits": 2,
+      "fontSize": 20,
+      "color": "#81baf4",
+      "colorMid": "#81baf4",
+      "colorEnd": "#e8bb57",
+      "adaptiveColor": true,
+      "multicolor": false,
+      "invert": false,
+      "min": -2000,
+      "max": 2000,
+      "scaleMode": "auto",
+      "valueMode": "history",
+      "reverseSign": false,
+      "background": "auto",
+      "opacity": 100,
+      "period": {
+        "mode": "today",
+        "amount": 6,
+        "unit": "h",
+        "aggregate": "last",
+        "resetAt": 0,
+        "from": 0,
+        "to": 0
+      },
+      "layouts": {
+        "compact": {
+          "x": 7.5,
+          "y": 8,
+          "w": 4.5,
+          "h": 7.5
+        },
+        "wide": {
+          "x": 7,
+          "y": 0,
+          "w": 3,
+          "h": 8
+        }
+      },
+      "colorSource": "value"
+    },
+    {
+      "id": "default-solarEnergy",
+      "metric": "solarEnergy",
+      "title": "",
+      "unit": "Wh",
+      "type": "chart",
+      "digits": 2,
+      "fontSize": 20,
+      "color": "#e8bb57",
+      "colorMid": "#81baf4",
+      "colorEnd": "#e8bb57",
+      "adaptiveColor": true,
+      "multicolor": false,
+      "invert": false,
+      "min": 0,
+      "max": 2000,
+      "scaleMode": "auto",
+      "valueMode": "history",
+      "reverseSign": false,
+      "background": "auto",
+      "opacity": 100,
+      "period": {
+        "mode": "sunrise",
+        "amount": 6,
+        "unit": "h",
+        "aggregate": "last",
+        "resetAt": 0,
+        "from": 0,
+        "to": 0
+      },
+      "layouts": {
+        "compact": {
+          "x": 7.5,
+          "y": 0,
+          "w": 4.5,
+          "h": 8
+        },
+        "wide": {
+          "x": 4,
+          "y": 0,
+          "w": 3,
+          "h": 8
+        }
+      },
+      "colorSource": "value"
+    },
+    {
+      "id": "default-voltage",
+      "metric": "voltage",
+      "title": "",
+      "unit": "V",
+      "type": "number",
+      "digits": 2,
+      "fontSize": 20,
+      "color": "#81baf4",
+      "colorMid": "#81baf4",
+      "colorEnd": "#e8bb57",
+      "adaptiveColor": true,
+      "multicolor": false,
+      "invert": false,
+      "min": 10,
+      "max": 15,
+      "scaleMode": "fixed",
+      "valueMode": "history",
+      "reverseSign": false,
+      "background": "auto",
+      "opacity": 100,
+      "period": {
+        "mode": "live",
+        "amount": 6,
+        "unit": "h",
+        "aggregate": "avg",
+        "resetAt": 0,
+        "from": 0,
+        "to": 0
+      },
+      "layouts": {
+        "compact": {
+          "x": 0,
+          "y": 8,
+          "w": 3,
+          "h": 2.5
+        },
+        "wide": {
+          "x": 0,
+          "y": 4,
+          "w": 2,
+          "h": 2
+        }
+      },
+      "colorSource": "value"
+    },
+    {
+      "id": "default-power",
+      "metric": "power",
+      "title": "Aktuell",
+      "unit": "W",
+      "type": "number",
+      "digits": 0,
+      "fontSize": 20,
+      "color": "#65cbb0",
+      "colorMid": "#81baf4",
+      "colorEnd": "#e8bb57",
+      "adaptiveColor": true,
+      "multicolor": false,
+      "invert": false,
+      "min": -1000,
+      "max": 1000,
+      "scaleMode": "fixed",
+      "valueMode": "history",
+      "reverseSign": false,
+      "background": "auto",
+      "opacity": 100,
+      "period": {
+        "mode": "live",
+        "amount": 6,
+        "unit": "h",
+        "aggregate": "avg",
+        "resetAt": 0,
+        "from": 0,
+        "to": 0
+      },
+      "layouts": {
+        "compact": {
+          "x": 0,
+          "y": 10.5,
+          "w": 3,
+          "h": 2.5
+        },
+        "wide": {
+          "x": 0,
+          "y": 6,
+          "w": 2,
+          "h": 2
+        }
+      },
+      "colorSource": "value"
+    },
+    {
+      "id": "default-weather",
+      "metric": "weather",
+      "title": "",
+      "unit": "",
+      "type": "weather",
+      "digits": 0,
+      "fontSize": 20,
+      "color": "#e8bb57",
+      "colorMid": "#81baf4",
+      "colorEnd": "#e8bb57",
+      "adaptiveColor": true,
+      "multicolor": false,
+      "invert": false,
+      "min": 0,
+      "max": 1,
+      "scaleMode": "fixed",
+      "valueMode": "history",
+      "reverseSign": false,
+      "background": "auto",
+      "opacity": 100,
+      "period": {
+        "mode": "live",
+        "amount": 6,
+        "unit": "h",
+        "aggregate": "avg",
+        "resetAt": 0,
+        "from": 0,
+        "to": 0
+      },
+      "layouts": {
+        "compact": {
+          "x": 0,
+          "y": 15.5,
+          "w": 12,
+          "h": 6
+        },
+        "wide": {
+          "x": 0,
+          "y": 8,
+          "w": 12,
+          "h": 4
+        }
+      },
+      "colorSource": "value"
+    },
+    {
+      "id": "default-consumptionEnergy",
+      "metric": "consumptionEnergy",
+      "title": "",
+      "unit": "Wh",
+      "type": "chart",
+      "digits": 2,
+      "fontSize": 20,
+      "color": "#65cbb0",
+      "colorMid": "#81baf4",
+      "colorEnd": "#e8bb57",
+      "adaptiveColor": true,
+      "multicolor": false,
+      "invert": false,
+      "min": 0,
+      "max": 2000,
+      "scaleMode": "auto",
+      "valueMode": "history",
+      "reverseSign": false,
+      "background": "auto",
+      "opacity": 100,
+      "period": {
+        "mode": "today",
+        "amount": 6,
+        "unit": "h",
+        "aggregate": "last",
+        "resetAt": 0,
+        "from": 0,
+        "to": 0
+      },
+      "layouts": {
+        "compact": {
+          "x": 3,
+          "y": 8,
+          "w": 4.5,
+          "h": 7.5
+        },
+        "wide": {
+          "x": 10,
+          "y": 0,
+          "w": 2,
+          "h": 8
+        }
+      },
+      "colorSource": "value"
+    },
+    {
+      "id": "default-state",
+      "metric": "state",
+      "title": "",
+      "unit": "",
+      "type": "number",
+      "digits": 0,
+      "fontSize": 20,
+      "color": "#e8bb57",
+      "colorMid": "#81baf4",
+      "colorEnd": "#e8bb57",
+      "adaptiveColor": true,
+      "multicolor": false,
+      "invert": false,
+      "min": 0,
+      "max": 255,
+      "scaleMode": "fixed",
+      "valueMode": "history",
+      "reverseSign": false,
+      "background": "auto",
+      "opacity": 100,
+      "period": {
+        "mode": "live",
+        "amount": 6,
+        "unit": "h",
+        "aggregate": "last",
+        "resetAt": 0,
+        "from": 0,
+        "to": 0
+      },
+      "layouts": {
+        "compact": {
+          "x": 0,
+          "y": 21.5,
+          "w": 4,
+          "h": 2.5
+        },
+        "wide": {
+          "x": 0,
+          "y": 12,
+          "w": 4,
+          "h": 3
+        }
+      },
+      "colorSource": "value"
+    },
+    {
+      "id": "default-chargeTime",
+      "metric": "chargeTime",
+      "title": "",
+      "unit": "h",
+      "type": "number",
+      "digits": 1,
+      "fontSize": 20,
+      "color": "#65cbb0",
+      "colorMid": "#81baf4",
+      "colorEnd": "#e8bb57",
+      "adaptiveColor": true,
+      "multicolor": false,
+      "invert": false,
+      "min": 0,
+      "max": 1440,
+      "scaleMode": "fixed",
+      "valueMode": "history",
+      "reverseSign": false,
+      "background": "auto",
+      "opacity": 100,
+      "period": {
+        "mode": "live",
+        "amount": 6,
+        "unit": "h",
+        "aggregate": "avg",
+        "resetAt": 0,
+        "from": 0,
+        "to": 0
+      },
+      "layouts": {
+        "compact": {
+          "x": 0,
+          "y": 5.5,
+          "w": 3,
+          "h": 2.5
+        },
+        "wide": {
+          "x": 0,
+          "y": 15,
+          "w": 4,
+          "h": 4
+        }
+      },
+      "colorSource": "value"
+    },
+    {
+      "id": "default-lan",
+      "metric": "lan",
+      "title": "",
+      "unit": "",
+      "type": "lan",
+      "digits": 0,
+      "fontSize": 20,
+      "color": "#81baf4",
+      "colorMid": "#81baf4",
+      "colorEnd": "#e8bb57",
+      "adaptiveColor": true,
+      "multicolor": false,
+      "invert": false,
+      "min": 0,
+      "max": 1,
+      "scaleMode": "fixed",
+      "valueMode": "history",
+      "reverseSign": false,
+      "background": "auto",
+      "opacity": 100,
+      "period": {
+        "mode": "live",
+        "amount": 6,
+        "unit": "h",
+        "aggregate": "avg",
+        "resetAt": 0,
+        "from": 0,
+        "to": 0
+      },
+      "layouts": {
+        "compact": {
+          "x": 0,
+          "y": 24,
+          "w": 4,
+          "h": 7.5
+        },
+        "wide": {
+          "x": 0,
+          "y": 19,
+          "w": 12,
+          "h": 4
+        }
+      },
+      "colorSource": "value"
+    },
+    {
+      "id": "tile-mvrl6zvd-tbkix",
+      "metric": "remainingWh",
+      "title": "",
+      "unit": "Wh",
+      "type": "number",
+      "digits": 0,
+      "fontSize": 20,
+      "color": "#65cbb0",
+      "colorMid": "#81baf4",
+      "colorEnd": "#e8bb57",
+      "adaptiveColor": true,
+      "multicolor": false,
+      "invert": false,
+      "min": 0,
+      "max": 1400,
+      "scaleMode": "fixed",
+      "valueMode": "history",
+      "reverseSign": false,
+      "background": "auto",
+      "opacity": 100,
+      "period": {
+        "mode": "live",
+        "amount": 6,
+        "unit": "h",
+        "aggregate": "avg",
+        "resetAt": 0,
+        "from": 0,
+        "to": 0
+      },
+      "layouts": {
+        "compact": {
+          "x": 0,
+          "y": 13,
+          "w": 3,
+          "h": 2.5
+        },
+        "wide": {
+          "x": 0,
+          "y": 23,
+          "w": 4,
+          "h": 3
+        }
+      },
+      "colorSource": "value"
+    },
+    {
+      "id": "tile-mvxxip83-oskmq",
+      "metric": "mobileSolarEnergy",
+      "title": "",
+      "unit": "Wh",
+      "type": "chart",
+      "digits": 2,
+      "fontSize": 20,
+      "color": "#e8bb57",
+      "colorMid": "#81baf4",
+      "colorEnd": "#e8bb57",
+      "adaptiveColor": true,
+      "multicolor": false,
+      "invert": false,
+      "min": 0,
+      "max": 1000,
+      "scaleMode": "auto",
+      "valueMode": "history",
+      "reverseSign": false,
+      "background": "auto",
+      "opacity": 100,
+      "period": {
+        "mode": "sunrise",
+        "amount": 6,
+        "unit": "h",
+        "aggregate": "last",
+        "resetAt": 0,
+        "from": 0,
+        "to": 0
+      },
+      "layouts": {
+        "compact": {
+          "x": 8,
+          "y": 21.5,
+          "w": 4,
+          "h": 10
+        },
+        "wide": {
+          "x": 0,
+          "y": 26,
+          "w": 4,
+          "h": 6
+        }
+      },
+      "colorSource": "value"
+    },
+    {
+      "id": "tile-mvxxr08f-wohh7",
+      "metric": "mobileSolarPower",
+      "title": "",
+      "unit": "W",
+      "type": "chart",
+      "digits": 0,
+      "fontSize": 20,
+      "color": "#e8bb57",
+      "colorMid": "#81baf4",
+      "colorEnd": "#e8bb57",
+      "adaptiveColor": true,
+      "multicolor": false,
+      "invert": false,
+      "min": 0,
+      "max": 200,
+      "scaleMode": "auto",
+      "valueMode": "live",
+      "reverseSign": false,
+      "background": "auto",
+      "opacity": 100,
+      "period": {
+        "mode": "sunrise",
+        "amount": 6,
+        "unit": "h",
+        "aggregate": "avg",
+        "resetAt": 0,
+        "from": 0,
+        "to": 0
+      },
+      "layouts": {
+        "compact": {
+          "x": 4,
+          "y": 21.5,
+          "w": 4,
+          "h": 10
+        },
+        "wide": {
+          "x": 0,
+          "y": 32,
+          "w": 4,
+          "h": 3
+        }
+      },
+      "colorSource": "value"
+    },
+    {
+      "id": "tile-mw342nqk-mg2xx",
+      "metric": "waterStock",
+      "title": "",
+      "unit": "L",
+      "type": "gauge",
+      "digits": 1,
+      "fontSize": 20,
+      "color": "#4c65e0",
+      "colorMid": "#81baf4",
+      "colorEnd": "#e8bb57",
+      "adaptiveColor": true,
+      "multicolor": false,
+      "invert": false,
+      "min": 0,
+      "max": 40,
+      "scaleMode": "fixed",
+      "valueMode": "history",
+      "reverseSign": false,
+      "background": "auto",
+      "opacity": 100,
+      "period": {
+        "mode": "live",
+        "amount": 6,
+        "unit": "h",
+        "aggregate": "avg",
+        "resetAt": 0,
+        "from": 0,
+        "to": 0
+      },
+      "layouts": {
+        "compact": {
+          "x": 0,
+          "y": 31.5,
+          "w": 4,
+          "h": 6
+        },
+        "wide": {
+          "x": 0,
+          "y": 35,
+          "w": 4,
+          "h": 4
+        }
+      },
+      "colorSource": "value"
+    },
+    {
+      "id": "tile-mw342zqi-8zo24",
+      "metric": "waterRange",
+      "title": "",
+      "unit": "",
+      "type": "number",
+      "digits": 1,
+      "fontSize": 20,
+      "color": "#4c65e0",
+      "colorMid": "#81baf4",
+      "colorEnd": "#e8bb57",
+      "adaptiveColor": true,
+      "multicolor": false,
+      "invert": false,
+      "min": 0,
+      "max": 336,
+      "scaleMode": "fixed",
+      "valueMode": "history",
+      "reverseSign": false,
+      "background": "auto",
+      "opacity": 100,
+      "period": {
+        "mode": "live",
+        "amount": 6,
+        "unit": "h",
+        "aggregate": "last",
+        "resetAt": 0,
+        "from": 0,
+        "to": 0
+      },
+      "layouts": {
+        "compact": {
+          "x": 4,
+          "y": 31.5,
+          "w": 4,
+          "h": 6
+        },
+        "wide": {
+          "x": 0,
+          "y": 39,
+          "w": 4,
+          "h": 6
+        }
+      },
+      "colorSource": "value"
+    },
+    {
+      "id": "tile-mw3436k6-g4jal",
+      "metric": "waterNext",
+      "title": "",
+      "unit": "",
+      "type": "number",
+      "digits": 1,
+      "fontSize": 20,
+      "color": "#4c65e0",
+      "colorMid": "#81baf4",
+      "colorEnd": "#e8bb57",
+      "adaptiveColor": true,
+      "multicolor": false,
+      "invert": false,
+      "min": 0,
+      "max": 336,
+      "scaleMode": "fixed",
+      "valueMode": "history",
+      "reverseSign": false,
+      "background": "auto",
+      "opacity": 100,
+      "period": {
+        "mode": "live",
+        "amount": 6,
+        "unit": "h",
+        "aggregate": "last",
+        "resetAt": 0,
+        "from": 0,
+        "to": 0
+      },
+      "layouts": {
+        "compact": {
+          "x": 8,
+          "y": 31.5,
+          "w": 4,
+          "h": 6
+        },
+        "wide": {
+          "x": 0,
+          "y": 45,
+          "w": 4,
+          "h": 6
+        }
+      },
+      "colorSource": "value"
+    },
+    {
+      "id": "tile-mw345n73-oh6ao",
+      "metric": "gasStock",
+      "title": "",
+      "unit": "kg",
+      "type": "gauge",
+      "digits": 1,
+      "fontSize": 20,
+      "color": "#c2c200",
+      "colorMid": "#81baf4",
+      "colorEnd": "#e8bb57",
+      "adaptiveColor": true,
+      "multicolor": false,
+      "invert": false,
+      "min": 0,
+      "max": 11,
+      "scaleMode": "fixed",
+      "valueMode": "history",
+      "reverseSign": false,
+      "background": "auto",
+      "opacity": 100,
+      "period": {
+        "mode": "live",
+        "amount": 6,
+        "unit": "h",
+        "aggregate": "avg",
+        "resetAt": 0,
+        "from": 0,
+        "to": 0
+      },
+      "layouts": {
+        "compact": {
+          "x": 0,
+          "y": 37.5,
+          "w": 4,
+          "h": 6
+        },
+        "wide": {
+          "x": 0,
+          "y": 51,
+          "w": 4,
+          "h": 4
+        }
+      },
+      "colorSource": "value"
+    },
+    {
+      "id": "tile-mw345tvk-gjp1v",
+      "metric": "gasRange",
+      "title": "",
+      "unit": "",
+      "type": "number",
+      "digits": 1,
+      "fontSize": 20,
+      "color": "#c2c200",
+      "colorMid": "#81baf4",
+      "colorEnd": "#e8bb57",
+      "adaptiveColor": true,
+      "multicolor": false,
+      "invert": false,
+      "min": 0,
+      "max": 336,
+      "scaleMode": "fixed",
+      "valueMode": "history",
+      "reverseSign": false,
+      "background": "auto",
+      "opacity": 100,
+      "period": {
+        "mode": "live",
+        "amount": 6,
+        "unit": "h",
+        "aggregate": "last",
+        "resetAt": 0,
+        "from": 0,
+        "to": 0
+      },
+      "layouts": {
+        "compact": {
+          "x": 4,
+          "y": 37.5,
+          "w": 4,
+          "h": 6
+        },
+        "wide": {
+          "x": 0,
+          "y": 55,
+          "w": 4,
+          "h": 6
+        }
+      },
+      "colorSource": "value"
+    },
+    {
+      "id": "tile-mw346egd-xaveg",
+      "metric": "gasDaily",
+      "title": "",
+      "unit": "kg/Tag",
+      "type": "number",
+      "digits": 1,
+      "fontSize": 20,
+      "color": "#c2c200",
+      "colorMid": "#81baf4",
+      "colorEnd": "#e8bb57",
+      "adaptiveColor": true,
+      "multicolor": false,
+      "invert": false,
+      "min": 0,
+      "max": 11,
+      "scaleMode": "fixed",
+      "valueMode": "history",
+      "reverseSign": false,
+      "background": "auto",
+      "opacity": 100,
+      "period": {
+        "mode": "live",
+        "amount": 6,
+        "unit": "h",
+        "aggregate": "avg",
+        "resetAt": 0,
+        "from": 0,
+        "to": 0
+      },
+      "layouts": {
+        "compact": {
+          "x": 8,
+          "y": 37.5,
+          "w": 4,
+          "h": 6
+        },
+        "wide": {
+          "x": 0,
+          "y": 61,
+          "w": 4,
+          "h": 4
+        }
+      },
+      "colorSource": "value"
+    }
+  ],
+  "lanTileVersion": 1,
+  "dischargeSignVersion": 1,
+  "energyFlowVersion": 1,
+  "rollerLayout": {
+    "compact": {
+      "width": 12,
+      "height": 650
+    },
+    "wide": {
+      "width": 12,
+      "height": 650
+    }
+  },
+  "historyHeight": {
+    "compact": 465,
+    "wide": 380
+  },
+  "presetId": "user-layout-1.9.1",
+  "valueColors": {
+    "soc": "#65cbb0",
+    "solar": "#e8bb57",
+    "energyBalance": "#81baf4",
+    "solarEnergy": "#e8bb57",
+    "voltage": "#81baf4",
+    "power": "#65cbb0",
+    "weather": "#e8bb57",
+    "consumptionEnergy": "#65cbb0",
+    "state": "#e8bb57",
+    "chargeTime": "#65cbb0",
+    "lan": "#81baf4",
+    "remainingWh": "#65cbb0",
+    "mobileSolarEnergy": "#e8bb57",
+    "mobileSolarPower": "#e8bb57",
+    "waterStock": "#4c65e0",
+    "waterRange": "#4c65e0",
+    "waterNext": "#4c65e0",
+    "gasStock": "#c2c200",
+    "gasRange": "#c2c200",
+    "gasDaily": "#c2c200"
+  }
+}

@@ -8,7 +8,7 @@ public final class CentralArchiveProof {
     private static void check(boolean value,String message){if(!value)throw new AssertionError(message);System.out.println("PASS "+message);}
     public static void main(String[] args)throws Exception{
         Class.forName("org.sqlite.JDBC");
-        LanSyncProof.TestContext context=new LanSyncProof.TestContext(Path.of(args[0]));Repository repo=LanSyncProof.repository(context);
+        LanSyncProof.TestContext context=new LanSyncProof.TestContext(Path.of(args[0]));context.getSharedPreferences(AppRole.PREFS,0).edit().putString(AppRole.KEY,"central").commit();Repository repo=LanSyncProof.repository(context);
         String solar="AA:11:22:33:44:55",shunt="AA:11:22:33:44:66";
         repo.prefs.edit().putString("devices",new JSONArray().put(new JSONObject().put("mac",solar).put("kind","solar")).put(new JSONObject().put("mac",shunt).put("kind","shunt")).toString()).commit();
         long before=System.currentTimeMillis();

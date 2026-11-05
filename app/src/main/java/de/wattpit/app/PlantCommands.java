@@ -62,7 +62,7 @@ final class PlantCommands {
     @SuppressLint("MissingPermission")
     private static void bluetoothReady(Context c){
         boolean allowed=Build.VERSION.SDK_INT>=31?c.checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN)==PackageManager.PERMISSION_GRANTED&&c.checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT)==PackageManager.PERMISSION_GRANTED:c.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)==PackageManager.PERMISSION_GRANTED;
-        if(!allowed)throw new IllegalArgumentException("Bitte Watt’n’Pit am Hauptgerät öffnen und die Bluetooth-Berechtigung erteilen.");
+        if(!allowed)throw new IllegalArgumentException("Bitte WohnPit am Hauptgerät öffnen und die Bluetooth-Berechtigung erteilen.");
         BluetoothManager manager=c.getSystemService(BluetoothManager.class);BluetoothAdapter adapter=manager==null?null:manager.getAdapter();
         if(adapter==null||!adapter.isEnabled())throw new IllegalArgumentException("Bitte Bluetooth am Hauptgerät einschalten.");
     }

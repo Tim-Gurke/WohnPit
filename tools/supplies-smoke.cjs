@@ -1,0 +1,44 @@
+/* Actual shipped UI with a delayed, acknowledged data-host fixture; fictional data only. */
+const waitForPage=require('./browser-wait.cjs');
+const {chromium}=require('playwright'),assert=require('node:assert/strict'),path=require('node:path'),fs=require('node:fs');
+(async()=>{
+ const browser=await chromium.launch({headless:true,args:['--no-sandbox'],...(process.env.WATTPIT_CHROMIUM?{executablePath:process.env.WATTPIT_CHROMIUM}:{})});
+ try{
+  const page=await browser.newPage({viewport:{width:950,height:1050},deviceScaleFactor:1.5,timezoneId:'Europe/Berlin',locale:'de-DE'}),errors=[];page.on('pageerror',e=>errors.push(e.message));await page.clock.setFixedTime(new Date('2026-11-04T12:00:00Z'));
+  await page.addInitScript(()=>{
+   const now=Date.now(),D=86400000,site={name:'Beispielort',latitude:50,longitude:10,key:'50000:10000'},event=(id,kind,type,at,amount)=>({id:'example-'+id,kind,type,at,amount,empty:true,site});
+   window.suppliesFixture={version:1,protocol:1,revision:1,defaults:{water:20,gas:11},events:[event('water-01','water','supply',now-12*D,20),event('water-02','water','supply',now-8*D,20),event('water-03','water','supply',now-4*D,20),event('gas-01','gas','swap',now-9*D,11),event('gas-02','gas','swap',now-5*D,11),event('gas-03','gas','swap',now-D,11),event('stock-water','water','stock',now,12),event('stock-gas','gas','stock',now-7200000,5)],weather:{updated:now,siteKey:site.key,place:site,history:[],forecast:[]}};
+   window.plantRevision=4;window.online=true;window.writes=0;window.testBoard={};
+   window.WattPit={appVersion:()=>'1.9.0',isLanViewer:()=>true,controlRevision:()=>window.plantRevision,lanState:()=>JSON.stringify({role:'viewer',id:'example-plant',name:'WohnPit · Beispiel',connected:window.online}),dashboard:()=>JSON.stringify(window.testBoard),saveDashboard:json=>{window.testBoard=JSON.parse(json);return '';},settings:()=>'',solarSetup:()=>'{}',rollerSnapshot:()=>'{}',
+    syncState:()=>JSON.stringify({busy:false,runId:0,cockpitNoticeAccepted:true,theme:window.testTheme||'dark',palette:'classic'}),
+    snapshot:()=>JSON.stringify({lan:{role:'viewer',id:'example-plant',connected:window.online},controlRevision:window.plantRevision,running:false,status:'Beispieldaten',devices:[],readings:[],found:[],stats:{count:0},settings:{theme:window.testTheme||'dark',capacity:100,sampleSeconds:10,weatherPlace:site}}),
+    suppliesSnapshot:()=>JSON.stringify(window.suppliesFixture),saveSupplies:()=>{throw Error('Viewer must use acknowledged controls');},refreshSuppliesWeather:()=>{},refreshLan:()=>{},
+    requestPlantCommand:json=>{const command=JSON.parse(json);setTimeout(()=>{
+      if(command.revision!==window.plantRevision){window.onPlantResult({id:command.id,error:'Daten wurden inzwischen geändert. Bitte neu öffnen.'});return;}
+      const config=window.suppliesFixture;if(command.action==='saveSupplies'){const value=JSON.parse(command.args[0]);if(value.op==='defaults')config.defaults={water:value.water,gas:value.gas};else if(value.op==='delete')config.events=config.events.filter(e=>e.id!==value.id);else{const index=config.events.findIndex(e=>e.id===value.event.id);if(index>=0)config.events[index]=value.event;else config.events.push(value.event);}config.revision++;window.writes++;}window.plantRevision++;window.onPlantResult({id:command.id,ok:true});
+     },400);}
+   };
+  });
+  await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));await page.locator('[data-page="supplies"]').click();
+  assert.match(await page.locator('#supplies-gas .supply-range').textContent(),/1 Tag 17 Stunden/);assert.match(await page.locator('#supplies-water').textContent(),/12 L verbleibend/);
+  assert.equal(await page.evaluate(()=>document.body.scrollWidth>innerWidth),false);
+  const out=process.env.WATTPIT_SUPPLIES_SCREENSHOTS||path.resolve(__dirname,'../docs/images');fs.mkdirSync(out,{recursive:true});
+  await page.screenshot({path:path.join(out,'supplies-1.9.0-dark.png'),animations:'disabled'});
+  await page.evaluate(()=>{window.testTheme='light';poll();});await page.screenshot({path:path.join(out,'supplies-1.9.0-light.png'),animations:'disabled'});await page.evaluate(()=>{window.testTheme='dark';poll();});
+  await page.setViewportSize({width:390,height:900});await page.locator('#suppliesWater').click();assert.equal(await page.locator('#supplyAmount').inputValue(),'20');
+  await page.screenshot({path:path.join(out,'supplies-water-entry-1.9.0.png'),animations:'disabled'});
+  const before=await page.locator('.supply-event').count();await page.locator('#supplySave').click();
+  assert.equal(await page.evaluate(()=>window.writes),0,'success must wait for the host');await waitForPage(page,()=>window.writes===1);await waitForPage(page,()=>document.getElementById('modal').hidden);assert.equal(await page.locator('.supply-event').count(),before+1);
+  await page.locator('#suppliesGas').click();assert.equal(await page.locator('#supplyAmount').inputValue(),'11');await page.locator('#supplyEmpty').uncheck();await page.locator('#supplySave').click();await waitForPage(page,()=>window.writes===2);await waitForPage(page,()=>document.getElementById('modal').hidden);assert.match(await page.locator('#suppliesJournal').textContent(),/noch nicht leer/);
+  await page.locator('[data-supply-edit]').first().click();await page.locator('#supplyDelete').click();await page.locator('#supplyCancel').click();assert.equal(await page.evaluate(()=>window.writes),2,'cancel deletion preserves journal');await page.locator('#supplyDelete').click();await page.locator('#supplySave').click();await waitForPage(page,()=>window.writes===3);await waitForPage(page,()=>document.getElementById('modal').hidden);
+  await page.locator('#suppliesSettings').click();await page.locator('#supplyWaterDefault').fill('25');await page.locator('#supplySave').click();await waitForPage(page,()=>window.writes===4);await waitForPage(page,()=>document.getElementById('modal').hidden);await page.locator('#suppliesWater').click();assert.equal(await page.locator('#supplyAmount').inputValue(),'25');await page.locator('#supplyCancel').click();
+  await page.locator('[data-page="overview"]').click();const layouts=await page.evaluate(()=>dashboard.config.tiles.map(t=>({id:t.id,layouts:t.layouts})));
+  await page.locator('#addTile').click();await page.locator('[data-metric="gasRange"]').click();if(await page.locator('#saveTile').count())await page.locator('#saveTile').click();
+  assert.match(await page.locator('[data-tile] .tile-number').last().textContent(),/Tag|Stunde/);assert.deepEqual(await page.evaluate(()=>dashboard.config.tiles.filter(t=>t.metric!=='gasRange').map(t=>({id:t.id,layouts:t.layouts}))),layouts);
+  const rangeFits=async()=>{const rects=await page.locator('[data-tile]').last().evaluate(el=>{const number=el.querySelector('.tile-number').getBoundingClientRect(),visual=el.querySelector('.tile-visual').getBoundingClientRect();return {top:number.top,bottom:number.bottom,from:visual.top,to:visual.bottom};});assert.ok(rects.top>=rects.from-1&&rects.bottom<=rects.to+1,'days/hours text must fit entirely inside its tile: '+JSON.stringify(rects));};await rangeFits();
+  await page.evaluate(()=>{document.getElementById('toast').hidden=true;document.getElementById('plantActionStatus').hidden=true;});await page.locator('[data-tile]').last().screenshot({path:path.join(out,'supplies-tile-1.9.0.png'),animations:'disabled'});await page.setViewportSize({width:832,height:620});await waitForPage(page,()=>dashboard.profile==='wide');await rangeFits();await page.setViewportSize({width:390,height:900});await waitForPage(page,()=>dashboard.profile==='compact');
+  await page.locator('[data-page="supplies"]').click();await page.evaluate(()=>{window.online=false;poll();});assert.equal(await page.locator('#suppliesWater').isDisabled(),true);assert.match(await page.locator('#suppliesStatus').textContent(),/Letzter Stand/);
+  await page.evaluate(()=>{window.online=true;delete window.suppliesFixture.protocol;poll();});assert.equal(await page.locator('#suppliesGas').isDisabled(),true);assert.match(await page.locator('#suppliesStatus').textContent(),/0\.0\.4/);
+  assert.deepEqual(errors,[]);console.log('PASS supplies UI: days/hours, delayed host acknowledgement, additions, early gas changes, delete/cancel, shared defaults, optional tiles, retained layouts, offline/update states and screenshots.');
+ }finally{await browser.close();}
+})().catch(e=>{console.error(e);process.exit(1);});

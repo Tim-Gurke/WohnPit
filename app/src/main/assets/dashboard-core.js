@@ -1,0 +1,414 @@
+/* Dashboard values and configuration. No Bluetooth or UI dependencies. */
+(function (root, factory) {
+  const api = factory(typeof module==='object'&&module.exports?require('./dashboard-preset.json'):root.WattPit?.dashboardPreset?JSON.parse(root.WattPit.dashboardPreset()):null,typeof module==='object'&&module.exports?require('./supplies-core.js'):root.WattSuppliesCore);
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  else root.WattDashboardCore = api;
+})(typeof globalThis === 'object' ? globalThis : this, function (preset,supplies) {
+  'use strict';
+  const CATALOG = {
+    soc:          {label:'Ladezustand', group:'Akku', kind:'shunt', field:'soc', units:['%'], min:0, max:100, digits:1, color:'#65cbb0'},
+    remaining:    {label:'Restlaufzeit', group:'Akku', kind:'shunt', field:'ttg', backend:'ttg', units:['h','d','min','s'], min:0, max:1440, digits:1, color:'#81baf4', hint:'Restlaufzeit vom SmartShunt; beim Laden oft nicht verfügbar.'},
+    chargeTime:   {label:'Restladezeit / Restlaufzeit', group:'Akku', kind:'shunt', units:['h','min','d','s'], min:0, max:1440, digits:1, color:'#65cbb0', liveOnly:true, hint:'Automatisch nach dem Netto-Batteriestrom: beim Laden geschätzte Zeit bis 100 % aus Ladezustand und eingestellter Batteriekapazität; beim Entladen Restlaufzeit vom SmartShunt. Der Trend verwendet bis zu eine Minute, ein Wechsel braucht 30 Sekunden Bestätigung mit frischen Messwerten. Die Ladezeit wird über bis zu fünf Minuten gemittelt; laufende Verbraucher sind berücksichtigt. Sonne und sinkender Strom gegen Ladeende beeinflussen die Schätzung. Kein gespeicherter Verlauf.'},
+    remainingAh:  {label:'Kapazität im Akku', group:'Akku', kind:'shunt', field:'soc', backend:'soc', units:['Ah','mAh'], min:0, max:100, digits:1, color:'#65cbb0', calculated:'capacity', hint:'Rechnerisch: Ladezustand × eingestellte Batteriekapazität.'},
+    remainingWh:  {label:'Energie im Akku', group:'Akku', kind:'shunt', backend:'storedEnergy', units:['Wh','kWh'], min:0, max:1400, digits:0, color:'#65cbb0', calculated:'energy', hint:'Näherung aus Kapazität, Ladezustand und momentaner Spannung; keine nutzbare Energieprognose.'},
+    power:        {label:'Batteriebilanz', group:'Akku', kind:'shunt', field:'power', backend:'batteryPower', units:['W','kW'], min:-1000, max:1000, digits:0, color:'#65cbb0', hint:'+ Laden · − Entladen. Alle Quellen und Verbraucher am Shunt.'},
+    voltage:      {label:'Batteriespannung', group:'Akku', kind:'shunt', field:'voltage', backend:'batteryVoltage', units:['V','mV'], min:10, max:15, digits:2, color:'#81baf4'},
+    current:      {label:'Batteriestrom', group:'Akku', kind:'shunt', field:'current', backend:'batteryCurrent', units:['A','mA'], min:-100, max:100, digits:2, color:'#81baf4'},
+    temperature:  {label:'Batterietemperatur', group:'Akku', kind:'shunt', field:'temperature', units:['°C','°F'], min:-10, max:60, digits:1, color:'#81baf4', hint:'Nur bei entsprechend eingerichtetem Temperatur-Eingang verfügbar.'},
+    aux:          {label:'Zusatzspannung', group:'Akku', kind:'shunt', field:'aux', units:['V','mV'], min:0, max:16, digits:2, color:'#81baf4', hint:'Nur bei entsprechend eingerichtetem Shunt-Eingang verfügbar.'},
+    consumed:     {label:'Entnommene Kapazität', group:'Akku', kind:'shunt', field:'consumed', units:['Ah','mAh'], min:0, max:100, digits:1, color:'#81baf4', hint:'Vom Shunt seit seiner letzten Voll-Synchronisation gezählte Ah. Optionaler Zusatzwert.'},
+    alarm:        {label:'Shunt-Alarm', group:'Akku', kind:'shunt', field:'alarm', units:['Code'], min:0, max:255, digits:0, color:'#e8bb57', status:true},
+    solar:        {label:'Solarleistung', group:'Solar', kind:'solar', field:'solar', units:['W','kW'], min:0, max:300, digits:0, color:'#e8bb57'},
+    mobileSolarPower:{label:'Solarleistung mobil',group:'Solar',kind:'mobile',backend:'mobileSolarPower',modelPower:true,units:['W','kW'],min:0,max:200,digits:0,color:'#e8bb57',hint:'Geschätzte zusätzliche Solarleistung aus Wetter, gespeicherter Aufstellung und plausibler Messbilanz. Bei Ladebegrenzung oder zu kleinem Wetterwert kann ein zuvor unabhängig beobachteter Grundbedarf die Schätzung stützen. Keine Liveablesung des PWM-Reglers. Mobil aus oder kein mobiles Modul: 0 W ab diesem Zeitpunkt. Fehlende Grundlagen bei aktivem Modul bleiben unbekannt.'},
+    mobileSolarEnergy:{label:'Solarertrag mobil',group:'Energie',kind:'mobile',backend:'mobileSolarEnergy',flow:'mobile',units:['Wh','kWh'],min:0,max:1000,digits:2,color:'#e8bb57',energy:true,estimated:true,hint:'Geschätzter genutzter Ertrag der nicht separat gemessenen mobilen Kreise im gewählten Zeitraum. Erkennbare Ladebegrenzung wird berücksichtigt; verfügbares Sonnenpotenzial ist nicht automatisch tatsächlicher Ertrag. Frühere aktive Zeiten bleiben nach Mobil aus erhalten; unbekannte Aufstellung oder Wetterlücken zählen nicht als Null. Bereits am Solarregler gemessene Kreise werden nicht doppelt gezählt.'},
+    yieldWh:      {label:'Solarertrag heute', group:'Solar', kind:'solar', field:'yieldWh', units:['kWh','Wh'], min:0, max:2000, digits:2, color:'#e8bb57'},
+    solarEnergy:  {label:'Solarertrag',group:'Energie',kind:'solar',backend:'flowSolarEnergy',flow:'solar',units:['Wh','kWh'],min:0,max:2000,digits:2,color:'#e8bb57',energy:true,hint:'Ertrag des gemessenen Solarreglers. Solarertrag, Verbrauch und Bilanz verwenden ab Sonnenaufgang gemeinsam erfasste Solar- und Shuntabschnitte. Ein ungemessener PWM-Regler fehlt im Ertrag.'},
+    consumptionEnergy:{label:'Geräteverbrauch',group:'Energie',kind:'consumption',backend:'consumptionEnergy',flow:'consumption',units:['Wh','kWh'],min:0,max:2000,digits:2,color:'#65cbb0',energy:true,hint:'Gesamter Gerätebedarf einschließlich Rollerladung und Ladeverlusten: gemessenes festes Solar plus geschätzte zusätzliche Solarerzeugung (z. B. PWM) minus Akkubilanz. Mit mobilem Anteil teilweise geschätzt. Ohne mobile Einspeisung entfällt die Ergänzung automatisch. Mess- und Modelllücken bleiben offen; unplausible negative Gerätebedarfe werden nicht als Verbrauch ausgegeben.'},
+    energyBalance:{label:'Akkubilanz',group:'Energie',kind:'balance',backend:'flowBalanceEnergy',flow:'balance',units:['Wh','kWh'],min:-2000,max:2000,digits:2,color:'#81baf4',energy:true,hint:'Nettoenergie am Akku auf den gemeinsam erfassten Solar- und Shuntabschnitten. + mehr zugeführt als entnommen, − mehr entnommen als zugeführt. Beide Solarkreise und alle Verbraucher sind am Shunt enthalten. Eine positive momentane Leistung kann gleichzeitig mit einer negativen Tagesbilanz auftreten.'},
+    dischargeEnergy:{label:'Batterieentnahme berechnet',group:'Energie',kind:'shunt',backend:'dischargeEnergy',units:['Wh','kWh'],min:0,max:2000,digits:2,color:'#65cbb0',energy:true,hint:'Zusatzwert: nur aus dem Akku entnommene Energie. Direkt genutzter Solarstrom fehlt; dies ist kein Gesamtverbrauch.'},
+    batteryEnergy:{label:'Akkubilanz · Shunt gesamt',group:'Energie',kind:'shunt',backend:'batteryEnergy',units:['Wh','kWh'],min:-2000,max:2000,digits:2,color:'#81baf4',energy:true,hint:'Zusatzwert aus dem Shunt allein: geladene minus entnommene Energie, unabhängig vom Solarregler. + Laden · − Entladen. Nur erfasste Zeitabschnitte; ohne Korrektur der Ladeverluste.'},
+    pvVoltage: {label:'PV-Eingangsspannung',group:'Solar',kind:'solar',field:'pvVoltage',backend:'pvVoltage',units:['V','mV'],min:0,max:75,digits:2,color:'#efb468',hint:'Spannung am Solareingang des Reglers; aus dem Gerätearchiv.'},
+    solarTemperature: {label:'Batterietemperatur am Regler',group:'Solar',kind:'solar',field:'temperature',backend:'solarTemperature',units:['°C'],min:-20,max:60,digits:1,color:'#81baf4',hint:'Nur mit vorhandenem Temperatursensor; aus dem Gerätearchiv.'},
+    solarVoltage: {label:'Regler-Batteriespannung', group:'Solar', kind:'solar', field:'voltage', units:['V','mV'], min:10, max:15, digits:2, color:'#81baf4', hint:'Batterieseitige Spannung am SmartSolar; keine PV-Eingangsspannung.'},
+    solarCurrent: {label:'Solar-Ladestrom', group:'Solar', kind:'solar', field:'current', units:['A','mA'], min:0, max:20, digits:2, color:'#e8bb57'},
+    load:         {label:'Lastausgang-Strom', group:'Solar', kind:'solar', field:'load', units:['A','mA'], min:0, max:20, digits:2, color:'#e8bb57'},
+    state:        {label:'Ladephase', group:'Solar', kind:'solar', field:'state', units:[''], min:0, max:255, digits:0, color:'#e8bb57', status:true},
+    error:        {label:'Reglerfehler', group:'Solar', kind:'solar', field:'error', units:['Code'], min:0, max:255, digits:0, color:'#e8bb57', status:true},
+    shuntRssi:    {label:'Shunt-Signal', group:'Verbindung', kind:'shunt', units:['dBm'], min:-100, max:-30, digits:0, color:'#81baf4', liveOnly:true},
+    solarRssi:    {label:'Regler-Signal', group:'Verbindung', kind:'solar', units:['dBm'], min:-100, max:-30, digits:0, color:'#81baf4', liveOnly:true},
+    shuntAge:     {label:'Shunt: letzter Empfang', group:'Verbindung', kind:'shunt', units:['s','min'], min:0, max:60, digits:0, color:'#81baf4', liveOnly:true},
+    solarAge:     {label:'Regler: letzter Empfang', group:'Verbindung', kind:'solar', units:['s','min'], min:0, max:60, digits:0, color:'#81baf4', liveOnly:true},
+    weather:      {label:'Wetter · 14 Tage',group:'Wetter',kind:'weather',units:[''],min:0,max:1,digits:0,color:'#e8bb57',widget:'weather'},
+    lan:          {label:'Anlagenverbund',group:'Verbindung',kind:'lan',units:[''],min:0,max:1,digits:0,color:'#81baf4',widget:'lan'}
+  };
+  for(const kind of ['water','gas']){
+    const label=kind==='water'?'Wasser':'Gas',unit=kind==='water'?'L':'kg',color=kind==='water'?'#4c65e0':'#c2c200';
+    for(const [suffix,title,field,duration,need] of [['Stock','Restvorrat','stock',false],['Range','Reichweite','remainingHours',true],['Daily','Tagesbedarf','daily',false],['Need3','Bedarf · 3 Tage','needs',false,3],['Need7','Bedarf · 7 Tage','needs',false,7],['Need14','Bedarf · 14 Tage','needs',false,14],['Last',kind==='water'?'Seit letzter Beschaffung':'Seit letztem Flaschenwechsel','lastAt',true],['Interval','Üblicher Abstand','intervalHours',true],['Next','Bis zur nächsten Beschaffung','nextSupplyAt',true]]){
+      if(kind==='gas'&&suffix==='Next')continue;
+      CATALOG[kind+suffix]={label:label+' · '+title,group:label,kind:'supply',resource:kind,resourceField:field,resourceDuration:duration,resourceNeed:need,units:[duration?'':field==='daily'?unit+'/Tag':unit],min:0,max:duration?336:kind==='water'?100:11,digits:1,color,liveOnly:true,status:duration,estimated:true,hint:'Aus manuell erfassten Beschaffungen und Wechselintervallen geschätzt. Reichweite in Tagen und Stunden. Restvorrat benötigt einen bekannten Ausgangspunkt. Einstellungen und Einträge unter Gas / Wasser.'};
+    }
+  }
+  const PHASES = {0:'Aus',1:'Wenig Leistung',2:'Fehler',3:'Bulk',4:'Absorption',5:'Float',6:'Storage',7:'Ausgleich',9:'Invertieren',11:'Stromversorgung',245:'Start',247:'Auto-Ausgleich',252:'Extern gesteuert'};
+  const BLOCK_ORDER=['tiles','history','record','roller'];
+  const finite = x => x !== null && x !== '' && Number.isFinite(Number(x));
+  const clamp = (x,a,b) => Math.max(a,Math.min(b,x));
+  const numeric = (x,fallback,a,b) => finite(x) ? clamp(Number(x),a,b) : fallback;
+  const color = (x,fallback) => /^#[0-9a-f]{6}$/i.test(x || '') ? x : fallback;
+  function valueColors(input={}) {
+    return Object.fromEntries(Object.entries(CATALOG).map(([key,m])=>[key,color(input?.[key],m.color).toLowerCase()]));
+  }
+  function metricColor(board,metric){return color(board?.valueColors?.[metric],CATALOG[metric]?.color||'#81baf4');}
+  // Only live Shunt readings enter this estimate. Repeated UI polls add no samples.
+  class CurrentAverage {
+    constructor(){this.generation=0;this.reset();}
+    reset(){this.samples=[];this.device=null;this.updated=null;this.generation++;}
+    update(reading,now=Date.now()){
+      if(!reading||!finite(reading.t)||!finite(reading.current)||!finite(now)||now<Number(reading.t)||now-Number(reading.t)>45000){this.reset();return null;}
+      const t=Number(reading.t),current=Number(reading.current),device=reading.device||reading.kind||'shunt',last=this.samples.at(-1);
+      if(device!==this.device||this.updated!==null&&now<this.updated||last&&(t<last.t||t-last.t>45000))this.reset();
+      this.device=device;this.updated=now;
+      if(!this.samples.length||t>this.samples.at(-1).t)this.samples.push({t,current});
+      else this.samples.at(-1).current=current;
+      const cutoff=now-300000;
+      while(this.samples.length>1&&this.samples[1].t<=cutoff)this.samples.shift();
+      return {...this.window(now,cutoff),trend:this.window(now,now-60000).average};
+    }
+    window(now,from){
+      let area=0,duration=0;
+      for(let i=0;i<this.samples.length;i++){
+        const a=this.samples[i],b=this.samples[i+1],start=Math.max(from,a.t),end=b?b.t:now;
+        if(end<=start)continue;
+        const startCurrent=b?a.current+(b.current-a.current)*(start-a.t)/(b.t-a.t):a.current;
+        area+=(startCurrent+(b?b.current:a.current))/2*(end-start);duration+=end-start;
+      }
+      return {average:duration?area/duration:this.samples.at(-1)?.current??null,seconds:duration/1000};
+    }
+  }
+  const validChargeInputs=(r,capacity)=>r&&finite(r.soc)&&Number(r.soc)>=0&&Number(r.soc)<=100&&finite(capacity)&&Number(capacity)>0;
+  function chargeForecast(reading,capacity,base){
+    if(!validChargeInputs(reading,capacity))return {...base,minutes:null,state:'unavailable'};
+    if(Number(reading.soc)===100)return {...base,minutes:0,state:'full'};
+    if(Number(reading.current)<=.03)return {...base,minutes:null,state:'inactive'};
+    if(base.average<=.03)return {...base,minutes:null,state:'waiting'};
+    const minutes=(100-Number(reading.soc))/100*Number(capacity)/base.average*60;
+    return {...base,minutes:Number.isFinite(minutes)?minutes:null,state:Number.isFinite(minutes)?'charging':'unavailable'};
+  }
+  class ChargeEstimator {
+    constructor(){this.current=new CurrentAverage();}
+    get samples(){return this.current.samples;}
+    reset(){this.current.reset();}
+    update(reading,capacity,now=Date.now()){
+      if(!validChargeInputs(reading,capacity)){this.reset();return {minutes:null,state:'unavailable',average:null,seconds:0};}
+      const average=this.current.update(reading,now);
+      return average?chargeForecast(reading,capacity,average):{minutes:null,state:'unavailable',average:null,seconds:0};
+    }
+  }
+  class BatteryTimeEstimator {
+    constructor(){this.current=new CurrentAverage();this.clearMode();this.generation=this.current.generation;}
+    get samples(){return this.current.samples;}
+    clearMode(){this.mode=null;this.pending=null;this.pendingSince=null;this.modeSince=null;}
+    reset(){this.current.reset();this.clearMode();this.generation=this.current.generation;}
+    update(reading,capacity,now=Date.now()){
+      const average=this.current.update(reading,now);
+      if(this.generation!==this.current.generation){this.clearMode();this.generation=this.current.generation;}
+      if(!average)return {mode:null,minutes:null,state:'unavailable',average:null,seconds:0};
+      const direction=a=>a>.03?'charge':a<-.03?'discharge':'idle';
+      const instant=direction(Number(reading.current)),trend=direction(average.trend),target=instant==='idle'?'idle':instant===trend?instant:null;
+      if(this.mode===null&&target!==null){this.mode=target;this.modeSince=Number(reading.t);}
+      if(target===null||target===this.mode){this.pending=null;this.pendingSince=null;}
+      else{
+        if(this.pending!==target){this.pending=target;this.pendingSince=now;}
+        // A repeated old packet cannot confirm a change merely because the UI keeps polling.
+        if(Number(reading.t)-this.pendingSince>=30000){this.mode=target;this.modeSince=this.pendingSince;this.pending=null;this.pendingSince=null;}
+      }
+      const base={...average,mode:this.mode};
+      if(this.mode===null||target!==this.mode||this.pending!==null)return {...base,minutes:null,state:'changing'};
+      if(this.mode==='idle')return {...base,minutes:null,state:'balanced'};
+      if(this.mode==='discharge'){
+        const minutes=finite(reading.ttg)&&Number(reading.ttg)>=0?Number(reading.ttg):null;
+        return {...base,minutes,state:minutes===null?'runtimeUnavailable':'discharging'};
+      }
+      // A confirmed new charging phase does not inherit the preceding discharge current.
+      return {...chargeForecast(reading,capacity,this.current.window(now,Math.max(now-300000,this.modeSince))),mode:'charge'};
+    }
+  }
+  function chargeHint(estimate){
+    if(estimate?.state==='balanced')return 'Zeit derzeit nicht bestimmbar';
+    if(estimate?.state==='changing')return 'Trendwechsel wird geprüft';
+    if(estimate?.state==='discharging')return 'Restlaufzeit vom SmartShunt';
+    if(estimate?.state==='runtimeUnavailable')return 'Restlaufzeit vom SmartShunt fehlt';
+    if(estimate?.state==='full')return '100 % laut SmartShunt';
+    if(estimate?.state==='inactive')return 'Wird nicht geladen';
+    if(estimate?.state==='waiting')return 'Noch kein stabiler Ladestrom';
+    if(estimate?.state==='charging')return estimate.seconds<60?'Bis 100 % · Mittelung läuft an':'Bis 100 % · Ø bis 5 min';
+    return 'Kein aktueller Shuntwert oder Kapazität fehlt';
+  }
+  function tileLabel(t,estimate){
+    if(t.title)return t.title;
+    if(t.metric!=='chargeTime')return CATALOG[t.metric].label;
+    return estimate?.mode==='charge'?'Restladezeit':estimate?.mode==='discharge'?'Restlaufzeit':'Akkuzeit';
+  }
+  function readableColor(foreground,background,page,opacity=100,target=7) {
+    const rgb=hex=>{hex=hex.trim();if(/^#[0-9a-f]{3}$/i.test(hex))hex='#'+[...hex.slice(1)].map(c=>c+c).join('');return [1,3,5].map(i=>parseInt(hex.slice(i,i+2),16));};
+    const luminance=channels=>channels.map(c=>c/255).map(c=>c<=.04045?c/12.92:((c+.055)/1.055)**2.4).reduce((n,c,i)=>n+c*[.2126,.7152,.0722][i],0);
+    const back=rgb(background),base=rgb(page),alpha=clamp(opacity,0,100)/100,surface=back.map((c,i)=>c*alpha+base[i]*(1-alpha)),bg=luminance(surface),original=rgb(foreground);
+    const whiteRatio=1.05/(bg+.05),blackRatio=(bg+.05)/.05,end=whiteRatio>blackRatio?255:0;
+    for(let step=0;step<=100;step++){
+      const channels=original.map(c=>Math.round(c+(end-c)*step/100)),fg=luminance(channels),ratio=(Math.max(bg,fg)+.05)/(Math.min(bg,fg)+.05);
+      if(ratio>=target||step===100)return '#'+channels.map(c=>c.toString(16).padStart(2,'0')).join('');
+    }
+  }
+  function seriesGap(previous,point,fallbackLimit=45000) {
+    if(!previous)return true;
+    if(previous.device!==point.device)return true;
+    if(typeof point.gap==='boolean')return point.gap;
+    return previous.origin!==point.origin||point.t-(previous.last??previous.t)>fallbackLimit;
+  }
+  function unitValue(value,unit) {
+    if (!finite(value)) return null;
+    value=Number(value);
+    if (['kW','kWh','h'].includes(unit)) return value/(unit==='h'?60:1000);
+    if (unit==='d') return value/1440;
+    if (unit==='s') return value*60;
+    if (['mA','mV','mAh'].includes(unit)) return value*1000;
+    if (unit==='°F') return value*1.8+32;
+    return value;
+  }
+  function fromUnit(value,unit) {
+    if (!finite(value)) return null;
+    value=Number(value);
+    if (['kW','kWh','h'].includes(unit)) return value*(unit==='h'?60:1000);
+    if (unit==='d') return value*1440;
+    if (unit==='s') return value/60;
+    if (['mA','mV','mAh'].includes(unit)) return value/1000;
+    if (unit==='°F') return (value-32)/1.8;
+    return value;
+  }
+  // Reception age has seconds as its base; remaining runtime has minutes.
+  function convert(value,unit,metric) {
+    return /Age$/.test(metric) ? finite(value) ? Number(value)/(unit==='min'?60:1) : null : unitValue(value,unit);
+  }
+  function unconvert(value,unit,metric) {
+    return /Age$/.test(metric) ? finite(value) ? Number(value)*(unit==='min'?60:1) : null : fromUnit(value,unit);
+  }
+  function position(input={},wide=false) {
+    const snap=x=>Math.round(x*2)/2,w=snap(numeric(input.w,wide?4:6,2,12));
+    return {x:snap(numeric(input.x,0,0,12-w)), y:snap(numeric(input.y,0,0,1000)), w,h:snap(numeric(input.h,3,2,18))};
+  }
+  function tile(metric,id) {
+    const m=CATALOG[metric] || CATALOG.soc;
+    return {id:id || 'tile-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7),metric:CATALOG[metric]?metric:'soc',title:'',unit:m.units[0],type:m.widget|| (m.energy?'chart':metric==='soc'?'gauge':'number'),
+      digits:m.digits,fontSize:20,color:m.color,colorSource:'value',colorMid:'#81baf4',colorEnd:'#e8bb57',adaptiveColor:true,multicolor:false,invert:false,reverseSign:metric==='dischargeEnergy',min:m.min,max:m.max,scaleMode:m.energy?'auto':'fixed',valueMode:'history',background:'auto',opacity:100,
+      period:{mode:m.energy?'today':'live',amount:6,unit:'h',aggregate:m.energy||m.status?'last':'avg',resetAt:Date.now(),from:0,to:0},layouts:{compact:position(m.widget?{w:12,h:4}:{h:m.resource?(m.resourceDuration?6:4):m.energy?6:metric==='chargeTime'?4:3}),wide:position(m.widget?{w:12,h:4}:{h:m.resource?(m.resourceDuration?6:4):m.energy?6:metric==='chargeTime'?4:3},true)}};
+  }
+  function normalizeTile(input,seen) {
+    if (!input || !CATALOG[input.metric]) return null;
+    const fallback=tile(input.metric),m=CATALOG[input.metric],result={...fallback};
+    result.id=/^[a-zA-Z0-9_-]{1,90}$/.test(input.id || '') && !seen.has(input.id)?input.id:fallback.id;seen.add(result.id);
+    result.title=typeof input.title==='string'?input.title.slice(0,60):'';
+    if(input.metric==='energyBalance'&&/^Ertrag\s*[−–-]\s*Entnahme$/i.test(result.title.trim()))result.title='';
+    result.unit=m.units.includes(input.unit)?input.unit:m.units[0];
+    result.type=!m.status && (m.liveOnly?['number','gauge']:['number','gauge','chart']).includes(input.type)?input.type:'number';
+    result.digits=Math.round(numeric(input.digits,m.digits,0,3));result.fontSize=numeric(input.fontSize,20,18,20);
+    for (const k of ['color','colorMid','colorEnd']) result[k]=color(input[k],fallback[k]);
+    result.colorSource=['value','custom'].includes(input.colorSource)?input.colorSource:color(input.color,m.color).toLowerCase()===m.color.toLowerCase()?'value':'custom';
+    result.multicolor=!!input.multicolor;result.invert=!!input.invert;result.adaptiveColor=input.adaptiveColor!==false;
+    result.min=numeric(input.min,m.min,-1e9,1e9);result.max=numeric(input.max,m.max,-1e9,1e9);
+    if(result.max<=result.min){result.min=m.min;result.max=m.max;}
+    result.scaleMode=input.scaleMode==='auto'?'auto':'fixed';
+    result.valueMode=input.valueMode==='live'?'live':'history';
+    result.reverseSign=!!m.energy&&!m.flow&&input.reverseSign===true;
+    result.opacity=numeric(input.opacity,100,0,100);result.background=input.background==='auto'?'auto':color(input.background,'auto');
+    const p=input.period || {};
+    result.period={mode:!m.liveOnly && ['live','last','today','sunrise','reset','custom'].includes(p.mode)?p.mode:'live',amount:numeric(p.amount,6,1,10000),unit:['min','h','d'].includes(p.unit)?p.unit:'h',
+      aggregate:['last','avg','min','max'].includes(p.aggregate)?p.aggregate:'avg',resetAt:numeric(p.resetAt,Date.now(),0,9e15),from:numeric(p.from,0,0,9e15),to:numeric(p.to,0,0,9e15)};
+    if(m.status)result.period.aggregate='last';
+    if(m.energy){result.valueMode='history';result.period.aggregate='last';if(result.period.mode==='live')result.period.mode='today';}
+    result.layouts={compact:position(input.layouts?.compact),wide:position(input.layouts?.wide,true)};
+    if(m.widget){result.type=m.widget;result.period.mode='live';for(const p of Object.values(result.layouts)){p.w=Math.max(4,p.w);p.h=Math.max(4,p.h);p.x=Math.min(p.x,12-p.w);}}
+    if(m.resourceDuration)for(const p of Object.values(result.layouts)){p.w=Math.max(4,p.w);p.h=Math.max(6,p.h);p.x=Math.min(p.x,12-p.w);}
+    return result;
+  }
+  function defaults() {
+    if(preset)return normalize(JSON.parse(JSON.stringify(preset)));
+    const ids=['soc','solar','energyBalance','solarEnergy','voltage','power','weather','consumptionEnergy','state','chargeTime'];
+    const energyPeriod={...tile('energyBalance').period};
+    const layouts={
+      compact:[[0,0,4,5],[4,0,4,7],[8,7,4,5.5],[8,0,4,7],[0,7.5,4,2.5],[0,10,4,2.5],[0,12.5,12,5],[4,7,4,5.5],[4,17.5,4,3.5],[0,5,4,2.5]],
+      wide:[[0,0,2,4],[2,0,2,8],[7,0,3,8],[4,0,3,8],[0,4,2,2],[0,6,2,2],[0,8,12,4],[10,0,2,8],[0,12,4,3],[0,15,4,4]]
+    };
+    const board={version:1,lanTileVersion:1,dischargeSignVersion:1,energyFlowVersion:1,historyHeight:historyHeight(),rollerLayout:rollerLayout(),blockOrder:[...BLOCK_ORDER],tiles:ids.map((id,i)=>{
+      const t=tile(id,'default-'+id);
+      for(const profile of ['compact','wide']){const [x,y,w,h]=layouts[profile][i];t.layouts[profile]={x,y,w,h};}
+      if(id==='soc'){t.fontSize=20;t.scaleMode='auto';}
+      if(id==='solar'){t.type='chart';t.scaleMode='auto';t.valueMode='live';t.period.mode='sunrise';t.period.amount=3;}
+      if(CATALOG[id].flow)t.period={...energyPeriod,mode:id==='solarEnergy'?'sunrise':energyPeriod.mode};
+      if(id==='power')t.title='Aktuell';
+      return t;
+    })};
+    appendTile(board.tiles,'lan','default-lan');return board;
+  }
+  function appendTile(tiles,metric,id){
+    const t=tile(metric,tiles.some(t=>t.id===id)?undefined:id);
+    for(const profile of ['compact','wide'])t.layouts[profile].y=tiles.length?Math.max(...tiles.map(t=>t.layouts[profile].y+t.layouts[profile].h)):0;
+    tiles.push(t);
+  }
+  function rollerLayout(input={}){
+    return Object.fromEntries(['compact','wide'].map(profile=>[profile,{width:Math.round(numeric(input?.[profile]?.width,12,4,12)*2)/2,height:Math.round(numeric(input?.[profile]?.height,650,250,1600))}]));
+  }
+  function historyHeight(input={}) {
+    return Object.fromEntries(['compact','wide'].map(profile=>[profile,finite(input?.[profile])?Math.round(clamp(Number(input[profile]),300,1000)):profile==='wide'?380:465]));
+  }
+  function normalize(input) {
+    if (!input || !Array.isArray(input.tiles)) return defaults();
+    const seen=new Set(),migrating=input.energyFlowVersion!==1;
+    const energyPeriod=tile('energyBalance').period;
+    const migrate=t=>{
+      if(!migrating||t?.metric!=='dischargeEnergy')return t;
+      return {...t,metric:'consumptionEnergy',reverseSign:false,title:/^Batterieentnahme(?: berechnet)?$/i.test(t.title?.trim()||'')?'':t.title};
+    };
+    const order=Array.isArray(input.blockOrder)?input.blockOrder.filter(k=>BLOCK_ORDER.includes(k)):[];
+    const widgets=new Set();
+    const tiles=input.tiles.slice(0,64).map(t=>normalizeTile(migrate(t),seen)).filter(t=>{if(!t)return false;if(!CATALOG[t.metric].widget)return true;if(widgets.has(t.metric))return false;widgets.add(t.metric);return true;});
+    if(Array.isArray(input.blockOrder)&&input.blockOrder.includes('weather')&&!widgets.has('weather')&&tiles.length<64){
+      const w=tile('weather',seen.has('default-weather')?undefined:'default-weather');
+      for(const profile of ['compact','wide'])w.layouts[profile].y=tiles.length?Math.max(...tiles.map(t=>t.layouts[profile].y+t.layouts[profile].h)):0;
+      tiles.push(w);
+    }
+    // Add the former fixed banner once, without moving a customized tile.
+    if(input.lanTileVersion!==1&&!widgets.has('lan')&&tiles.length>0&&tiles.length<64)appendTile(tiles,'lan','default-lan');
+    if(input.dischargeSignVersion!==1)for(const t of tiles)if(t.metric==='dischargeEnergy')t.reverseSign=true;
+    // Only the old energy-metric migration sets defaults. Existing tiles own
+    // their periods; the former board-wide energyPeriod must never override them.
+    for(const t of tiles)if(migrating&&CATALOG[t.metric].flow){
+      const sunrise=t.metric==='solarEnergy'&&energyPeriod.mode==='today'&&(migrating||t.period.mode==='sunrise');
+      t.period={...energyPeriod,mode:sunrise?'sunrise':energyPeriod.mode};
+    }
+    const colors=valueColors(input.valueColors);
+    for(const t of tiles)if(t.colorSource==='value')t.color=colors[t.metric];
+    return {version:1,lanTileVersion:1,dischargeSignVersion:1,energyFlowVersion:1,valueColors:colors,historyHeight:historyHeight(input.historyHeight),rollerLayout:rollerLayout(input.rollerLayout),blockOrder:[...new Set([...order,...BLOCK_ORDER])],tiles};
+  }
+  function windowFor(t,now=Date.now(),weather={}) {
+    if(CATALOG[t.metric].widget||CATALOG[t.metric].liveOnly)return null;
+    const p=t.period;
+    if(p.mode==='live' && t.type!=='chart') return null;
+    if(p.mode==='sunrise')return miniWindow('sunrise',weather,now);
+    let from,to=now;
+    if(p.mode==='today'){const d=new Date(now);d.setHours(0,0,0,0);from=d.getTime();}
+    else if(p.mode==='reset')from=p.resetAt;
+    else if(p.mode==='custom'){from=p.from;to=Math.min(p.to,now);}
+    else from=now-(p.mode==='live'?6*3600000:p.amount*({min:60000,h:3600000,d:86400000}[p.unit]));
+    return finite(from) && finite(to) && from>=0 && to>from ? {from,to} : {from:now,to:now};
+  }
+  function liveValue(metric,shunt,solar,snapshot,now=Date.now(),chargeEstimate=null) {
+    const m=CATALOG[metric],r=m.kind==='shunt'?shunt:solar;
+    if(m.resource){const profile=snapshot.suppliesAnalysis?.[m.resource];if(!profile)return null;const value=profile[m.resourceField];return m.resourceField==='lastAt'?finite(value)?Math.max(0,(now-value)/3600000):null:m.resourceField==='nextSupplyAt'?finite(value)?Math.max(0,(value-now)/3600000):null:m.resourceNeed?value?.[m.resourceNeed]??null:value??null;}
+    if(/Age$|Rssi$/.test(metric)) {
+      const config=snapshot.devices.find(d=>d.kind===m.kind);
+      if(!config || !snapshot.running)return null;
+      if(/Age$/.test(metric)){const last=snapshot.readings.find(d=>d.device===config.mac);return last?Math.max(0,(now-last.t)/1000):null;}
+      return r && finite(config.rssi)?config.rssi:null;
+    }
+    if(!r)return null;
+    if(metric==='chargeTime')return chargeEstimate?.minutes??null;
+    const capacity=snapshot.settings.capacity || 100;
+    if(metric==='remainingAh')return finite(r.soc)?r.soc/100*capacity:null;
+    if(metric==='remainingWh')return finite(r.soc)&&finite(r.voltage)?r.soc/100*capacity*r.voltage:null;
+    const v=r[m.field];
+    return finite(v)?metric==='consumed'?Math.abs(v):Number(v):null;
+  }
+  function historicalValue(metric,value,capacity) {
+    if(!finite(value))return null;
+    return (metric==='remainingAh'?Number(value)/100:metric==='remainingWh'?Number(value):Number(value))*(['remainingAh','remainingWh'].includes(metric)?capacity:1);
+  }
+  function usesLiveValue(t) { return !CATALOG[t.metric].energy&&(t.type==='chart'?t.valueMode==='live':t.period.mode==='live'); }
+  function signedValue(t,value) { return finite(value)?Number(value)===0?0:Number(value)*(CATALOG[t.metric].energy&&t.reverseSign?-1:1):null; }
+  function fixedRange(t) {
+    const min=convert(t.min,t.unit,t.metric),max=convert(t.max,t.unit,t.metric);
+    return CATALOG[t.metric].energy&&t.reverseSign?{min:signedValue(t,max),max:signedValue(t,min)}:{min,max};
+  }
+  function displayValue(t,summary,shunt,solar,snapshot,chargeEstimate=null) {
+    if(CATALOG[t.metric].modelPower&&usesLiveValue(t))return finite(summary?.liveAt)&&Math.abs(Date.now()-summary.liveAt)<=45000?signedValue(t,summary.live):null;
+    return signedValue(t,usesLiveValue(t)?liveValue(t.metric,shunt,solar,snapshot,Date.now(),chargeEstimate):historicalValue(t.metric,summary?.[t.period.aggregate],snapshot.settings.capacity));
+  }
+  function format(value,t) {
+    if(!finite(value))return '—';
+    if(CATALOG[t.metric]?.resourceDuration)return supplies.duration(Number(value));
+    if(t.metric==='state')return PHASES[value] || 'Code '+value;
+    if(t.metric==='error')return Number(value)===0?'Kein Fehler':String(value);
+    if(t.metric==='alarm')return Number(value)===0?'Kein Alarm':'0x'+Number(value).toString(16).toUpperCase();
+    return (t.metric==='chargeTime'&&Number(value)>0?'≈ ':'')+Number(value).toLocaleString('de-DE',{minimumFractionDigits:t.digits,maximumFractionDigits:t.digits});
+  }
+  /** Uses actual extrema, including peaks hidden by chart buckets; manual bounds remain stored. */
+  function chartRange(t,points=[],capacity=100,summary={}) {
+    const fixed={...fixedRange(t),auto:false};
+    if(t.scaleMode!=='auto')return fixed;
+    const values=[summary.min,summary.max,...points.flatMap(p=>[p.min,p.max,p.v])].filter(finite).map(v=>signedValue(t,historicalValue(t.metric,v,capacity)));
+    if(!values.length)return fixed;
+    const dataLow=Math.min(...values),dataHigh=Math.max(...values);
+    const upper=v=>{const step=10**(Math.floor(Math.log10(v))-1);return Number((Math.ceil(v/step-1e-9)*step).toPrecision(12));};
+    let low,high;
+    if(['solar','mobileSolarPower','mobileSolarEnergy','yieldWh','solarEnergy','consumptionEnergy','dischargeEnergy','energyBalance','batteryEnergy','solarCurrent','load','remaining','remainingAh','remainingWh','consumed','power','current'].includes(t.metric)){
+      low=dataLow<0?-upper(-dataLow*1.1):0;high=dataHigh>0?upper(dataHigh*1.1):dataLow<0?0:1;
+    }else{
+      const span=dataHigh-dataLow||Math.max(Math.abs(dataHigh)*.02,.1),step=10**(Math.floor(Math.log10(span))-1),pad=span*.1;
+      low=Number((Math.floor((dataLow-pad)/step+1e-9)*step).toPrecision(12));high=Number((Math.ceil((dataHigh+pad)/step-1e-9)*step).toPrecision(12));
+      if(dataLow>=0&&CATALOG[t.metric].min>=0)low=Math.max(0,low);
+      if(t.metric==='soc'&&dataLow>=0&&dataHigh<=100)high=Math.min(100,high);
+    }
+    return {min:convert(low,t.unit,t.metric),max:convert(high,t.unit,t.metric),auto:true};
+  }
+  function axisLabel(value,span){
+    const digits=Math.max(0,Math.min(8,1-Math.floor(Math.log10(Math.abs(span)||1))));
+    return Number(value).toLocaleString('de-DE',{maximumFractionDigits:digits});
+  }
+  function miniWindow(mode,weather={},now=Date.now()) {
+    const midnight=new Date(now);midnight.setHours(0,0,0,0);
+    if(mode==='last6h')return {from:now-6*3600000,to:now,label:'Letzte 6 Stunden',note:''};
+    if(mode==='last24h')return {from:now-24*3600000,to:now,label:'Letzte 24 Stunden',note:''};
+    if(mode==='yesterday'){
+      const from=new Date(midnight);from.setDate(from.getDate()-1);
+      return {from:from.getTime(),to:midnight.getTime(),label:'Gestern',note:''};
+    }
+    if(mode==='week'||mode==='month'){
+      const from=new Date(midnight),days=mode==='week'?7:30;from.setDate(from.getDate()-days+1);
+      return {from:from.getTime(),to:now,label:mode==='week'?'Woche':'Monat',note:`Letzte ${days} Kalendertage einschließlich heute.`};
+    }
+    const today={from:midnight.getTime(),to:now,label:'Heute',note:''};
+    if(mode==='today')return today;
+    try {
+      const dayFormat=new Intl.DateTimeFormat('en-CA',{timeZone:weather.timezone||undefined,year:'numeric',month:'2-digit',day:'2-digit'});
+      const day=dayFormat.format(new Date(now)),sun=(weather.days||[]).find(d=>d.day===day),rise=sun?.sunrise,set=sun?.sunset;
+      if(finite(rise)&&Number(rise)>0&&dayFormat.format(new Date(Number(rise)))===day){
+        const validSet=finite(set)&&Number(set)>Number(rise)&&dayFormat.format(new Date(Number(set)))===day;
+        const bounds={solarFrom:Number(rise),solarTo:validSet?Number(set):now,dayFrom:today.from,dayTo:now};
+        if(Number(rise)<now)return {from:Number(rise),to:validSet?Math.min(now,Number(set)):now,...bounds,label:'Seit Sonnenaufgang',note:validSet?'Solarfenster am Wetterort; gemessener Ertrag davor oder danach wird mitgezählt.':'Sonnenuntergang nicht verfügbar: Solarfenster bis jetzt. Gemessener früher Ertrag zählt mit.'};
+        return {...today,...bounds,note:'Heute: Der Sonnenaufgang am Wetterort steht noch bevor. Gemessener früher Ertrag zählt mit.'};
+      }
+    }catch(_){}
+    return {...today,note:'Heute: Sonnenaufgang nicht verfügbar. Wetterort wählen oder Wetter aktualisieren.'};
+  }
+  function solarQueryWindow(window){return {from:window.dayFrom??window.from,to:window.dayTo??window.to};}
+  function solarPlotWindow(window,points=[],summary=null){
+    if(window.solarFrom==null)return window;
+    if(summary&&finite(summary.from)&&finite(summary.to))return {...window,from:Number(summary.from),to:Number(summary.to)};
+    let from=window.from,to=window.to;
+    const solar=points.filter(p=>(!p.kind||p.kind==='solar')&&finite(p.v)&&Number(p.v)>=0).sort((a,b)=>a.t-b.t);
+    for(let i=0;i<solar.length;i++){
+      const p=solar[i];if(Math.max(Number(p.v),Number(p.max)||0)<=0)continue;
+      let start=p.t,end=p.last||p.t;
+      const before=solar[i-1],after=solar[i+1],limit=Math.max(90000,(p.period||0)*1500);
+      if(before&&p.t-(before.last||before.t)<=limit)start=before.t;
+      if(after&&after.t-end<=limit)end=after.last||after.t;
+      from=Math.min(from,start);to=Math.max(to,end);
+    }
+    return {...window,from:Math.max(window.dayFrom??window.from,from),to:Math.min(window.dayTo??window.to,to)};
+  }
+  function weatherPlaceLabel(place={},customTitle=''){
+    const name=String(place.name||'').trim(),gps=/^GPS(?:-Standort)?(?:\s*[·:]\s*(.+))?$/.exec(name);
+    const coordinates=finite(place.latitude)&&finite(place.longitude)?place.latitude.toFixed(3)+'°, '+place.longitude.toFixed(3)+'°':'';
+    const detail=gps?(gps[1]||coordinates):'',description=gps?'GPS'+(detail?' · '+detail:''):name||'Wetter';
+    return {prefix:customTitle|| (gps?'GPS':name||'Wetter'),detail:customTitle?'':detail,description,gps:!!gps};
+  }
+  return {seriesGap,CATALOG,PHASES,BLOCK_ORDER,finite,clamp,color,valueColors,metricColor,ChargeEstimator,BatteryTimeEstimator,chargeHint,tileLabel,readableColor,convert,unconvert,position,tile,defaults,normalize,windowFor,liveValue,historicalValue,usesLiveValue,signedValue,fixedRange,displayValue,format,chartRange,axisLabel,miniWindow,solarQueryWindow,solarPlotWindow,weatherPlaceLabel};
+});

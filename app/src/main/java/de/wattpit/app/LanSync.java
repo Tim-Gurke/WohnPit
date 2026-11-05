@@ -36,7 +36,8 @@ final class LanSync {
     private volatile String error="",resolvedHost="";
     private volatile int resolvedPort;
     private volatile boolean visible,hosting,backgroundViewer;
-    private volatile long backgroundRefresh;
+    private ScheduledFuture<?> refreshTask,rollerDiscoveryTask;
+    private long refreshEpoch;
     private volatile Consumer<JSONObject> listener;
     private ServerSocket server;
     private ExecutorService acceptor;
@@ -58,16 +59,43 @@ final class LanSync {
         cache=new File(context.getFilesDir(),"lan-display.json");
         controlRevision=prefs.getLong("controlRevision",0);
         if(viewer()&&cache.length()<=LanWire.MAX_RESPONSE)try(InputStream in=new FileInputStream(cache)){ByteArrayOutputStream bytes=new ByteArrayOutputStream();byte[] block=new byte[8192];int n;while((n=in.read(block))!=-1){if(bytes.size()+n>LanWire.MAX_RESPONSE)throw new IOException();bytes.write(block,0,n);}JSONObject saved=new JSONObject(bytes.toString("UTF-8"));if(config.optString("id").equals(saved.optString("id"))){remote=saved.getJSONObject("bundle");receivedAt=saved.optLong("at");}}catch(Exception ignored){}
-        client.scheduleWithFixedDelay(()->{if(viewer()&&(visible||backgroundViewer&&SystemClock.elapsedRealtime()-backgroundRefresh>=15000)){backgroundRefresh=SystemClock.elapsedRealtime();refresh();}},0,3,TimeUnit.SECONDS);
     }
     boolean viewer(){return "viewer".equals(config.optString("role"));}
     boolean host(){return "host".equals(config.optString("role"));}
     void hostFailed(){error="Anlagenverbund konnte nicht gestartet werden. App erneut öffnen und WLAN prüfen.";}
-    void foreground(Consumer<JSONObject> callback){visible=true;listener=callback;if(viewer()){discover();client.execute(this::refresh);}}
-    void background(){visible=false;listener=null;if(viewer()&&!backgroundViewer)stopDiscovery();}
-    void backgroundViewer(boolean enabled){backgroundViewer=enabled;if(enabled&&viewer())discover();else if(!visible)stopDiscovery();}
+    synchronized void foreground(Consumer<JSONObject> callback){visible=true;listener=callback;updateRefreshLoop();if(viewer())discover();}
+    synchronized void background(){visible=false;listener=null;updateRefreshLoop();if(viewer()&&!backgroundViewer&&SystemClock.elapsedRealtime()>=rollerDiscoveryUntil)stopDiscovery();}
+    synchronized void backgroundViewer(boolean enabled){
+        enabled=enabled&&viewer()&&backgroundPresenceEnabled();if(backgroundViewer==enabled)return;
+        backgroundViewer=enabled;updateRefreshLoop();if(enabled)discover();else if(!visible&&SystemClock.elapsedRealtime()>=rollerDiscoveryUntil)stopDiscovery();
+    }
+    boolean backgroundPresenceEnabled(){return prefs.getBoolean("backgroundPresence",false);}
+    synchronized void backgroundPresence(boolean enabled)throws IOException{
+        if(!viewer())throw new IllegalStateException("Diese Einstellung gehört zur Anzeige.");
+        if(!prefs.edit().putBoolean("backgroundPresence",enabled).commit())throw new IOException("Die Einstellung konnte nicht gespeichert werden.");
+        if(!enabled)backgroundViewer(false);
+    }
+    private boolean refreshAllowed(){return viewer()&&(visible||backgroundViewer&&backgroundPresenceEnabled());}
+    private synchronized void updateRefreshLoop(){
+        long epoch=++refreshEpoch;
+        if(refreshTask!=null){refreshTask.cancel(false);refreshTask=null;}
+        if(refreshAllowed())refreshTask=client.scheduleWithFixedDelay(()->refresh(epoch),visible?0:60,visible?3:60,TimeUnit.SECONDS);
+    }
     private void save(JSONObject next)throws Exception{
         if(!prefs.edit().putString("config",next.toString()).putBoolean("joinedNotice","viewer".equals(next.optString("role"))).commit())throw new IOException();config=next;
+    }
+    synchronized void applyDeviceRole(String role)throws Exception{
+        if((role.equals("central")&&host())||(role.equals("viewer")&&viewer())||(role.equals("direct")&&!host()&&!viewer()))return;
+        String current=host()?"host":viewer()?"viewer":"";
+        if(!current.isEmpty()&&!prefs.edit().putString("role-"+current,config.toString()).commit())throw new IOException("Kopplung konnte nicht gesichert werden.");
+        leave();repository.prefs.edit().putBoolean("recording",false).commit();
+        String wanted=role.equals("central")?"host":role.equals("viewer")?"viewer":"";
+        if(!wanted.isEmpty()){
+            JSONObject saved=new JSONObject(prefs.getString("role-"+wanted,"{}"));
+            if(saved.optString("role").equals(wanted))save(saved);
+            else if(wanted.equals("host"))create("WohnPit");
+        }
+        updateRefreshLoop();
     }
     synchronized boolean consumeJoined(){return viewer()&&prefs.getBoolean("joinedNotice",false)&&prefs.edit().putBoolean("joinedNotice",false).commit();}
     synchronized void create(String name)throws Exception{
@@ -93,11 +121,12 @@ final class LanSync {
         JSONObject next=invitation(code),bundle=rpc(next,"bundle",new JSONArray());validateBundle(bundle);
         next.put("previousRecording",repository.prefs.getBoolean("recording",false));save(next);
         context.stopService(new Intent(context,MonitorService.class));remote=new JSONObject();receivedElapsed=lastCacheElapsed=0;resolvedHost="";
-        accept(bundle,next);discover();
+        accept(bundle,next);updateRefreshLoop();discover();
     }
     synchronized boolean leave()throws Exception{
         boolean resume=viewer()&&config.optBoolean("previousRecording");stopHost();stopDiscovery();save(new JSONObject());
-        remote=new JSONObject();receivedAt=receivedElapsed=lastCacheElapsed=0;resolvedHost="";resolvedPort=0;error="";cache.delete();return resume;
+        remote=new JSONObject();receivedAt=receivedElapsed=lastCacheElapsed=0;resolvedHost="";resolvedPort=0;error="";cache.delete();
+        backgroundViewer=false;rollerDiscoveryUntil=0;if(rollerDiscoveryTask!=null){rollerDiscoveryTask.cancel(false);rollerDiscoveryTask=null;}updateRefreshLoop();return resume;
     }
     String pairingCode()throws Exception{
         if(!host()||!hosting)throw new IllegalArgumentException("Der Anlagenverbund ist noch nicht bereit.");
@@ -115,7 +144,8 @@ final class LanSync {
         JSONObject result=new JSONObject();try{
             long now=SystemClock.elapsedRealtime();JSONArray connected=new JSONArray();for(JSONObject peer:peers.values())if(now-peer.optLong("seen")<20000)connected.put(new JSONObject().put("name",peer.optString("name")));
             result.put("role",config.optString("role","off")).put("id",config.optString("id")).put("name",config.optString("name")).put("hosting",hosting).put("connected",viewer()?receivedElapsed>0&&now-receivedElapsed<10000:hosting)
-                .put("receivedAt",receivedAt).put("analysisAt",analysisAt).put("analysisPending",analysisPending).put("error",error).put("peers",connected).put("address",resolvedHost);
+                .put("receivedAt",receivedAt).put("analysisAt",analysisAt).put("analysisPending",analysisPending).put("error",error).put("peers",connected).put("address",resolvedHost)
+                .put("backgroundPresence",backgroundPresenceEnabled());
             if(hosting)result.put("addresses",addresses()).put("port",server.getLocalPort());
         }catch(Exception ignored){}return result;
     }
@@ -175,11 +205,14 @@ final class LanSync {
         if(!prefs.edit().putString("controlReceipts",kept.toString()).commit())throw new IOException();
         return read("bundle",new JSONArray());
     }
-    void refreshNow(){if(viewer())client.execute(this::refresh);}
-    private void refresh(){
-        if(!viewer()||!refreshing.compareAndSet(false,true))return;JSONObject active=config;
-        try{JSONObject bundle=rpc(active,"bundle",new JSONArray());validateBundle(bundle);accept(bundle,active);}
-        catch(Exception e){if(active==config)error="Hauptgerät nicht erreichbar. WLAN und Watt’n’Pit am Hauptgerät prüfen.";}
+    synchronized void refreshNow(){if(refreshAllowed()){long epoch=refreshEpoch;client.execute(()->refresh(epoch));}}
+    /** Explicit snapshots are independent of the automatic display refresh loop. */
+    private void refresh(){refresh(-1);}
+    private void refresh(long epoch){
+        synchronized(this){if(!viewer()||epoch>=0&&(epoch!=refreshEpoch||!refreshAllowed())||!refreshing.compareAndSet(false,true))return;}
+        JSONObject active=config;
+        try{JSONObject bundle=rpc(active,"bundle",new JSONArray());validateBundle(bundle);synchronized(this){if(epoch<0||epoch==refreshEpoch&&refreshAllowed())accept(bundle,active);}}
+        catch(Exception e){synchronized(this){if(active==config&&(epoch<0||epoch==refreshEpoch&&refreshAllowed()))error="Hauptgerät nicht erreichbar. WLAN und Zentrale prüfen.";}}
         finally{refreshing.set(false);}
     }
     private static void validateBundle(JSONObject bundle)throws JSONException{
@@ -217,7 +250,11 @@ final class LanSync {
     }
     JSONObject rollerLink(String action,JSONObject data)throws Exception{
         if(!viewer())return new JSONObject().put("available",false);
-        rollerDiscoveryUntil=SystemClock.elapsedRealtime()+30000;discover();
+        synchronized(this){
+            rollerDiscoveryUntil=SystemClock.elapsedRealtime()+30000;discover();
+            if(rollerDiscoveryTask!=null)rollerDiscoveryTask.cancel(false);
+            rollerDiscoveryTask=client.schedule(()->{synchronized(this){if(!visible&&!backgroundViewer&&SystemClock.elapsedRealtime()>=rollerDiscoveryUntil)stopDiscovery();}},30,TimeUnit.SECONDS);
+        }
         if(!data.has("operation"))data=new JSONObject(data.toString()).put("operation",SystemClock.elapsedRealtimeNanos());
         return query("rollerLink",new JSONArray().put(action).put(data));
     }

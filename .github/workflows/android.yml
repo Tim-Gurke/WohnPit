@@ -1,16 +1,124 @@
-name: WohnPit prüfen und bauen
+name: WohnPit gemeinsam prüfen
 
 on:
   push:
+    branches: [main, 'test/2.0.0*', 'publish/*', 'test/1.5.0*', 'test/1.6.0*', 'test/1.6.1*', 'test/1.6.6*', 'test/1.6.7*', 'test/1.6.8*', 'test/1.6.9*', 'test/1.6.10*', 'test/1.6.11*', 'test/1.6.12*', 'test/1.6.13*', 'test/1.7.0*', 'test/1.8.0*', 'test/1.8.1*', 'test/1.8.2*', 'test/1.8.3*', 'test/1.8.4*', 'test/1.9.0*', 'test/1.9.1*']
   pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  android:
+  build:
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Dashboard-Berechnungen und Konfiguration prüfen
+        run: node --test tools/value-colors.test.cjs tools/weather-history.test.cjs tools/supplies-core.test.cjs tools/dashboard-core.test.cjs tools/equipment-core.test.cjs tools/settings-backup.test.cjs tools/tile-detail.test.cjs tools/read-bridge.test.cjs tools/energy-window-cache.test.cjs tools/control-bridge.test.cjs tools/solar-core.test.cjs tools/presence-core.test.cjs tools/roller-core.test.cjs tools/special-use-core.test.cjs
+      - name: Private Dateien vor Veröffentlichung ausschließen
+        run: python3 tools/check-public-files.py
+      - name: Tests, Lint und Android-Build
+        run: ./gradlew testDebugUnitTest lintDebug assembleDebug assembleRelease
+      - name: Archivbedarf, Neustart und atomare Speicherung prüfen
+        run: |
+          deps="$RUNNER_TEMP/wattpit-proof-deps"
+          mkdir -p "$deps"
+          curl --fail --location --retry 2 --max-time 120 https://repo.maven.apache.org/maven2/org/xerial/sqlite-jdbc/3.46.1.0/sqlite-jdbc-3.46.1.0.jar -o "$deps/sqlite-jdbc-3.46.1.0.jar"
+          curl --fail --location --retry 2 --max-time 120 https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/1.7.36/slf4j-api-1.7.36.jar -o "$deps/slf4j-api-1.7.36.jar"
+          curl --fail --location --retry 2 --max-time 120 https://repo.maven.apache.org/maven2/org/robolectric/android-all/15-robolectric-12468137/android-all-15-robolectric-12468137.jar -o "$deps/android-api35.jar"
+          curl --fail --location --retry 2 --max-time 120 https://repo.maven.apache.org/maven2/com/google/zxing/core/3.5.3/core-3.5.3.jar -o "$deps/zxing-core.jar"
+          curl --fail --location --retry 2 --max-time 120 https://repo.maven.apache.org/maven2/com/journeyapps/zxing-android-embedded/4.3.0/zxing-android-embedded-4.3.0.aar -o "$deps/zxing-embedded.aar"
+          unzip -p "$deps/zxing-embedded.aar" classes.jar > "$deps/zxing-embedded.jar"
+          python3 tools/prove-archive-delta.py --output app/build/reports/archive-delta-proof --sqlite-jar "$deps/sqlite-jdbc-3.46.1.0.jar" --slf4j-jar "$deps/slf4j-api-1.7.36.jar"
+          python3 tools/prove-archive-storage.py --output app/build/reports/archive-storage-proof --android-jar "$deps/android-api35.jar" --sqlite-jar "$deps/sqlite-jdbc-3.46.1.0.jar" --slf4j-jar "$deps/slf4j-api-1.7.36.jar"
+          mkdir -p "$RUNNER_TEMP/roller-proof"
+          java com.sun.tools.javac.Main -cp "$deps/android-api35.jar" -d "$RUNNER_TEMP/roller-proof" app/src/main/java/de/wattpit/app/core/BmsPacket.java app/src/main/java/de/wattpit/app/core/RollerEnergy.java app/src/main/java/de/wattpit/app/RollerStore.java app/src/main/java/de/wattpit/app/SpecialUses.java app/src/main/java/de/wattpit/app/RollerLedger.java app/src/main/java/de/wattpit/app/LearningWindow.java tools/testing/android/database/Cursor.java tools/testing/android/database/sqlite/SQLiteDatabase.java tools/testing/android/database/sqlite/SQLiteOpenHelper.java tools/RollerStoreProof.java
+          java -cp "$RUNNER_TEMP/roller-proof:$deps/android-api35.jar:$deps/sqlite-jdbc-3.46.1.0.jar:$deps/slf4j-api-1.7.36.jar" de.wattpit.app.RollerStoreProof "$RUNNER_TEMP/roller-preferences"
+          python3 tools/prove-archive-foreground.py --dependencies "$deps" --output app/build/reports/archive-foreground-proof --mode fixed
+          python3 tools/prove-lan.py --output app/build/reports/lan-proof --android-jar "$deps/android-api35.jar" --sqlite-jar "$deps/sqlite-jdbc-3.46.1.0.jar" --slf4j-jar "$deps/slf4j-api-1.7.36.jar"
+      - name: Native Abdeckung in allen Kurven prüfen
+        env:
+          WATTPIT_CHROMIUM: /usr/bin/google-chrome
+          WATTPIT_COVERAGE_FIXTURE: ${{ runner.temp }}/coverage-fixture.json
+          WATTPIT_SCREENSHOT_DIR: app/build/reports/sync-coverage
+          WATTPIT_WEATHER_FIXTURE: app/build/reports/archive-storage-proof/weather-contract-fixture.json
+          WATTPIT_QR_FIXTURE: ${{ runner.temp }}/pairing-qr-fixture.json
+        run: |
+          npm install --no-save --prefix "$RUNNER_TEMP/wattpit-ui" playwright@1.51.1
+          mkdir -p "$RUNNER_TEMP/wattpit-java"
+          classes=app/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes
+          javac -cp "$classes" -d "$RUNNER_TEMP/wattpit-java" tools/SyncCoverageFixture.java
+          java -cp "$RUNNER_TEMP/wattpit-java:$classes" de.wattpit.app.core.SyncCoverageFixture > "$WATTPIT_COVERAGE_FIXTURE"
+          qr_cp="$classes:$RUNNER_TEMP/wattpit-proof-deps/zxing-core.jar"
+          javac -cp "$qr_cp" -d "$RUNNER_TEMP/wattpit-java" tools/PairingQrFixture.java
+          java -cp "$RUNNER_TEMP/wattpit-java:$qr_cp" de.wattpit.app.core.PairingQrFixture > "$WATTPIT_QR_FIXTURE"
+          export NODE_PATH="$RUNNER_TEMP/wattpit-ui/node_modules"
+          node tools/sync-coverage-smoke.cjs
+          node tools/energy-balance-smoke.cjs
+          node tools/energy-tile-smoke.cjs
+          node tools/tile-period-isolation-smoke.cjs
+          node tools/energy-refresh-smoke.cjs
+          node tools/gps-place-smoke.cjs
+          node tools/tile-detail-smoke.cjs
+          node tools/mini-history-smoke.cjs
+          node tools/reload-daily-smoke.cjs
+          node tools/charge-time-smoke.cjs
+          node tools/lifecycle-smoke.cjs
+          node tools/background-sync-smoke.cjs
+          node tools/solar-planning-smoke.cjs
+          node tools/special-use-smoke.cjs
+          node tools/supplies-smoke.cjs
+          node tools/value-colors-smoke.cjs
+          node tools/mobile-solar-smoke.cjs
+          node tools/display-layout-smoke.cjs
+          node tools/presence-smoke.cjs
+          node tools/roller-smoke.cjs
+          node tools/lan-smoke.cjs
+          node tools/plant-control-smoke.cjs
+          node tools/history-retention-smoke.cjs
+          node tools/display-pause-smoke.cjs
+          node tools/dashboard-usability-smoke.cjs
+          node tools/dashboard-contrast-smoke.cjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Watt-n-Pit-CI-release
+          path: app/build/outputs/apk/release/app-release-unsigned.apk
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Pruefberichte
+          path: |
+            app/build/reports/tests/
+            app/build/reports/lint-results-debug.html
+            app/build/reports/sync-coverage/
+            app/build/reports/archive-delta-proof/report.json
+            app/build/reports/archive-delta-proof/*.requests.tsv
+            app/build/reports/archive-storage-proof/report.json
+            app/build/reports/archive-storage-proof/results.log
+            app/build/reports/archive-storage-proof/weather-contract-fixture.json
+            app/build/reports/archive-foreground-proof/
+            app/build/reports/lan-proof/report.json
+            app/build/reports/lan-proof/results.log
+            app/build/reports/lan-proof/presence-results.log
+            app/build/reports/lan-proof/viewer-idle-results.log
+            app/build/reports/lan-proof/viewer-report.json
+            app/build/reports/lan-proof/viewer-results.log
+            app/build/reports/lan-proof/mobile-viewer-results.log
+            app/build/reports/lan-proof/solar-inputs.json
+
+  emulator:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -18,90 +126,31 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
-      - name: Übernommene BMS- und Speicherbausteine prüfen
-        run: python3 tools/check-upstream.py
-      - name: Private Dateien vor Veröffentlichung ausschließen
-        run: python3 tools/check-public-files.py
-      - name: Tests, Lint und APKs
-        run: ./gradlew testDebugUnitTest lintDebug assembleDebug assembleRelease
-      - name: JVM-Prüfabhängigkeiten
-        run: |
-          deps="$RUNNER_TEMP/wohnpit-proof-deps"
-          mkdir -p "$deps"
-          curl --fail --location --retry 2 --max-time 180 https://repo.maven.apache.org/maven2/org/robolectric/android-all/15-robolectric-12468137/android-all-15-robolectric-12468137.jar -o "$deps/android-api35.jar"
-          curl --fail --location --retry 2 --max-time 120 https://repo.maven.apache.org/maven2/org/xerial/sqlite-jdbc/3.46.1.0/sqlite-jdbc-3.46.1.0.jar -o "$deps/sqlite-jdbc-3.46.1.0.jar"
-          curl --fail --location --retry 2 --max-time 120 https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/1.7.36/slf4j-api-1.7.36.jar -o "$deps/slf4j-api-1.7.36.jar"
-          curl --fail --location --retry 2 --max-time 120 https://repo.maven.apache.org/maven2/com/google/zxing/core/3.5.3/core-3.5.3.jar -o "$deps/zxing-core.jar"
-      - name: Datenverbund, BMS-Übergabe und Anzeigeauswertung
-        run: |
-          deps="$RUNNER_TEMP/wohnpit-proof-deps"
-          python3 tools/prove-lan.py --output app/build/reports/lan-proof --android-jar "$deps/android-api35.jar" --sqlite-jar "$deps/sqlite-jdbc-3.46.1.0.jar" --slf4j-jar "$deps/slf4j-api-1.7.36.jar"
-      - uses: actions/upload-artifact@v4
-        with:
-          name: WohnPit-Testbuild
-          path: |
-            app/build/outputs/apk/debug/*.apk
-            app/build/outputs/apk/release/*.apk
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: WohnPit-Pruefberichte
-          path: app/build/reports/
-
-  screenshots:
-    if: startsWith(github.ref, 'refs/heads/test/0.0.4')
-    needs: android
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: WohnPit-Testbuild
-          path: screenshot-apks
-      - name: KVM einschalten
+      - name: Android-Testpakete bauen
+        run: ./gradlew assembleDebug assembleDebugAndroidTest
+      - name: KVM freigeben
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      - name: Android-8-Statusoberfläche prüfen und aufnehmen
-        uses: reactivecircus/android-emulator-runner@v2
+      - uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 26
           arch: x86
           profile: Nexus 5
           disable-animations: true
           script: |
+            adb install -r app/build/outputs/apk/debug/app-debug.apk
+            adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+            adb shell am instrument -w -e class de.wattpit.app.UnifiedSmokeTest de.wattpit.app.test/androidx.test.runner.AndroidJUnitRunner | tee unified-emulator.log
+            python3 -c "from pathlib import Path; s=Path('unified-emulator.log').read_text(); assert 'OK (3 tests)' in s and 'FAILURES' not in s"
             mkdir -p docs/images
-            adb install -r "$(find screenshot-apks -name app-debug.apk -print -quit)"
-            adb shell wm size 1080x1920
-            adb shell wm density 320
-            adb shell am start -W -n de.wohnpit.app/de.wattpit.app.MainActivity
-            sleep 3
-            adb shell uiautomator dump /sdcard/wohnpit-ui.xml
-            adb pull /sdcard/wohnpit-ui.xml wohnpit-ui.xml
-            python3 -c "from pathlib import Path; s=Path('wohnpit-ui.xml').read_text(); assert '0.0.5' in s and 'Gas, Wasser und Wetter' in s"
-            adb shell screencap -p /sdcard/overview.png
-            adb pull /sdcard/overview.png docs/images/wohnpit-0.0.5-overview.png
-            adb shell input swipe 500 1600 500 900 300
-            sleep 1
-            adb shell screencap -p /sdcard/supplies.png
-            adb pull /sdcard/supplies.png docs/images/wohnpit-0.0.5-supplies.png
-      - name: Geprüfte Statusbilder bereitstellen
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          git switch -c assets/wohnpit-0.0.4
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add docs/images/wohnpit-0.0.5-*.png
-          git commit -m "Document WohnPit 0.0.4 on Android 8 with an empty example installation"
-          git push origin HEAD:refs/heads/assets/wohnpit-0.0.4
+            adb pull /sdcard/Android/data/de.wattpit.app/files/wohnpit-2.0.0-central.png docs/images/
+            adb pull /sdcard/Android/data/de.wattpit.app/files/wohnpit-2.0.0-direct.png docs/images/
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: WohnPit-Android-8-Screenshots
+          name: WohnPit-2.0.0-Emulator
           path: |
-            docs/images/wohnpit-0.0.5-*.png
-            wohnpit-ui.xml
+            unified-emulator.log
+            docs/images/wohnpit-2.0.0-*.png

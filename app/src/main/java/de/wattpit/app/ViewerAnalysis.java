@@ -76,7 +76,7 @@ final class ViewerAnalysis {
         for(int retry=0;retry<3;retry++){
             JSONObject m=get("analysisMetadata",new JSONArray().put(from).put(to));
             if(m.optBoolean("changed"))continue;
-            if(m.getInt("algorithm")!=SolarPlanning.ALGORITHM)throw new IOException("Bitte Hauptgerät und Anzeige auf dieselbe Watt’n’Pit-Version aktualisieren.");
+            if(m.getInt("algorithm")!=SolarPlanning.ALGORITHM)throw new IOException("Bitte Hauptgerät und Anzeige auf dieselbe WohnPit-Version aktualisieren.");
             JSONObject versions=m.getJSONObject("tables");boolean changed=false;
             for(String table:AnalysisExchange.ALL){
                 String version=versions.getString(table),scope=(table.equals("model_weather")||table.equals("device_settings")||table.equals("input_intervals"))?":"+from+":"+to:"";
@@ -107,7 +107,7 @@ final class ViewerAnalysis {
         throw new IOException("Die Berechnungsgrundlagen ändern sich gerade. Bitte erneut versuchen.");
     }
     private void requireProtocol()throws Exception{
-        if(lan.analysisProtocol()!=1)throw new IOException("Bitte zuerst das Hauptgerät auf Watt’n’Pit 1.7.0 oder neuer aktualisieren.");
+        if(lan.analysisProtocol()!=1)throw new IOException("Bitte zuerst das Hauptgerät auf WohnPit 1.7.0 oder neuer aktualisieren.");
     }
     private static long support(long from){return Math.max(0,from/86400000L*86400000L-4L*86400000-EnergyIntegral.LOOKAROUND);}
     private void prepare(long from,long to)throws Exception{

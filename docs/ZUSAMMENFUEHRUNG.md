@@ -1,42 +1,49 @@
-# Eine App für Zentrale und Anzeige – Entwurf vom 05.11.2026
+# WohnPit ab 2.0.0 – Zentrale und Cockpit in einer App
 
-Status: bevorzugter Vorschlag zur Prüfung, noch keine Zusammenführung oder freigegebene Umstellung. Die laufenden Versionen bleiben gültig.
+WohnPit führt die bisherigen Funktionen von Watt’n’Pit und der schlanken WohnPit-Zentrale in einer Anwendung zusammen. Der Name beschreibt ein lokales Cockpit für Energie, Gas und Wasser – im Wohnwagen, Ferienhaus, Gartenhaus oder an einer passenden Balkonanlage.
 
-## Bedienung
+## Drei Betriebsarten
 
-Eine gemeinsame APK auf G5, S20 und S10 installieren. Beim ersten Start fragt die App „Wie möchtest du dieses Handy nutzen?“ und bietet zwei klar beschriebene Rollen:
+| Betriebsart | Datenquelle und Aufgabe |
+|---|---|
+| **Zentrale** | Victron- und weitere vorhandene Datenquellen lesen, Messwerte/Journal/Wetter speichern und im lokalen WLAN bereitstellen. Die schlanke native Konsole startet kein Dashboard-WebView. |
+| **Anzeigehandy** | Eine Zentrale koppeln; Kacheln, Diagramme, Berechnungen, Lernen und gemeinsame Bedienung auf diesem Handy. Vor einer Kopplung startet keine lokale Victron-Aufzeichnung. |
+| **Eigenständig · Victron direkt** | Ohne zweite Zentrale direkt mit den eigenen Victron-Geräten verbinden. Dasselbe Handy übernimmt Aufzeichnung, Wetterabruf, Berechnung und Anzeige. |
 
-| Rolle | Aufgabe | Einrichtung |
-|---|---|---|
-| Zentrale | Geräte auslesen, Messdaten und Gas-/Wasserjournal speichern, Wetter einschließlich Rückblick laden, Anzeigehandys versorgen | Geräte einrichten oder Daten übernehmen, Aufzeichnung starten, Kopplungscode anzeigen |
-| Anzeigehandy | Zentrale koppeln, Kacheln und Diagramme anzeigen, berechnen und lernen, Anlage und Einträge bedienen | Kopplungscode scannen oder eingeben, eigenes Layout verwenden |
+Bei einer neuen Installation die Betriebsart beim ersten Start wählen. Bestehende Watt’n’Pit-Installationen übernehmen ihre bisherige Verbundrolle; ohne Verbund starten sie eigenständig. Unter **Einstellungen → WohnPit auf diesem Handy → Betriebsart ändern** lässt sich die Rolle später wechseln. In der Zentralen-Konsole liegt derselbe Eintrag unter Einstellungen und Daten. Vorher Aufzeichnung und Archivabruf pausieren. Die bisherige Kopplung einer Rolle wird lokal für die Rückkehr erhalten; Messwerte und Layouts werden beim Wechsel nicht gelöscht. Ein noch nicht gekoppeltes Anzeigehandy führt zur Verbundeinrichtung.
 
-Die Rollenauswahl erfolgt beim ersten App-Start. Für beide Rollen wird dieselbe APK installiert. Auf einem bereits eingerichteten Handy wird die bisherige Rolle erhalten und der Assistent nicht ungefragt wiederholt. Die eigenständige direkte Watt’n’Pit-Nutzung bleibt als gesondert zu prüfender Betriebsmodus erhalten.
+Die Energiegeräte über die vorhandene Geräteeinrichtung hinzufügen. Im eigenständigen Betrieb benötigt dieses Handy die Bluetooth-Berechtigungen und für Wetter selbst Internet. Im Verbund benötigen Zentrale und Anzeigen dasselbe lokale WLAN; für die Datensammlung ist dann die Zentrale zuständig. Die App bietet dadurch keinen automatischen Fernzugriff über das Internet.
 
-Ein späterer Rollenwechsel gehört in die Einstellungen. Vorher laufende Aufzeichnung und Geräteverbindungen geordnet beenden; Kopplung und Zuständigkeiten nicht versehentlich überschreiben. Messdaten und lokale Layouts erhalten, Folgen des Wechsels verständlich anzeigen. Kein stilles Aktivieren einer zweiten Zentrale.
+## Was erhalten bleibt
 
-## G5 und Berechtigungen
+Solar-, Akku- und Verbrauchswerte, Gerätearchive, Energieplanung, zusätzliche Speicher, Wetter, das manuelle Gas-/Wasserjournal und seine Schätzungen gehören weiter zum Cockpit. Reichweiten bleiben in Tagen und Stunden lesbar. Wasser- und Gasfarben werden zentral mit Hexcodes verwaltet; die ausdrücklich gewünschte Kachelanordnung wird einmal übernommen. Siehe [Messwertfarben und Wetterrückblick](MESSWERTFARBEN-WETTER.md).
 
-Im Zentralenmodus die schlanke native WohnPit-Oberfläche weiterverwenden. Kein Dashboard-WebView und keine Anzeige-Berechnungen im Hintergrund starten. Auch bei gesperrtem Display müssen Aufzeichnung, Wetterabruf, Archivplaner und WLAN-Bereitstellung weiter funktionieren. Der gemeinsame APK-Inhalt allein ist kein Beleg für höheren laufenden Ressourcenverbrauch; RAM, CPU und Akku auf dem echten G5 vor/nach dem Umbau messen.
+Die vorhandene ScootPit-Schnittstelle und die WLAN-/BMS-Übergabe bleiben erhalten. ScootPit braucht für diese Zusammenführung kein Update. Regler-/Shunt-Einstellungen und Firmware-Updates gehören weiterhin in VictronConnect.
 
-Im Anzeigemodus keine lokale Bluetooth-Aufzeichnung oder Archivdienste allein durch App-Start aktivieren. Notwendige Berechtigungen jeweils dann anfordern, wenn die gewählte Funktion sie benötigt.
+Für das Cockpit ist ein aktuelles Android-System-WebView erforderlich. Die schlanke Zentralenansicht benötigt kein WebView. Android 8 oder neuer bleibt die Mindestversion; Bluetooth-Funktionen verlangen die für die Android-Version nötigen Berechtigungen.
 
-## Vorhandene Installationen übernehmen
+## Bestehendes Watt’n’Pit auf S20/S10 weiterverwenden
 
-Aktueller Quellstand: Watt’n’Pit 1.9.0 verwendet die Android-App-Kennung `de.wattpit.app`, WohnPit 0.0.4 `de.wohnpit.app`; beide besitzen getrennte Updatesignaturen und Datenspeicher. Eine gemeinsame APK kann deshalb nicht ohne geplante Übernahme beide bisherigen Apps zugleich als gewöhnliches Update ersetzen.
+Die gemeinsame WohnPit-App behält technisch die bisherige Watt’n’Pit-Updatekennung und ihre Signatur. **WohnPit 2.0.0 über die vorhandene Watt’n’Pit-App installieren**, ohne vorher zu deinstallieren. Der sichtbare App-Name wird WohnPit. Vorhandene lokale Daten, Einstellungen und Verbundkopplungen bleiben dadurch im selben App-Speicher. Die ausdrücklich gewünschte Anordnung mit 20 Kacheln wird beim Update einmal auf diesem Gerät übernommen; spätere eigene Änderungen bleiben erhalten. Bei Bedarf das bisherige Layout vorher mit dem normalen Einstellungsexport sichern.
 
-Bevorzugt prüfen: Watt’n’Pit mit bestehender Kennung und Signatur als gemeinsame App fortführen, den schlanken Zentralenmodus aus WohnPit übernehmen und für bestehendes WohnPit eine gezielte Migrationsversion anbieten. Alternativen erst anhand von Updatefähigkeit, Signaturen und Datenübernahme entscheiden. Keinen neuen App-Namen, keine neue Kennung und kein Abschalten der alten Apps ohne Entscheidung festlegen.
+## Bisherige WohnPit-Zentrale umziehen
 
-Die Migration muss Einstellungen, Messwertarchive, Anlagen-/Standorthistorie, Gas-/Wasserjournal, Wetterrückblick, Lernstände sowie Geräte- und Verbundzuordnung berücksichtigen. Vorhandene Exporte sind nicht automatisch eine vollständige Wiederherstellung: Geräteschlüssel und Kopplungsgeheimnisse werden nicht in gewöhnliche öffentliche oder unverschlüsselte Sicherungen aufgenommen. Für solche Daten einen geschützten Übergabeweg oder eine klar geführte Neueinrichtung vorsehen. Erst nach bestätigter Übernahme und Funktionsprüfung die alte Zentrale beenden. Die alte App nicht automatisch deinstallieren oder ihre Daten löschen.
+1. **WohnPit 0.0.5 · Übernahme** über die alte WohnPit-Zentrale installieren. Vorher nichts deinstallieren.
+2. Aufzeichnung pausieren, Archivabruf beenden und einen Wetterabruf abwarten. Unter **Einstellungen und Daten → Vollständige Übernahmesicherung** eine lokale **.wohnpit-Datei** mit eigenem langem Kennwort erstellen. [Ausführliche Sicherungsanleitung](changes-0.0.5.md).
+3. Falls auf dem G5 noch eine alte Watt’n’Pit-Aufzeichnung läuft, auch diese pausieren. Danach **WohnPit 2.0.0** auf diesem Handy installieren. Ist das alte Watt’n’Pit noch vorhanden, aktualisiert diese APK dessen Installation; sonst wird die gemeinsame App neu installiert. Die App **WohnPit · Übernahme** bleibt daneben zunächst erhalten.
+4. In WohnPit **Übernahmesicherung einlesen** öffnen – beim Erststart oder später in den Einstellungen. Die .wohnpit-Datei wählen und das zugehörige Kennwort eingeben. Der Import ersetzt die Daten der Zielinstallation; deshalb einen dort benötigten eigenen Stand vorher ebenfalls vollständig sichern.
+5. Die App prüft zuerst die Sicherung und ihre Datenbanken. Bei falschem Kennwort oder beschädigter Datei wird nichts eingespielt. Nach erfolgreicher Prüfung **Übernehmen und schließen** bestätigen und erneut öffnen. **Verwerfen** behält den bisherigen Stand. Erst der folgende Neustart übernimmt Datenbanken und Einstellungen; zusätzlich bleibt der vorherige Zielzustand intern gesichert. Bei einem unterbrochenen Einspielen erneut öffnen und die Meldung beachten.
+6. Betriebsart **Zentrale** prüfen, Aufzeichnung starten und Anzeigehandys verbinden. Messwerte, Verlauf, Journal, Wetterrückblick und Lernstände vergleichen. Übernommene Kopplungen werden weiterverwendet; falls nötig Geräte und Anzeigehandys neu verknüpfen. Android-Berechtigungen, systemweite Bluetooth-Kopplungen und WLAN-Zugangsdaten lassen sich nicht als App-Einstellung übertragen; diese bei Bedarf erneut einrichten. Aufzeichnung und Lernstände haben Vorrang.
+7. Die Übernahme-App erst entfernen, wenn der neue Betrieb geprüft ist. Beide Apps niemals gleichzeitig aufzeichnen lassen. Die verschlüsselte Sicherungsdatei privat aufbewahren.
 
-## Umsetzung in prüfbaren Schritten
+**Die Umzugsdatei enthält private Verknüpfungen und Zugangsdaten. Sie darf auch verschlüsselt niemals in öffentliche Repositories, Releases, Prüfartefakte oder auf die Projektseite geladen werden.** Die App lädt sie nicht auf einen Server. Das Sicherungskennwort wird nicht gespeichert. Öffentliche Downloads enthalten ausschließlich die signierte Anwendung; alle veröffentlichten Screenshots und Tests verwenden künstliche Daten.
 
-1. Rollen-, Dienst- und Speichermatrix beider Quellstände vergleichen. Gemeinsame Bausteine vereinheitlichen, ohne vorhandene Protokolle oder Datenformate nebenbei zu ändern.
-2. Daten- und Signaturstrategie einschließlich geschützter Schlüsselübernahme und Rückweg festlegen. Migrationsablauf mit Bestandsdaten erproben.
-3. Erststart-Assistent und dauerhaft gespeicherte Rolle bauen. Vorhandene eigenständige Nutzung und lokale Layouts erhalten.
-4. Zentralenmodus mit nativer Statusansicht und Anzeigemodus mit bestehendem Dashboard integrieren. Einrichtungs- und Rollenwechselabläufe prüfen.
-5. Übergangsphase mit alten und neuen App-Versionen über den bestehenden Anlagenverbund testen. Kompatibilitätsmatrix und Update-Reihenfolge dokumentieren.
-6. Auf G5, S20 und S10 prüfen: gesperrtes Display, Netzverlust, Neustart, Wetterlücken/Rückblick, Archive, Gas/Wasser, Lernen, Steuerung und bestehende ScootPit-BMS-Übernahme/Rückgabe. Keine doppelten Aufzeichnungen, Bluetooth-Verbindungen oder unerwarteten Dienste.
-7. Nach Entscheidung veröffentlichen: eine signierte APK, beide Rollen mit sichtbaren Screenshots, ausführlicher Anleitung, Versionshistorie und höchstens drei veröffentlichten Releases je Repository. WohnPit-Repository als dokumentierte Herkunft/Migrationsstrecke erhalten, statt es vorschnell zu löschen.
+## Geeignete Anlagen und Orte
 
-Offene Entscheidung: ob und wann die Zusammenführung umgesetzt wird. Farben, Layoutübernahme und nachvollziehbarer Wetterrückblick im laufenden Watt’n’Pit-Update hängen davon nicht ab.
+WohnPit ist nicht auf Wohnwagen beschränkt. Entscheidend sind passende Datenquellen: unterstützte Victron SmartSolar-/SmartShunt-Geräte mit Bluetooth-Sofortanzeige und den richtigen Geräteschlüsseln. Auch am Ferienhaus, Gartenhaus oder Balkonkraftwerk lassen sich so die tatsächlich verfügbaren Werte verfolgen. Beliebige Wechselrichter, Netzstromzähler oder fremde Sensoren werden durch die neue Bezeichnung nicht automatisch unterstützt. Gas und Wasser lassen sich manuell erfassen.
+
+## Herkunft und Versionshistorie
+
+Das führende Projekt ist [WohnPit](https://github.com/Tim-Gurke/WohnPit). Die [bisherige Watt’n’Pit-Versionshistorie](https://github.com/Tim-Gurke/Watt-n-Pit/blob/main/CHANGELOG.md) und alle alten Quellstände bleiben erhalten. Die neue [WohnPit-Versionshistorie](../CHANGELOG.md) führt die gemeinsame Entwicklung fort. Je Repository bleiben nur die drei neuesten Releases veröffentlicht.
+
+Die technischen Details der Übernahme und die Prüfgrenzen stehen in [WohnPit 2.0.0](changes-2.0.0.md). Ein Test im Emulator ersetzt keine Prüfung von Bluetooth, WLAN-Empfang oder Stromverbrauch am tatsächlichen G5.

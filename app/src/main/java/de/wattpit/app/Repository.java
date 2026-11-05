@@ -102,7 +102,7 @@ final class Repository {
     }
     private static Double number(JSONObject values,String key){double value=values.optDouble(key,Double.NaN);return Double.isFinite(value)?value:null;}
     synchronized String diagnosticText()throws JSONException{
-        JSONObject all=new JSONObject(prefs.getString("archiveDiagnostics","{}"));StringBuilder text=new StringBuilder("Watt’n’Pit "+BuildConfig.VERSION_NAME+" · Archivdiagnose\n");
+        JSONObject all=new JSONObject(prefs.getString("archiveDiagnostics","{}"));StringBuilder text=new StringBuilder("WohnPit "+BuildConfig.VERSION_NAME+" · Archivdiagnose\n");
         for(String kind:new String[]{"solar","shunt"}){
             JSONObject d=all.optJSONObject(kind);if(d==null)continue;text.append(kind.equals("solar")?"\nSolarladeregler\n":"\nBatteriewächter\n");
             text.append(d.optString("result")).append('\n');JSONArray lines=d.optJSONArray("steps");if(lines!=null)for(int i=0;i<lines.length();i++)text.append("· ").append(lines.getString(i)).append('\n');
@@ -186,7 +186,9 @@ final class Repository {
     void archiveAttemptStarted(String mac){
         if(!prefs.edit().putBoolean("archivePending."+mac,true).putLong("archiveAttemptReception."+mac,archiveReception.getOrDefault(mac,0L)).commit())throw new IllegalStateException("Archivfortschritt konnte nicht gespeichert werden.");
     }
-    void archiveAttemptFinished(String mac,boolean cancelled,boolean complete){long now=System.currentTimeMillis();prefs.edit().putLong("archiveNext."+mac,ArchiveSchedule.nextAutomatic(now,cancelled,archiveIntervalMinutes())).putLong("archiveFinished."+mac,now).putBoolean("archiveCancelled."+mac,cancelled)
+    private boolean centralArchivePolicy(){return prefs.contains("archiveIntervalMinutes")||AppRole.get(context).equals("central");}
+    private long archiveNextAttempt(long now,boolean cancelled,boolean complete){return centralArchivePolicy()?ArchiveSchedule.nextAutomatic(now,cancelled,archiveIntervalMinutes()):complete&&!cancelled?0:now+(cancelled?ArchiveSchedule.CANCEL_PAUSE_MS:300000L);}
+    void archiveAttemptFinished(String mac,boolean cancelled,boolean complete){long now=System.currentTimeMillis();prefs.edit().putLong("archiveNext."+mac,archiveNextAttempt(now,cancelled,complete)).putLong("archiveFinished."+mac,now).putBoolean("archiveCancelled."+mac,cancelled)
             .putBoolean("archivePending."+mac,!cancelled&&!complete).putLong("archiveAttemptReception."+mac,archiveReception.getOrDefault(mac,0L)).apply();}
     private boolean archiveReceptionRecovered(String mac,long now){
         Reading live=latest.get(mac);
@@ -194,7 +196,7 @@ final class Repository {
                 &&archiveReception.getOrDefault(mac,0L)>prefs.getLong("archiveAttemptReception."+mac,0);
     }
     void pauseAutomaticArchives(){
-        try{JSONArray all=configs();SharedPreferences.Editor edit=prefs.edit();long now=System.currentTimeMillis(),next=ArchiveSchedule.nextAutomatic(now,true,archiveIntervalMinutes());
+        try{JSONArray all=configs();SharedPreferences.Editor edit=prefs.edit();long now=System.currentTimeMillis(),next=archiveNextAttempt(now,true,false);
             for(int i=0;i<all.length();i++){String mac=all.getJSONObject(i).getString("mac");edit.putLong("archiveNext."+mac,next).putLong("archiveFinished."+mac,now).putBoolean("archiveCancelled."+mac,true).putBoolean("archivePending."+mac,false);}edit.apply();
         }catch(JSONException ignored){}
     }

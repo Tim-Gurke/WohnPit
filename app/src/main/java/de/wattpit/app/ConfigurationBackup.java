@@ -10,7 +10,7 @@ final class ConfigurationBackup {
     static JSONObject normalize(String json) throws Exception {
         if(json.getBytes(StandardCharsets.UTF_8).length>MAX_BYTES)throw new IllegalArgumentException("Die Einstellungsdatei darf höchstens 256 KB groß sein.");
         JSONObject input=new JSONObject(json);
-        if(!input.optString("format").equals("wattnpit-settings")||input.optInt("version")!=1)throw new IllegalArgumentException("Keine unterstützte Watt’n’Pit-Einstellungssicherung.");
+        if(!input.optString("format").equals("wattnpit-settings")||input.optInt("version")!=1)throw new IllegalArgumentException("Keine unterstützte WohnPit-Einstellungssicherung.");
         JSONObject s=input.getJSONObject("settings");
         String theme=s.getString("theme"),palette=s.getString("palette"),miniRange=s.getString("miniRange");
         double capacity=s.getDouble("capacity"),seconds=s.getDouble("sampleSeconds");
@@ -22,7 +22,7 @@ final class ConfigurationBackup {
         for(int i=0;i<rows.length();i++){
             JSONObject row=rows.getJSONObject(i);String id=row.getString("id"),metric=row.getString("metric");
             if(!id.matches("[a-zA-Z0-9_-]{1,90}")||!ids.add(id)||!metric.matches("[a-zA-Z][a-zA-Z0-9]{0,40}"))throw new IllegalArgumentException("Ungültige Kachel in der Sicherung.");
-            JSONObject tile=pick(row,"id","metric","title","unit","type","digits","fontSize","color","colorMid","colorEnd","adaptiveColor","multicolor","invert","min","max","scaleMode","valueMode","reverseSign","background","opacity");
+            JSONObject tile=pick(row,"id","metric","title","unit","type","digits","fontSize","color","colorSource","colorMid","colorEnd","adaptiveColor","multicolor","invert","min","max","scaleMode","valueMode","reverseSign","background","opacity");
             tile.put("fontSize",Math.max(18,Math.min(20,row.optDouble("fontSize",20))));
             if(row.has("period"))tile.put("period",pick(row.getJSONObject("period"),"mode","amount","unit","aggregate","resetAt","from","to"));
             if(row.has("layouts")){
@@ -37,6 +37,12 @@ final class ConfigurationBackup {
         for(int i=0;i<order.length();i++)if(!Arrays.asList("tiles","weather","history","record","roller").contains(order.getString(i))||!blocks.add(order.getString(i)))throw new IllegalArgumentException("Ungültige Blockreihenfolge.");
         if(!blocks.containsAll(Arrays.asList("tiles","history","record")))throw new IllegalArgumentException("Ungültige Blockreihenfolge.");
         JSONObject dashboard=new JSONObject().put("version",1).put("blockOrder",order).put("tiles",tiles);
+        if(board.has("valueColors")){
+            JSONObject given=board.getJSONObject("valueColors"),clean=new JSONObject();
+            if(given.length()>128)throw new IllegalArgumentException("Zu viele Messwertfarben.");
+            for(Iterator<String> keys=given.keys();keys.hasNext();){String key=keys.next(),value=given.getString(key);if(!key.matches("[a-zA-Z][a-zA-Z0-9]{0,40}")||!value.matches("#[0-9a-fA-F]{6}"))throw new IllegalArgumentException("Ungültiger Messwertfarbcode.");clean.put(key,value.toLowerCase(Locale.ROOT));}
+            dashboard.put("valueColors",clean);
+        }
         if(board.optInt("lanTileVersion")==1)dashboard.put("lanTileVersion",1);
         if(board.optInt("dischargeSignVersion")==1)dashboard.put("dischargeSignVersion",1);
         if(board.optInt("energyFlowVersion")==1)dashboard.put("energyFlowVersion",1);

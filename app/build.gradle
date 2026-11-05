@@ -5,12 +5,12 @@ android {
     compileSdk 35
     buildFeatures { buildConfig true }
     defaultConfig {
-        applicationId 'de.wohnpit.app'
+        applicationId 'de.wattpit.app'
         minSdk 26
         targetSdk 35
-        versionCode 5
-        versionName '0.0.5'
-        testInstrumentationRunner 'android.test.InstrumentationTestRunner'
+        versionCode 71
+        versionName '2.0.0'
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
@@ -18,27 +18,28 @@ android {
     }
     signingConfigs {
         localRelease {
-            if (System.getenv('WOHNPIT_KEYSTORE')) {
-                storeFile file(System.getenv('WOHNPIT_KEYSTORE'))
-                storePassword System.getenv('WOHNPIT_SIGNING_PASSWORD')
-                keyAlias 'wohnpit'
-                keyPassword System.getenv('WOHNPIT_SIGNING_PASSWORD')
+            if (System.getenv('WATTPIT_KEYSTORE')) {
+                storeFile file(System.getenv('WATTPIT_KEYSTORE'))
+                storePassword System.getenv('WATTPIT_SIGNING_PASSWORD')
+                keyAlias 'wattpit'
+                keyPassword System.getenv('WATTPIT_SIGNING_PASSWORD')
             }
         }
     }
     buildTypes {
         release {
-            minifyEnabled true
-            shrinkResources true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt')
-            if (System.getenv('WOHNPIT_KEYSTORE')) signingConfig signingConfigs.localRelease
+            minifyEnabled false
+            if (System.getenv('WATTPIT_KEYSTORE')) signingConfig signingConfigs.localRelease
         }
     }
     lint { abortOnError true }
 }
 
 dependencies {
+    implementation 'com.journeyapps:zxing-android-embedded:4.3.0'
     implementation 'com.google.zxing:core:3.5.3'
+    androidTestImplementation 'androidx.test:runner:1.6.2'
+    androidTestImplementation 'junit:junit:4.13.2'
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.xerial:sqlite-jdbc:3.46.1.0'
 }

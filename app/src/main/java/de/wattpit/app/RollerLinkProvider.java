@@ -8,7 +8,7 @@ import android.os.*;
 import org.json.*;
 import java.security.MessageDigest;
 
-/** Same-phone bridge for official ScootPit; LAN credentials never leave Watt'n'Pit. */
+/** Same-phone bridge for official ScootPit; LAN credentials never leave WohnPit. */
 public final class RollerLinkProvider extends ContentProvider {
     @Override public boolean onCreate(){return true;}
     @SuppressWarnings("deprecation") private void authorize(){
@@ -23,6 +23,7 @@ public final class RollerLinkProvider extends ContentProvider {
     }
     @Override public Bundle call(String method,String mac,Bundle extras){
         authorize();Bundle out=new Bundle();out.putInt("protocol",2);
+        if(MigrationBackup.pending(getContext())){out.putBoolean("available",false);out.putString("error","WohnPit übernimmt gerade die gesicherten Daten.");return out;}
         try{
             LanSync lan=LanSync.get(getContext());if(!lan.viewer()){out.putBoolean("available",false);return out;}
             if(extras==null||extras.getString("payload","").length()>5000)throw new IllegalArgumentException();

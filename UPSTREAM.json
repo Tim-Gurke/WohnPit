@@ -14,8 +14,16 @@
   "reviewed_changes": {
     "app/src/main/java/de/wattpit/app/LanSync.java": {
       "upstream_sha256": "602c18d07390215423f01fdd698a2ceb528cd3a113bcd8738aa4c54a7e9b3856",
-      "sha256": "a753ad0a8e36afc14625e7d42c4e206e7cca85ba8abeca0cddadb522c37e9652",
-      "reason": "0.0.4: Gas-/Wasserjournal zum vorhandenen Bundle und zur Konfigurationsrevision ergänzen. Verschlüsselung, Befehlsbestätigung und BMS-Übergabe bleiben im bestehenden Protokoll."
+      "sha256": "855989a31bb8e44f1c4e07eb50e727fadfb19002ce711bd9f4056cfbafa2f96b",
+      "reason": "Watt’n’Pit-Anzeigeprotokoll mit WohnPit-Sammelbetrieb zusammengeführt; lokale Rollen bewahren jeweils ihre Kopplung, Daten-/BMS-Protokoll und Speicherformat bleiben erhalten."
     }
+  },
+  "consolidation": {
+    "date": "2026-11-05",
+    "wohnpit_base": "d681925e6f727dcc125fe745a77a0f9a938a993a",
+    "wattnpit_display_source": "2b3bb72d5a4d0a0fc8e7ee7bf226846284f46942",
+    "application_id": "de.wattpit.app",
+    "public_name": "WohnPit",
+    "notes": "Die bisherige Updatesignatur und signaturgeprüfte ScootPit-Schnittstelle bleiben erhalten; native G5-Konsole und Archivintervall aus WohnPit."
   }
 }

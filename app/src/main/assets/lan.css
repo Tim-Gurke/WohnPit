@@ -1,0 +1,26 @@
+.lan-banner{display:flex;flex-direction:column;align-items:flex-start;gap:8px;justify-content:space-between;width:100%;min-width:0;overflow:auto}
+.lan-banner[hidden]{display:none}
+.lan-banner>div{min-width:0;overflow-wrap:anywhere}
+.lan-banner strong{font-size:14px}
+.lan-banner p{margin:4px 0 0;font-size:12px;color:var(--muted);line-height:1.4}
+.lan-banner button{flex-shrink:0}
+.lan-offline{border-color:var(--orange)}
+.lan-code,#lanInvitation{display:block;box-sizing:border-box;width:100%;max-width:100%;padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--bg);color:var(--text);font:inherit;font-size:13px;overflow-wrap:anywhere;resize:vertical}
+.lan-code[hidden]{display:none}
+.lan-background-option{display:flex;align-items:flex-start;gap:10px;min-height:44px;padding:12px 0;line-height:1.4;cursor:pointer}
+.lan-background-option input[type=checkbox]{flex:0 0 18px;width:18px;height:18px;min-height:18px;margin:2px 0 0;padding:0;accent-color:var(--mint)}
+.lan-qr{margin:18px 0;text-align:center}
+.lan-qr[hidden]{display:none}
+.lan-qr img{display:block;width:100%;max-width:320px;height:auto;margin:0 auto 12px;background:#fff;border:8px solid #fff;border-radius:8px;box-sizing:border-box;image-rendering:pixelated}
+#lanScan{margin:0 0 16px}
+body.showing-pairing-qr #toast{visibility:hidden}
+.type-lan>.tile-visual{align-items:stretch;justify-content:flex-start;min-height:0;overflow:hidden}
+.type-lan .lan-banner{flex:1;min-height:0;overflow:hidden}
+.type-lan .lan-banner>div{flex:1;min-height:0;overflow:auto}
+.type-lan>.tile-hint{display:none}
+.type-lan .textbutton{font-size:11px;padding:4px 0;text-align:left;white-space:normal;margin-top:auto}
+.is-editing .lan-banner{overflow:hidden;pointer-events:none}
+
+.lan-success{text-align:center}.lan-success>span{display:block;font-size:20px;color:var(--mint)}.lan-success h3{margin-bottom:12px}.lan-success p{margin-bottom:16px}.lan-success button{width:100%}
+
+.plant-action-status{position:fixed;left:12px;right:12px;bottom:90px;z-index:1200;padding:10px 14px;border:1px solid var(--border);border-radius:12px;background:var(--panel);color:var(--text);font-size:12px;box-shadow:0 3px 18px #0004}.plant-command-busy main,.plant-command-busy .topbar,.plant-command-busy .bottom-nav,.plant-command-busy #modal{pointer-events:none}

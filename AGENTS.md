@@ -28,3 +28,5 @@ WohnPit als lokales Android-Cockpit für Energie, Gas und Wasser im Wohnwagen, F
 ## Private Übernahmedaten
 
 Die vollständige Umzugsdatei enthält private Verknüpfungen, Geräteschlüssel und Kennwörter. Sie darf auch verschlüsselt niemals öffentlich auf GitHub, in Releases, Prüfartefakten oder auf der Projektseite erscheinen. Nur lokal auswählen/speichern, mit eigenem Kennwort authentifiziert verschlüsseln; das Kennwort nicht speichern oder protokollieren. Signierschlüssel und echte private Einstellungs-/Messdaten ebenfalls ausschließen. Vor jedem Hochladen die vorgemerkte Dateiliste mit tools/check-public-files.py prüfen; nur neutrale Testdaten veröffentlichen.
+
+Wenn ein altes Übernahme-Release später aus den letzten drei Releases fällt, die notwendige signierte Übernahme-APK als zusätzliches Hilfsprogramm in den aktuellen Releases weiter anbieten; private Umzugsdateien niemals anhängen.

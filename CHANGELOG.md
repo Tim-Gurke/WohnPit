@@ -4,8 +4,11 @@ Die Dokumentation bleibt vollständig erhalten, auch wenn ältere GitHub-Release
 
 | Version | Änderungen |
 |---|---|
-| [0.0.5](docs/changes-0.0.5.md) | Private vollständige Übernahmesicherung mit Kennwortverschlüsselung für den Umstieg auf die gemeinsame WohnPit-App. |
+| [2.0.0](docs/changes-2.0.0.md) | WohnPit und Watt’n’Pit zusammengeführt; Zentrale, Anzeigehandy und eigenständiger Victron-Betrieb, private Vollsicherung, gemeinsame Messwertfarben und belegter Wetterrückblick. |
+| [0.0.5](docs/changes-0.0.5.md) | Private vollständige Übernahmesicherung für den Wechsel zur gemeinsamen WohnPit-App. |
 | [0.0.4](docs/changes-0.0.4.md) | Gemeinsames Gas-/Wasserjournal, Wetterrückblicke, Temperatur-/Winddaten und Statusanzeige; Bedienung und Auswertung in Watt’n’Pit ab 1.9.0. |
 | [0.0.3](docs/changes-0.0.3.md) | Gespeicherte Lernabschnitte und Prognosevergleiche aus unterstützten Watt’n’Pit-Diagnosen übernehmen. |
 | [0.0.2](docs/changes-0.0.2.md) | Historische Verbrauchsgrundlagen und Anlagen-/Wetterkontexte beim Umzug ergänzen. |
 | 0.0.1 | Eigenständige native Zentrale aus Watt’n’Pit 1.8.2: Messwerte, Archive, verschlüsselter Anlagenverbund und vorhandene BMS-Übergabe. |
+
+Die frühere [Watt’n’Pit-Versionshistorie](https://github.com/Tim-Gurke/Watt-n-Pit/blob/main/CHANGELOG.md) bleibt vollständig erhalten und wird ab WohnPit 2.0.0 hier gemeinsam fortgeführt.

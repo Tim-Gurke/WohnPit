@@ -75,28 +75,36 @@ final class MigrationBackup {
             File[] databases=new File(temp,"databases").listFiles();if(databases!=null)for(File file:databases)if(file.getName().endsWith(".db")){
                 try(SQLiteDatabase db=SQLiteDatabase.openDatabase(file.getAbsolutePath(),null,SQLiteDatabase.OPEN_READWRITE|SQLiteDatabase.NO_LOCALIZED_COLLATORS);Cursor cursor=db.rawQuery("PRAGMA quick_check",null)){if(!cursor.moveToFirst()||!cursor.getString(0).equals("ok"))throw new IOException("Die Datenbankprüfung ist fehlgeschlagen.");}
             }
-            remove(stage(c));Files.move(temp.toPath(),stage(c).toPath(),StandardCopyOption.ATOMIC_MOVE);write(marker(c),"ready".getBytes(StandardCharsets.UTF_8));stagedHere=true;return manifest.put("bytes",total);
+            remove(stage(c));Files.move(temp.toPath(),stage(c).toPath(),StandardCopyOption.ATOMIC_MOVE);return manifest.put("bytes",total);
         }catch(Exception e){remove(temp);throw e;}
     }
+    static synchronized void schedule(Context c)throws Exception{
+        if(pending(c)||!new File(stage(c),"manifest.json").isFile()||!new File(stage(c),"preferences.json").isFile())throw new IOException("Keine geprüfte Sicherung zur Übernahme bereit.");
+        File mark=new File(marker(c).getPath()+".tmp");write(mark,UUID.randomUUID().toString().getBytes(StandardCharsets.UTF_8));Files.move(mark.toPath(),marker(c).toPath(),StandardCopyOption.REPLACE_EXISTING,StandardCopyOption.ATOMIC_MOVE);stagedHere=true;
+    }
+    static synchronized void discard(Context c)throws IOException{if(!pending(c))remove(stage(c));}
     private static void validatePreferences(JSONObject prefs)throws Exception{
         for(Iterator<String> names=prefs.keys();names.hasNext();){String name=names.next();if(!name.matches("[A-Za-z0-9_.-]{1,120}")||name.contains(".."))throw new IOException("Ungültiger Einstellungsname.");JSONObject rows=prefs.getJSONObject(name);
             for(Iterator<String> keys=rows.keys();keys.hasNext();){JSONObject row=rows.getJSONObject(keys.next());switch(row.getString("type")){case "string":row.getString("value");break;case "int":row.getInt("value");break;case "long":row.getLong("value");break;case "float":if(!Double.isFinite(row.getDouble("value")))throw new IOException();break;case "boolean":row.getBoolean("value");break;case "set":JSONArray a=row.getJSONArray("value");for(int i=0;i<a.length();i++)a.getString(i);break;default:throw new IOException("Ungültiger Einstellungstyp.");}}
         }
     }
-    static void applyPending(Context c)throws Exception{
+    static synchronized void applyPending(Context c)throws Exception{
         if(!pending(c))return;if(stagedHere)throw new IOException("Bitte WohnPit zuerst vollständig neu starten.");
+        String session=new String(Files.readAllBytes(marker(c).toPath()),StandardCharsets.UTF_8);
+        if(!session.matches("[a-f0-9-]{36}"))throw new IOException("Ungültiger Übernahmestand.");
         File input=stage(c);JSONObject incoming=json(new File(input,"preferences.json"));validatePreferences(incoming);
         File rollback=new File(c.getFilesDir(),STAGE+"-previous");
-        if(!new File(rollback,"ready").isFile()){
+        File ready=new File(rollback,"ready");
+        if(!ready.isFile()||!new String(Files.readAllBytes(ready.toPath()),StandardCharsets.UTF_8).equals(session)){
             remove(rollback);if(!rollback.mkdirs())throw new IOException("Kein Platz für die bisherige Installation.");
             write(new File(rollback,"preferences.json"),preferences(c).toString().getBytes(StandardCharsets.UTF_8));File dbFolder=c.getDatabasePath("wattpit-history.db").getParentFile();copyFolder(dbFolder,new File(rollback,"databases"));
-            File cache=new File(c.getFilesDir(),"lan-display.json");if(cache.isFile())atomicCopy(cache,new File(rollback,"files/lan-display.json"));write(new File(rollback,"ready"),new byte[]{1});
+            File cache=new File(c.getFilesDir(),"lan-display.json");if(cache.isFile())atomicCopy(cache,new File(rollback,"files/lan-display.json"));write(new File(rollback,"ready"),session.getBytes(StandardCharsets.UTF_8));
         }
         // Marker and original backup survive interruption; the next cold start repeats safely.
         File target=c.getDatabasePath("wattpit-history.db").getParentFile();clearFiles(target);copyFolder(new File(input,"databases"),target);
         restorePreferences(c,incoming);c.getSharedPreferences("wattpit",0).edit().putBoolean("recording",false).commit();
         File cache=new File(input,"files/lan-display.json");if(cache.isFile())atomicCopy(cache,new File(c.getFilesDir(),"lan-display.json"));
-        c.getSharedPreferences("wohnpit-role",0).edit().remove("role").commit();
+        if(!c.getSharedPreferences("wohnpit-role",0).edit().remove("role").commit())throw new IOException("Betriebsart konnte nicht übernommen werden.");
         if(!marker(c).delete())throw new IOException("Übernahme konnte nicht abgeschlossen werden.");remove(input);
         c.getSharedPreferences("wohnpit-migration",0).edit().putBoolean("completed",true).putLong("at",System.currentTimeMillis()).commit();
     }
