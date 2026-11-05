@@ -17,7 +17,16 @@ const path=require('node:path');
   window.miniCalls=[];window.mock.settings.miniRange=localStorage.getItem('mini-range')||'today';
   window.WattPit={snapshot:()=>JSON.stringify(window.mock),dashboard:()=>localStorage.getItem('detail-board')||'{}',saveDashboard:json=>{if(window.failSave)return 'Test: Speichern fehlgeschlagen';window.saves++;localStorage.setItem('detail-board',json);return '';},settings:json=>{Object.assign(window.mock.settings,JSON.parse(json));localStorage.setItem('mini-range',window.mock.settings.miniRange);return '';},history:(from,to,metric)=>{window.miniCalls.push({from,to,metric});return JSON.stringify({points:Array.from({length:241},(_,i)=>['solar','shunt'].map(kind=>{const v=kind==='solar'?Math.max(0,Math.sin(i/10))*100:Math.sin(i/14)*40-10,t=from+(to-from-1)*i/240;return {t,last:t,v,min:v,max:v,n:1,period:Math.ceil((to-from)/240000),kind,device:kind==='solar'?'SOLAR':'SHUNT',origin:'archive'};})).flat()});},dashboardHistory:(from,to,metric)=>{window.calls.push({from,to,metric});return JSON.stringify(series(from,to,metric));},energyHistory:(from,to)=>JSON.stringify({accountingVersion:2,solar:series(from,to,'solarEnergy'),consumption:series(from,to,'consumptionEnergy'),balance:series(from,to,'batteryEnergy')})};
  });
- await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));
+ // file: URL localStorage persistence is undefined across browser versions.
+ // Serve the unchanged application assets under a stable origin for reload checks.
+ const assetRoot=path.resolve(__dirname,'../app/src/main/assets');
+ await page.route('http://wohnpit.test/**',async route=>{
+  const file=path.resolve(assetRoot,'.'+decodeURIComponent(new URL(route.request().url()).pathname));
+  if(!file.startsWith(assetRoot+path.sep))return route.abort();
+  const mime={'.html':'text/html','.js':'application/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.png':'image/png'};
+  await route.fulfill({status:200,body:fs.readFileSync(file),contentType:mime[path.extname(file)]||'application/octet-stream'});
+ });
+ await page.goto('http://wohnpit.test/index.html');
  const periods=['sunrise','today','yesterday','week','month','last6h','last24h'];
  assert.deepEqual(await page.locator('#miniRange option').evaluateAll(options=>options.map(o=>o.value)),periods);
  const expected={yesterday:['2026-10-24T22:00:00Z','2026-10-25T23:00:00Z'],week:['2026-10-19T22:00:00Z','2026-10-26T11:00:00Z'],month:['2026-09-26T22:00:00Z','2026-10-26T11:00:00Z'],last24h:['2026-10-25T11:00:00Z','2026-10-26T11:00:00Z']};
