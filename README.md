@@ -18,6 +18,14 @@ WohnPit vereint die bisherigen Apps Watt’n’Pit und WohnPit. **Android 8+**, 
 
 Beim ersten Start auswählen; bestehende Watt’n’Pit-Installationen übernehmen ihre bisherige Rolle. Die Betriebsart lässt sich später ändern. Der Verbund braucht dasselbe lokale WLAN. Ein automatischer Fernzugriff über das Internet ist nicht enthalten.
 
+## Anzeigehandy mit geladenen Statistiken · 2.0.1
+
+| Dunkle Ansicht | Helle Ansicht |
+|---|---|
+| ![WohnPit 2.0.1: Solarertrag, Verbrauch und gezeichnete Kurven; neutrale Testwerte](docs/images/wohnpit-2.0.1-viewer-dark.png) | ![WohnPit 2.0.1: dieselben geladenen Statistiken im hellen Design](docs/images/wohnpit-2.0.1-viewer-light.png) |
+
+Aufnahmen aus der automatisierten Browserprüfung mit erfundenen Messwerten. Der Test lädt zuerst unter fortlaufend neuen Live-Revisionen und prüft anschließend die sichtbaren Solar-, Verbrauchs- und Batteriekurven. [Update und Statusanzeigen](docs/ANZEIGE-STATISTIK.md).
+
 ## Was du im Cockpit siehst
 
 Solarleistung und -ertrag, Akkustand, Batterie- und Energiebilanz, Verbrauch, Gerätearchive, Wetter und Planung. Freie Kacheln mit Zahlen, Rundinstrumenten oder Kurven, getrennten Anordnungen für Hoch-/Querformat und zentralen Farben mit kopierbaren Hexcodes. Wasserbeschaffungen und Gaswechsel manuell eintragen; daraus Bedarf, Restvorrat und Reichweite in **Tagen und Stunden** schätzen. Fehlende Werte bleiben unbekannt.
