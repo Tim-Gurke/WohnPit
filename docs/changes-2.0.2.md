@@ -1,6 +1,6 @@
 # WohnPit 2.0.2 – Gas, Wasser und ein gemeinsames Projekt
 
-**WohnPit führt Watt’n’Pit und die bisherige WohnPit-Zentrale in einer App zusammen.** Dieselbe APK bietet Zentrale, Anzeigehandy und eigenständigen Betrieb direkt mit unterstützten Victron-Geräten. Die Weiterentwicklung findet im öffentlichen WohnPit-Repository statt; Watt’n’Pit wird privat aufbewahrt. Die [vollständige dokumentierte Watt’n’Pit-Vorgeschichte](wattnpit-archiv/CHANGELOG.md), historischen Anleitungen und zugehörigen Bilder bleiben im gemeinsamen Projekt öffentlich erreichbar.
+**WohnPit führt Watt’n’Pit und die bisherige WohnPit-Zentrale in einer App zusammen.** Dieselbe APK bietet Zentrale, Anzeigehandy und eigenständigen Betrieb direkt mit unterstützten Victron-Geräten. Die Weiterentwicklung findet im öffentlichen WohnPit-Repository statt. Die [vollständige dokumentierte Watt’n’Pit-Vorgeschichte](wattnpit-archiv/CHANGELOG.md), historischen Anleitungen und zugehörigen Bilder bleiben im gemeinsamen Projekt öffentlich erreichbar.
 
 ## Gas- und Wasserbedarf verständlich anzeigen
 

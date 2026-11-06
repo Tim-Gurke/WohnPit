@@ -65,6 +65,6 @@ WohnPit ist nicht auf Wohnwagen beschränkt. Entscheidend sind passende Datenque
 
 ## Herkunft und Versionshistorie
 
-Das führende Projekt ist [WohnPit](https://github.com/Tim-Gurke/WohnPit). Das ursprüngliche Watt’n’Pit-Repository wird privat aufbewahrt. Die hier öffentlich gesicherte [bisherige Watt’n’Pit-Versionshistorie](wattnpit-archiv/CHANGELOG.md) und alle alten Quellstände bleiben erhalten. Die neue [WohnPit-Versionshistorie](../CHANGELOG.md) führt die gemeinsame Entwicklung fort. Je Repository bleiben nur die drei neuesten Releases veröffentlicht.
+Das führende Projekt ist [WohnPit](https://github.com/Tim-Gurke/WohnPit). Die hier öffentlich gesicherte [bisherige Watt’n’Pit-Versionshistorie](wattnpit-archiv/CHANGELOG.md) und alle alten Quellstände bleiben erhalten. Die neue [WohnPit-Versionshistorie](../CHANGELOG.md) führt die gemeinsame Entwicklung fort. Je Repository bleiben nur die drei neuesten Releases veröffentlicht.
 
 Die technischen Details der Übernahme und die Prüfgrenzen stehen in [WohnPit 2.0.0](changes-2.0.0.md). Ein Test im Emulator ersetzt keine Prüfung von Bluetooth, WLAN-Empfang oder Stromverbrauch am tatsächlichen G5.

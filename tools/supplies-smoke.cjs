@@ -51,10 +51,11 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),path
   const quantityState=()=>({events:window.suppliesFixture.events,gas:{stock:supplies.analysis.gas.stock,daily:supplies.analysis.gas.daily,needs:supplies.analysis.gas.needs},water:{stock:supplies.analysis.water.stock,daily:supplies.analysis.water.daily,needs:supplies.analysis.water.needs}});
   const beforeSizes=await page.evaluate(quantityState);await page.locator('#suppliesSettings').click();
   await page.locator('#supplyWaterContainer').fill('0');await page.locator('#supplySave').click();assert.match(await page.locator('#supplyError').textContent(),/Kanistergröße/);
-  await page.locator('#supplyWaterContainer').fill('10');await page.locator('#supplyGasDefault').fill('5');await page.locator('#modal .sheet').screenshot({path:path.join(out,'supplies-settings-2.0.2.png'),animations:'disabled'});await page.locator('#supplySave').click();await waitForPage(page,()=>document.getElementById('modal').hidden);
+  await page.locator('#supplyWaterContainer').fill('10');await page.locator('#supplyGasDefault').fill('5');await page.locator('#supplySave').click();await waitForPage(page,()=>document.getElementById('modal').hidden);
   assert.match(await page.locator('[data-supply-needs="gas"]').textContent(),/7,7 Flaschen/);assert.match(await page.locator('[data-supply-needs="water"]').textContent(),/7 Kanister/);assert.deepEqual(await page.evaluate(quantityState),beforeSizes);
   await page.locator('#suppliesGas').click();assert.equal(await page.locator('#supplyAmount').inputValue(),'5');await page.locator('#supplyCancel').click();
   await page.locator('#suppliesSettings').click();assert.equal(await page.locator('#supplyWaterContainer').inputValue(),'10');assert.equal(await page.locator('#supplyWaterDefault').inputValue(),'25');
+  await page.locator('#modal .sheet').screenshot({path:path.join(out,'supplies-settings-2.0.2.png'),animations:'disabled'});
   await page.locator('#supplyWaterContainer').fill('20');await page.locator('#supplyGasDefault').fill('11');await page.locator('#supplySave').click();await waitForPage(page,()=>document.getElementById('modal').hidden);
   for(const [metric,unit,sizeHint,value] of [['gasNeed14','Flaschen','1 Flasche = 11 kg','3,5'],['waterNeed14','Kanister','1 Kanister = 20 L','3,5']]){
    await page.locator('[data-page="overview"]').click();await page.locator('#addTile').click();await page.locator('[data-metric="'+metric+'"]').click();

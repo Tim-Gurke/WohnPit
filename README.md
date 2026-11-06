@@ -85,7 +85,7 @@ Die Bluetooth-Energieanzeige nutzt unterstützte Victron SmartSolar-/SmartShunt-
 - [Übernahmeversion 0.0.5](docs/changes-0.0.5.md)
 - [WohnPit-Versionshistorie](CHANGELOG.md) und [bisherige Watt’n’Pit-Versionshistorie](docs/wattnpit-archiv/CHANGELOG.md)
 
-Das frühere Watt’n’Pit-Repository wird privat aufbewahrt. Seine vollständige dokumentierte Vorgeschichte liegt im [öffentlichen Dokumentationsarchiv](docs/wattnpit-archiv/HERKUNFT.md) dieses gemeinsamen Projekts.
+Die vollständige dokumentierte Watt’n’Pit-Vorgeschichte liegt im [öffentlichen Dokumentationsarchiv](docs/wattnpit-archiv/HERKUNFT.md) dieses gemeinsamen Projekts.
 
 Je Repository bleiben die drei neuesten Releases veröffentlicht. Tags, Quellhistorie und Änderungsdokumentation bleiben erhalten.
 
