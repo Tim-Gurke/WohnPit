@@ -1,13 +1,21 @@
 {
-  "tag": "v2.0.1",
-  "tested_commit": "94a6ef4973484aa32213b83cc7c17589f6ef17ae",
-  "tested_workflow_run": 42030199852,
-  "asset_blob_sha": "54c30c82c74f3d44eb75b2b27c49a57e06f61c76",
-  "asset_sha256": "24e7e842e1dbb31b747f47e620ff99cc490bb60a817bf5c5d2fac4bbb5dc8c68",
-  "asset_size": 749568,
-  "asset_name": "WohnPit-v2.0.1.apk",
-  "unit_tests": 505,
-  "integration_checks": 493,
+  "tag": "v2.0.2",
+  "tested_commit": "94ecff64c05b2553d2c3ba81d351e87e9eaa441a",
+  "tested_workflow_run": 42171348135,
+  "asset_blob_sha": "9a29261ec92d18c12c1b548f364d1d4869255904",
+  "asset_sha256": "3081bce07e2ddccde2df3a25c29415954e8587574b050525e1e76b0feabdad12",
+  "asset_size": 753664,
+  "asset_name": "WohnPit-v2.0.2.apk",
+  "unit_tests": 520,
+  "integration_checks": 515,
   "android_ui_checks": 3,
-  "notes_revision": 1
+  "notes_revision": 1,
+  "helpers": [
+    {
+      "asset_name": "WohnPit-Uebernahme-v0.0.5.apk",
+      "asset_blob_sha": "e193ee166ad3fd06699cef32dc38e4d618fcce23",
+      "asset_sha256": "74204a67fef30d1e3b64ebf9d668e8870f193f29c5390026ef77c5f1d3c1bbc7",
+      "asset_size": 204496
+    }
+  ]
 }

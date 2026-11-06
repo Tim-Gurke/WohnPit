@@ -50,9 +50,9 @@ Solarleistung und -ertrag, Akkustand, Batterie- und Energiebilanz, Verbrauch, Ge
 |---|---|
 | ![WohnPit 2.0.0 – Democockpit](docs/images/wohnpit-2.0.0-cockpit.png) | ![Gespeicherte Wettertage mit Zeitraum, Ort und Quelle; erfundene Werte](docs/images/weather-history-2.0.0-light.png) |
 
-| Schlanke Zentrale im Android-Emulator | Zentrale Messwertfarben |
+| Wasserbeschaffung in WohnPit 2.0.2 | Zentrale Messwertfarben |
 |---|---|
-| ![Native WohnPit-Zentrale, Android-9-Emulator ohne echte Geräte](docs/images/wohnpit-2.0.0-central.png) | ![WohnPit-Messwertfarben mit Hexcodes](docs/images/value-colors-2.0.0-dark.png) |
+| ![Wasserbeschaffung mit Menge und Zeitpunkt; erfundene Beispieldaten](docs/images/supplies-water-entry-2.0.2.png) | ![WohnPit-Messwertfarben mit Hexcodes](docs/images/value-colors-2.0.0-dark.png) |
 
 Alle Aufnahmen zeigen Demo-, Beispiel- oder Emulatoransichten. Keine persönlichen Messwerte oder Verknüpfungen werden veröffentlicht.
 
