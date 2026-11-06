@@ -57,7 +57,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),path
   await page.locator('#supplyWaterContainer').fill('20');await page.locator('#supplyGasDefault').fill('11');await page.locator('#supplySave').click();await waitForPage(page,()=>document.getElementById('modal').hidden);
   for(const [metric,unit,sizeHint,value] of [['gasNeed14','Flaschen','1 Flasche = 11 kg','3,5'],['waterNeed14','Kanister','1 Kanister = 20 L','3,5']]){
    await page.locator('[data-page="overview"]').click();await page.locator('#addTile').click();await page.locator('[data-metric="'+metric+'"]').click();
-   await page.locator('[data-tile]').last().locator('.tile-menu').click();
+   await page.locator('[data-tile]').last().click();await page.locator('#tileActionSettings').click();
    await page.locator('#tileUnit').selectOption(unit);assert.equal(await page.locator('#tileSupplyUnitHint').textContent(),sizeHint);
    await page.locator('#tileType').selectOption('gauge');await page.getByText('Skala',{exact:true}).click();await page.locator('#tileMax').fill('5');await page.locator('#saveTile').click();
    const tileId=await page.evaluate(metric=>dashboard.config.tiles.find(t=>t.metric===metric).id,metric),tile=page.locator('[data-tile="'+tileId+'"]');

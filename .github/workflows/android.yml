@@ -11,6 +11,22 @@ permissions:
   contents: read
 
 jobs:
+  supplies-ui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Gas- und Wasserbedienung unabhängig vom Android-Build prüfen
+        run: |
+          python3 tools/check-public-files.py
+          npm install --no-save --prefix "$RUNNER_TEMP/wohnpit-supplies-ui" playwright@1.51.1
+          NODE_PATH="$RUNNER_TEMP/wohnpit-supplies-ui/node_modules" WATTPIT_CHROMIUM=/usr/bin/google-chrome node tools/supplies-smoke.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Gas-Wasser-Oberflaeche
+          path: docs/images/supplies-*.png
+
   build:
     runs-on: ubuntu-latest
     steps:
