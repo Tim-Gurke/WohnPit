@@ -9,7 +9,7 @@
   }
   function containerHint(kind,size){
     if(!finite(size)||size<=0)return kind==='gas'?'Flaschengröße unbekannt':'Kanistergröße unbekannt';
-    return '1 '+(kind==='gas'?'Flasche':'Kanister')+' = '+size.toLocaleString('de-DE',{maximumFractionDigits:1})+' '+quantityUnits(kind)[0];
+    return '1 '+(kind==='gas'?'Flasche':'Kanister')+' = '+size.toLocaleString('de-DE',{maximumFractionDigits:6})+' '+quantityUnits(kind)[0];
   }
   function normalize(input={}){
     if(input.version!=null&&input.version!==1)throw Error('Unbekanntes Gas-/Wasserformat.');

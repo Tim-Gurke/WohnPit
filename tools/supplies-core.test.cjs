@@ -95,6 +95,10 @@ test('unknown quantities and missing container sizes never produce zero or an in
   assert.equal(C.quantity(0,kind,unit,20),0);
  }
 });
+test('fractional container sizes keep their actual reference instead of rounding the label',()=>{
+ assert.equal(C.containerHint('gas',2.75),'1 Flasche = 2,75 kg');assert.equal(C.quantity(11,'gas','Flaschen',2.75),4);
+ assert.equal(C.containerHint('water',12.5),'1 Kanister = 12,5 L');assert.equal(C.quantity(25,'water','Kanister',12.5),2);
+});
 test('all demand tiles and instrument scales convert with the current container size',()=>{
  const dashboard=require('../app/src/main/assets/dashboard-core.js'),snapshot={settings:{capacity:100},suppliesAnalysis:{gas:{containerSize:11,needs:{3:25.3,7:25.3,14:25.3}},water:{containerSize:20,needs:{3:30,7:30,14:30}}}};
  for(const kind of ['gas','water'])for(const horizon of [3,7,14]){
