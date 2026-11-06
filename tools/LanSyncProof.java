@@ -132,14 +132,22 @@ public final class LanSyncProof {
             check(new JSONObject(viewer.part("supplies")).getJSONArray("events").length()==1,"manual water entry reaches the viewer only after durable host acknowledgement");
             viewer.control("saveSupplies",new JSONArray().put(supplyCommand.toString()),viewer.controlRevision());
             check(SuppliesStore.read(source.prefs).getJSONArray("events").length()==1,"a repeated journal event id cannot duplicate water procurement");
+            viewer.control("saveSupplies",new JSONArray().put(new JSONObject().put("op","defaults").put("water",40).put("gas",5).put("waterContainer",10).toString()),viewer.controlRevision());
+            JSONObject supplyDefaults=new JSONObject(viewer.part("supplies"));
+            check(supplyDefaults.getBoolean("containerSizeSettings")&&supplyDefaults.getJSONObject("defaults").getDouble("waterContainer")==10&&supplyDefaults.getJSONObject("defaults").getDouble("water")==40,"the host acknowledges a shared canister size independently of the procurement default");
             LanSync supplyViewer=sync(new TestContext(root.resolve("supplies-second-display")));
-            try{supplyViewer.join(LanWire.encodeInvitation(invitation.toString()));check(new JSONObject(supplyViewer.part("supplies")).getJSONArray("events").getJSONObject(0).getDouble("amount")==20,"a second encrypted LAN display receives the same supply journal");}finally{close(supplyViewer);}
+            try{supplyViewer.join(LanWire.encodeInvitation(invitation.toString()));check(new JSONObject(supplyViewer.part("supplies")).getJSONArray("events").getJSONObject(0).getDouble("amount")==20,"a second encrypted LAN display receives the same supply journal");JSONObject sizes=new JSONObject(supplyViewer.part("supplies")).getJSONObject("defaults");check(sizes.getDouble("waterContainer")==10&&sizes.getDouble("gas")==5,"a second encrypted LAN display receives the same canister and gas bottle sizes");}finally{close(supplyViewer);}
             supplyEvent.put("amount",30);viewer.control("saveSupplies",new JSONArray().put(new JSONObject().put("op","edit").put("event",supplyEvent).toString()),viewer.controlRevision());
             check(SuppliesStore.read(source.prefs).getJSONArray("events").getJSONObject(0).getDouble("amount")==30,"editing a procurement replaces its quantity without a second purchase");
             rejected=false;try{viewer.control("saveSupplies",new JSONArray().put(new JSONObject().put("op","add").put("event",new JSONObject(supplyEvent.toString()).put("id","supply-proof-0002").put("amount",-2)).toString()),viewer.controlRevision());}catch(IllegalArgumentException expected){rejected=true;}
             check(rejected&&SuppliesStore.read(source.prefs).getJSONArray("events").length()==1,"invalid supply quantities cannot alter the stored journal");
             viewer.control("saveSupplies",new JSONArray().put(new JSONObject().put("op","delete").put("id","supply-proof-0001").toString()),viewer.controlRevision());
             check(SuppliesStore.read(source.prefs).getJSONArray("events").length()==0,"deleting an entry is acknowledged by the data host");
+            viewer.control("saveSupplies",new JSONArray().put(new JSONObject().put("op","defaults").put("water",20).put("gas",11).toString()),viewer.controlRevision());
+            check(SuppliesStore.read(source.prefs).getJSONObject("defaults").getDouble("waterContainer")==10,"an older display updating standard amounts preserves the new canister size");
+            rejected=false;try{viewer.control("saveSupplies",new JSONArray().put(new JSONObject().put("op","defaults").put("water",20).put("gas",11).put("waterContainer",0).toString()),viewer.controlRevision());}catch(IllegalArgumentException expected){rejected=true;}
+            check(rejected&&SuppliesStore.read(source.prefs).getJSONObject("defaults").getDouble("waterContainer")==10,"invalid canister sizes are rejected without changing shared settings");
+            viewer.control("saveSupplies",new JSONArray().put(new JSONObject().put("op","defaults").put("water",20).put("gas",11).put("waterContainer",20).toString()),viewer.controlRevision());
 
             check(!source.prefs.contains("weatherPlace"),"the viewer can disable shared weather at the host");
             source.prefs.edit().putString("theme","dark").putString("dashboard-v1","host-layout").commit();

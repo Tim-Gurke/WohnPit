@@ -4,6 +4,7 @@ Die Dokumentation bleibt vollständig erhalten, auch wenn ältere GitHub-Release
 
 ## Noch nicht veröffentlicht
 
+- Bedarf für 3 / 7 / 14 Tage wahlweise in kg oder Flaschen sowie Litern oder Kanistern anzeigen. Gasflaschen- und Kanistergröße sind zentral einstellbar (zunächst 11 kg / 20 L); die Wasser-Beschaffungsmenge bleibt davon unabhängig. Auswahl je Handy, Kachel und Großansicht; Umrechnung auch für Rundinstrumente und ihre Skalen. Die Anzeigeauswahl wird mit den Einstellungen gesichert.
 - Gas / Wasser erhält ein skalierbares Symbol aus Flamme und Wassertropfen; auch die beiden Versorgungskarten verwenden passende Symbole.
 - Die Gasansicht zeigt, ob die Wetterkorrektur aktiv ist, wie viele vollständige Flaschenabschnitte mit geeigneter Wetterzuordnung vorliegen und was noch fehlt. Wetterrückblick und künftige Wetterkorrektur werden getrennt ausgewiesen.
 - Üblicher Tagesbedarf bleibt als Durchschnitt erkennbar. Bedarf und Reichweite verwenden übereinstimmend nur aktuelle, freigegebene und als Vorhersage gekennzeichnete Wetterwerte für den passenden Ort. Änderungen der Vorhersage werden sofort neu ausgewertet.

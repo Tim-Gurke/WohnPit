@@ -67,6 +67,25 @@ Die Anzeige nennt die Zahl der wettergeeigneten und aller abgeschlossenen Flasch
 
 Die Versorgungsseite zeigt den geschätzten Restvorrat, die Reichweite samt Schätzbereich, üblichen Tagesbedarf, Bedarf für **3 / 7 / 14 Tage**, letzten Eintrag und übliche Abstände. Beim Wasser wird außerdem der aus dem Beschaffungsrhythmus erwartete nächste Termin angezeigt. Dieser Termin ist eine Planungshilfe und kein gemessener Leerstand.
 
+**Restvorrat bedeutet die jetzt geschätzte Menge:** letzter bekannter Vorrat minus bisherigem geschätztem Verbrauch und gegebenenfalls zuzüglich Wasserbeschaffungen. Ändert sich die Wettervorhersage für kommende Tage, ändern sich Bedarf und Reichweite. Die heutige Restmenge bleibt dabei gleich. Sie kann sich durch vergangenen Verbrauch, ergänzte Wetterrückblicke oder eine korrigierte Mengenangabe ändern. Ein zukünftiger Restvorrat etwa in 14 Tagen ist kein Wert dieser Anzeige.
+
+### Bedarf in Flaschen und Kanistern – nächste Aktualisierung, noch nicht in 2.0.1
+
+In der Gas- und Wasserkarte unter **Bedarf anzeigen in** zwischen **kg / Flaschen** und **L / Kanister** wählen. Unter **Einstellen** die **Kanistergröße in Litern** und die **Gasflaschengröße in Kilogramm** anpassen; zunächst sind 20 L und 11 kg hinterlegt. Die Auswahl gilt auf diesem Handy und bleibt beim erneuten Öffnen erhalten. Die zugehörige Bezugsgröße steht dabei:
+
+| Bedarf | Bezug | Beispiel |
+|---|---|---|
+| Gas in Flaschen | Eingestellte Gas-Standardmenge; zunächst 11 kg je Flasche, unter „Einstellen“ etwa auf 5 kg änderbar. | 25,3 kg = 2,3 Flaschen zu 11 kg. |
+| Wasser in Kanistern | Eingestellte Kanistergröße; zunächst **20 L**, beispielsweise auf 10 L änderbar. Eine andere vorgeschlagene Menge je Beschaffung verändert diesen Bezug nicht. | 30 L = 1,5 Kanister. |
+
+Die Behältergrößen werden auf der Zentrale gespeichert und gelten für alle gekoppelten Anzeigen. Sie lassen sich von einem Anzeigehandy aus einstellen. Für die neue Kanistergröße muss auch die Zentrale aktualisiert werden; bei einer älteren Zentrale erklärt die Anzeige den fehlenden Einstellweg. Ein älteres Anzeigehandy, das nur die bisherigen Standardmengen ändert, setzt die Kanistergröße nicht zurück. Im eigenständigen Betrieb speichert dasselbe Handy die Größen. Bereits erfasste Beschaffungen und Flaschenwechsel behalten ihre ursprünglichen Mengen.
+
+Bruchteile sind anteilige Bedarfsmengen. Die Versorgungsseite zeigt höchstens eine Nachkommastelle. Fehlende Bedarfsgrundlagen bleiben **—**; ein unbekannter Bedarf wird nicht als null Kanister oder null Flaschen ausgegeben.
+
+Für die Kacheln **Gas / Wasser · Bedarf · 3 / 7 / 14 Tage** unter **Kachel-Einstellungen → Einheit** dieselbe Auswahl treffen. Sie ist pro Kachel unabhängig; Zahlenwert, Rundinstrument und Skala werden passend umgerechnet. In der Großansicht lässt sich die Einheit vorübergehend wechseln. Die Bezugsgröße wird auch dort genannt. Die gewählten Seiten- und Kacheleinheiten sind in der Einstellungssicherung enthalten.
+
+Restvorrat und üblicher Tagesbedarf bleiben in kg beziehungsweise Litern angegeben. Einheitenwechsel verändert weder Journal noch Verbrauchslernen oder berechnete Reichweite. Die ursprünglichen Mengen bleiben intern in kg und Litern gespeichert.
+
 Die Reichweite wird in **Tagen und Stunden** angegeben, zum Beispiel **1 Tag 17 Stunden**. Unter einer Stunde steht **Weniger als 1 Stunde**. Fehlende Grundlagen erscheinen als **—**. Schätzbereiche sind Orientierung aus der Streuung bisheriger Abschnitte, keine garantierten Grenzen.
 
 Unter **Übersicht → + Kachel → Wasser / Gas** sind frei wählbar:

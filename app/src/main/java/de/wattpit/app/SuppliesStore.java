@@ -11,7 +11,8 @@ final class SuppliesStore {
         if(value.optInt("version",1)!=1)throw new IllegalArgumentException("Unbekanntes Gas-/Wasserformat.");
         if(!value.has("events"))value.put("events",new JSONArray());
         if(!value.has("defaults"))value.put("defaults",new JSONObject().put("water",20).put("gas",11));
-        return value.put("version",1).put("protocol",1);
+        if(!value.getJSONObject("defaults").has("waterContainer"))value.getJSONObject("defaults").put("waterContainer",20);
+        return value.put("version",1).put("protocol",1).put("containerSizeSettings",true);
     }
     static JSONObject site(JSONObject value)throws Exception {
         if(value==null||value.length()==0)return new JSONObject();
@@ -24,7 +25,9 @@ final class SuppliesStore {
         JSONArray events=value.getJSONArray("events");
         switch(op){
             case "defaults":{
-                JSONObject defaults=new JSONObject();for(String kind:new String[]{"water","gas"}){double amount=command.getDouble(kind);checkAmount(amount,kind,false);defaults.put(kind,amount);}value.put("defaults",defaults);break;
+                JSONObject defaults=new JSONObject();for(String kind:new String[]{"water","gas"}){double amount=command.getDouble(kind);checkAmount(amount,kind,false);defaults.put(kind,amount);}
+                double container=command.has("waterContainer")?command.getDouble("waterContainer"):value.getJSONObject("defaults").getDouble("waterContainer");checkAmount(container,"water",false);defaults.put("waterContainer",container);
+                value.put("defaults",defaults);break;
             }
             case "delete":{
                 String id=command.getString("id");JSONArray kept=new JSONArray();for(int i=0;i<events.length();i++)if(!id.equals(events.getJSONObject(i).getString("id")))kept.put(events.get(i));value.put("events",kept);break;

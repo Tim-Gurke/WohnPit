@@ -37,6 +37,11 @@ final class ConfigurationBackup {
         for(int i=0;i<order.length();i++)if(!Arrays.asList("tiles","weather","history","record","roller").contains(order.getString(i))||!blocks.add(order.getString(i)))throw new IllegalArgumentException("Ungültige Blockreihenfolge.");
         if(!blocks.containsAll(Arrays.asList("tiles","history","record")))throw new IllegalArgumentException("Ungültige Blockreihenfolge.");
         JSONObject dashboard=new JSONObject().put("version",1).put("blockOrder",order).put("tiles",tiles);
+        if(board.has("supplyUnits")){
+            JSONObject given=board.getJSONObject("supplyUnits");String water=given.optString("water","L"),gas=given.optString("gas","kg");
+            if(!Arrays.asList("L","Kanister").contains(water)||!Arrays.asList("kg","Flaschen").contains(gas))throw new IllegalArgumentException("Ungültige Bedarfseinheit.");
+            dashboard.put("supplyUnits",new JSONObject().put("water",water).put("gas",gas));
+        }
         if(board.has("valueColors")){
             JSONObject given=board.getJSONObject("valueColors"),clean=new JSONObject();
             if(given.length()>128)throw new IllegalArgumentException("Zu viele Messwertfarben.");

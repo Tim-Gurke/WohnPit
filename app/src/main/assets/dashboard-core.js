@@ -46,6 +46,7 @@
     for(const [suffix,title,field,duration,need] of [['Stock','Restvorrat','stock',false],['Range','Reichweite','remainingHours',true],['Daily','Tagesbedarf','daily',false],['Need3','Bedarf · 3 Tage','needs',false,3],['Need7','Bedarf · 7 Tage','needs',false,7],['Need14','Bedarf · 14 Tage','needs',false,14],['Last',kind==='water'?'Seit letzter Beschaffung':'Seit letztem Flaschenwechsel','lastAt',true],['Interval','Üblicher Abstand','intervalHours',true],['Next','Bis zur nächsten Beschaffung','nextSupplyAt',true]]){
       if(kind==='gas'&&suffix==='Next')continue;
       CATALOG[kind+suffix]={label:label+' · '+title,group:label,kind:'supply',resource:kind,resourceField:field,resourceDuration:duration,resourceNeed:need,units:[duration?'':field==='daily'?unit+'/Tag':unit],min:0,max:duration?336:kind==='water'?100:11,digits:1,color,liveOnly:true,status:duration,estimated:true,hint:'Aus manuell erfassten Beschaffungen und Wechselintervallen geschätzt. Reichweite in Tagen und Stunden. Restvorrat benötigt einen bekannten Ausgangspunkt. Einstellungen und Einträge unter Gas / Wasser.'};
+      if(need){CATALOG[kind+suffix].units=supplies.quantityUnits(kind);CATALOG[kind+suffix].hint+=' Bedarf wahlweise in '+(kind==='gas'?'kg oder Flaschen; die Flaschengröße entspricht der eingestellten Gas-Standardmenge.':'Litern oder Kanistern der eingestellten Größe (zunächst 20 L).');}
     }
   }
   const PHASES = {0:'Aus',1:'Wenig Leistung',2:'Fehler',3:'Bulk',4:'Absorption',5:'Float',6:'Storage',7:'Ausgleich',9:'Invertieren',11:'Stromversorgung',245:'Start',247:'Auto-Ausgleich',252:'Extern gesteuert'};
@@ -185,10 +186,12 @@
     return value;
   }
   // Reception age has seconds as its base; remaining runtime has minutes.
-  function convert(value,unit,metric) {
+  function convert(value,unit,metric,snapshot) {
+    const m=CATALOG[metric];if(m?.resourceNeed)return supplies.quantity(value,m.resource,unit,snapshot?.suppliesAnalysis?.[m.resource]?.containerSize);
     return /Age$/.test(metric) ? finite(value) ? Number(value)/(unit==='min'?60:1) : null : unitValue(value,unit);
   }
-  function unconvert(value,unit,metric) {
+  function unconvert(value,unit,metric,snapshot) {
+    const m=CATALOG[metric];if(m?.resourceNeed)return supplies.quantity(value,m.resource,unit,snapshot?.suppliesAnalysis?.[m.resource]?.containerSize,true);
     return /Age$/.test(metric) ? finite(value) ? Number(value)*(unit==='min'?60:1) : null : fromUnit(value,unit);
   }
   function position(input={},wide=false) {
@@ -286,7 +289,8 @@
     }
     const colors=valueColors(input.valueColors);
     for(const t of tiles)if(t.colorSource==='value')t.color=colors[t.metric];
-    return {version:1,lanTileVersion:1,dischargeSignVersion:1,energyFlowVersion:1,valueColors:colors,historyHeight:historyHeight(input.historyHeight),rollerLayout:rollerLayout(input.rollerLayout),blockOrder:[...new Set([...order,...BLOCK_ORDER])],tiles};
+    const supplyUnits=Object.fromEntries(['water','gas'].map(kind=>[kind,supplies.quantityUnits(kind).includes(input.supplyUnits?.[kind])?input.supplyUnits[kind]:supplies.quantityUnits(kind)[0]]));
+    return {version:1,lanTileVersion:1,dischargeSignVersion:1,energyFlowVersion:1,supplyUnits,valueColors:colors,historyHeight:historyHeight(input.historyHeight),rollerLayout:rollerLayout(input.rollerLayout),blockOrder:[...new Set([...order,...BLOCK_ORDER])],tiles};
   }
   function windowFor(t,now=Date.now(),weather={}) {
     if(CATALOG[t.metric].widget||CATALOG[t.metric].liveOnly)return null;
@@ -323,8 +327,8 @@
   }
   function usesLiveValue(t) { return !CATALOG[t.metric].energy&&(t.type==='chart'?t.valueMode==='live':t.period.mode==='live'); }
   function signedValue(t,value) { return finite(value)?Number(value)===0?0:Number(value)*(CATALOG[t.metric].energy&&t.reverseSign?-1:1):null; }
-  function fixedRange(t) {
-    const min=convert(t.min,t.unit,t.metric),max=convert(t.max,t.unit,t.metric);
+  function fixedRange(t,snapshot) {
+    const min=convert(t.min,t.unit,t.metric,snapshot),max=convert(t.max,t.unit,t.metric,snapshot);
     return CATALOG[t.metric].energy&&t.reverseSign?{min:signedValue(t,max),max:signedValue(t,min)}:{min,max};
   }
   function displayValue(t,summary,shunt,solar,snapshot,chargeEstimate=null) {
@@ -340,8 +344,8 @@
     return (t.metric==='chargeTime'&&Number(value)>0?'≈ ':'')+Number(value).toLocaleString('de-DE',{minimumFractionDigits:t.digits,maximumFractionDigits:t.digits});
   }
   /** Uses actual extrema, including peaks hidden by chart buckets; manual bounds remain stored. */
-  function chartRange(t,points=[],capacity=100,summary={}) {
-    const fixed={...fixedRange(t),auto:false};
+  function chartRange(t,points=[],capacity=100,summary={},snapshot) {
+    const fixed={...fixedRange(t,snapshot),auto:false};
     if(t.scaleMode!=='auto')return fixed;
     const values=[summary.min,summary.max,...points.flatMap(p=>[p.min,p.max,p.v])].filter(finite).map(v=>signedValue(t,historicalValue(t.metric,v,capacity)));
     if(!values.length)return fixed;
@@ -356,7 +360,7 @@
       if(dataLow>=0&&CATALOG[t.metric].min>=0)low=Math.max(0,low);
       if(t.metric==='soc'&&dataLow>=0&&dataHigh<=100)high=Math.min(100,high);
     }
-    return {min:convert(low,t.unit,t.metric),max:convert(high,t.unit,t.metric),auto:true};
+    return {min:convert(low,t.unit,t.metric,snapshot),max:convert(high,t.unit,t.metric,snapshot),auto:true};
   }
   function axisLabel(value,span){
     const digits=Math.max(0,Math.min(8,1-Math.floor(Math.log10(Math.abs(span)||1))));

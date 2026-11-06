@@ -33,8 +33,8 @@
     return clampView({from:center-span*anchor,to:center+span*(1-anchor)},base);
   }
   function panView(view,base,delta){return clampView({from:view.from+delta,to:view.to+delta},base);}
-  function seriesPoints(t,points,capacity){
-    const convert=v=>C.convert(C.signedValue(t,C.historicalValue(t.metric,v,capacity)),t.unit,t.metric);
+  function seriesPoints(t,points,capacity,snapshot){
+    const convert=v=>C.convert(C.signedValue(t,C.historicalValue(t.metric,v,capacity)),t.unit,t.metric,snapshot);
     return points.filter(p=>C.finite(p.t)).map(p=>{
       const v=convert(p.v),a=convert(p.min??p.v),b=convert(p.max??p.v);
       return {...p,v,min:C.finite(a)&&C.finite(b)?Math.min(a,b):v,max:C.finite(a)&&C.finite(b)?Math.max(a,b):v};
@@ -61,7 +61,7 @@
       const source=this.d.config.tiles.find(t=>t.id===id);if(!source)return;
       this.close();this.tile=copy(source);this.tiles=new Map([[source.metric,this.tile]]);this.selected=new Set([source.metric]);
       this.period=copy(source.period);if(this.period.mode==='live')this.period.mode='last';
-      this.selectedTime=null;this.scaleMode='auto';this.manual=C.fixedRange(this.tile);this.valueMode=C.usesLiveValue(source)?'live':source.period.aggregate;
+      this.selectedTime=null;this.scaleMode='auto';this.manual=C.fixedRange(this.tile,this.a.getSnapshot());this.valueMode=C.usesLiveValue(source)?'live':source.period.aggregate;
       this.root.classList.toggle('is-live-only',!!C.CATALOG[source.metric].liveOnly);
       this.active=true;this.previousOverflow=document.body.style.overflow;document.body.style.overflow='hidden';this.root.hidden=false;this.pointers.clear();
       this.root.innerHTML=`<div class="detail-top"><div><h2 id="tileDetailTitle">${esc(label(source))}</h2><span>Änderungen gelten nur in dieser Großansicht.</span></div><button id="detailClose" class="iconbutton" aria-label="Großansicht schließen">×</button></div><div class="detail-content"><div class="detail-toolbar"><label>Zeitraum<select id="detailPeriod">${[['last','Letzte …'],['today','Heute'],['yesterday','Gestern'],['week','Woche'],['month','Monat'],['sunrise','Seit Sonnenaufgang'],['reset','Seit Zurücksetzen'],['custom','Von / bis']].map(([v,n])=>`<option value="${v}">${n}</option>`).join('')}</select></label><div class="detail-zoom"><button id="detailZoomIn" aria-label="Vergrößern">+</button><button id="detailZoomOut" aria-label="Verkleinern">−</button><button id="detailReset">Gesamter Zeitraum</button></div></div><div id="detailLast" class="detail-period-fields"><label>Anzahl<input id="detailAmount" type="number" min="1" max="10000"></label><label>Einheit<select id="detailTimeUnit"><option value="min">Minuten</option><option value="h">Stunden</option><option value="d">Tage</option></select></label></div><div id="detailCustom" class="detail-period-fields"><label>Von<input id="detailFrom" type="datetime-local"></label><label>Bis<input id="detailTo" type="datetime-local"></label><button id="detailApplyPeriod" class="secondary">Anzeigen</button></div><p id="detailError" class="form-error" hidden></p><details id="detailSettings" class="detail-options"><summary>Ansicht einstellen</summary><div class="form-grid"><label>Darstellung<select id="detailType"><option value="number">Zahlenwert</option><option value="gauge">Rundinstrument</option><option value="chart">Verlauf</option></select></label><label>Einheit<select id="detailUnit">${C.CATALOG[source.metric].units.map(u=>`<option>${esc(u)}</option>`).join('')}</select></label><label>Große Zahl<select id="detailValue">${[['live','Aktuell'],['last','Letzter Wert'],['avg','Durchschnitt'],['min','Minimum'],['max','Maximum']].filter(([v])=>!C.CATALOG[source.metric].energy||v==='last').map(([v,n])=>`<option value="${v}">${n}</option>`).join('')}</select></label><label>Skala<select id="detailScale"><option value="auto">Automatisch</option><option value="fixed">Feste Grenzen</option></select></label><label>Minimum<input id="detailMin" type="number" step="any"></label><label>Maximum<input id="detailMax" type="number" step="any"></label><label>Nachkommastellen<select id="detailDigits"><option value="0">Keine</option><option value="1">Eine</option><option value="2">Zwei</option><option value="3">Drei</option></select></label><label>Farbe<input id="detailColor" type="color"></label></div>${C.CATALOG[source.metric].energy&&!C.CATALOG[source.metric].flow?'<label class="detail-check"><input id="detailReverse" type="checkbox"> Vorzeichen umkehren (+/−)</label>':''}</details><details id="detailComparisons" class="detail-options"><summary>Vergleichswerte <span id="detailCompareCount"></span></summary><div id="detailCompareOptions" class="detail-compare-options"></div><p>Werte mit gleicher Einheit liegen übereinander. Andere Einheiten erhalten eigene Skalen mit gemeinsamer Zeitachse.</p></details><div class="detail-main"><div id="detailReading" class="detail-reading"></div><div class="detail-plot"><p id="detailWindow" class="detail-window"></p><div id="detailLegend" class="detail-legend"></div><canvas id="detailCanvas" aria-label="Verlauf; antippen oder gedrückt halten und Messpunktauswahl ziehen; mit zwei Fingern zoomen" tabindex="0"></canvas><button id="detailClearSelection" class="textbutton" hidden>Auswahl aufheben</button><div id="detailTooltip" class="detail-tooltip" hidden></div><p class="detail-note">Antippen oder gedrückt halten wählt einen Messpunkt. Die Auswahl lässt sich ziehen. Nach „Auswahl aufheben“ verschiebt seitliches Wischen den Zeitraum; zwei Finger zoomen. Nach oben oder unten wischen scrollt die Ansicht. Am Computer: Strg + Mausrad zum Zoomen.</p><p id="detailNote" class="detail-note"></p></div></div><div id="detailWeather" hidden></div></div>`;
@@ -85,7 +85,7 @@
       };
       $('detailUnit').onchange=()=>{
         const before=this.tile.unit,next=$('detailUnit').value;
-        this.manual={min:C.convert(C.unconvert(this.manual.min,before,this.tile.metric),next,this.tile.metric),max:C.convert(C.unconvert(this.manual.max,before,this.tile.metric),next,this.tile.metric)};
+        this.manual={min:C.convert(C.unconvert(this.manual.min,before,this.tile.metric,this.a.getSnapshot()),next,this.tile.metric,this.a.getSnapshot()),max:C.convert(C.unconvert(this.manual.max,before,this.tile.metric,this.a.getSnapshot()),next,this.tile.metric,this.a.getSnapshot())};
         this.tile.unit=next;$('detailMin').value=this.manual.min;$('detailMax').value=this.manual.max;this.renderComparisons();this.refresh(false);
       };
       for(const name of ['detailScale','detailMin','detailMax'])$(name).onchange=()=>{
@@ -136,17 +136,18 @@
         const sun=C.miniWindow('sunrise',snapshot.weather||{},this.a.dataTime?.()??Date.now()),daily=m.flow&&['today','sunrise'].includes(this.period.mode);
         const query=solarSunrise?C.solarQueryWindow(this.base):this.base;
         const data=m.status||m.liveOnly?{points:[],summary:{}}:this.d.data(t,query,daily?Math.max(query.from,sun.solarFrom??query.from):query.from,daily?sun.solarTo??query.to:query.to,JSON.stringify(['detail',m.flow?'flow':metric,this.period,['today','sunrise','yesterday'].includes(this.period.mode)?new Date(query.from).toLocaleDateString('sv-SE'):'']));
-        this.series.push({tile:t,data,points:seriesPoints(t,data.points||[],snapshot.settings.capacity||100)});
+        this.series.push({tile:t,data,points:seriesPoints(t,data.points||[],snapshot.settings.capacity||100,snapshot)});
       }
       const primary=this.series[0],m=C.CATALOG[this.tile.metric];
       if(this.period.mode==='sunrise'&&(this.tile.metric==='solar'||m.flow==='solar')){const full=this.view.from===this.base.from&&this.view.to===this.base.to;this.base=C.solarPlotWindow(this.base,primary.data.points||[],m.flow==='solar'?primary.data.summary:null);if(full)this.view={from:this.base.from,to:this.base.to};}
       const shunt=this.a.reading('shunt'),chargeEstimate=this.tile.metric==='chargeTime'?this.d.updateChargeEstimate(shunt,snapshot):null;
       if(this.tile.metric==='chargeTime')$('tileDetailTitle').textContent=C.tileLabel(this.tile,chargeEstimate);
       let value=m.modelPower&&this.valueMode==='live'?C.displayValue({...this.tile,period:{...this.tile.period,mode:'live'},valueMode:'live'},primary.data.summary,shunt,this.a.reading('solar'),snapshot):this.valueMode==='live'?C.signedValue(this.tile,C.liveValue(this.tile.metric,shunt,this.a.reading('solar'),snapshot,Date.now(),chargeEstimate)):C.signedValue(this.tile,C.historicalValue(this.tile.metric,primary.data.summary?.[this.valueMode],snapshot.settings.capacity||100));
-      value=C.convert(value,this.tile.unit,this.tile.metric);
+      value=C.convert(value,this.tile.unit,this.tile.metric,snapshot);
       const color=this.d.paint(this.tile.color,this.tile,true),reading=$('detailReading');reading.style.setProperty('--tile-color',color);reading.style.setProperty('--number-size','42px');
       const number=`<strong class="detail-number">${esc(C.format(value,this.tile))}</strong><span>${esc(m.status?'':this.tile.unit)}${m.modelPower||m.estimated||primary.data.summary?.modelledMillis>0?' · geschätzt':''}</span>`;
       this.value=value;reading.innerHTML=this.tile.type==='gauge'?this.gauge():`<div class="detail-number-row">${number}</div>`;
+      if(this.d.supplyUnitHint(this.tile))reading.insertAdjacentHTML('beforeend',`<p class="detail-container-size">${esc(this.d.supplyUnitHint(this.tile))}</p>`);
       reading.insertAdjacentHTML('beforeend',`<p>${esc(this.tile.metric==='chargeTime'?C.chargeHint(chargeEstimate):{live:'Aktuell',last:'Letzter Wert',avg:'Durchschnitt',min:'Minimum',max:'Maximum'}[this.valueMode])}</p>${m.liveOnly&&m.hint?`<p class="detail-live-note">${esc(m.hint)}</p>`:''}`);
       $('detailCompareCount').textContent=this.selected.size>1?'('+String(this.selected.size-1)+')':'';
       $('detailLegend').innerHTML=this.series.map((s,i)=>`<span><i style="background:${this.color(s,i)}"></i>${esc(label(s.tile))} · ${esc(s.tile.unit)}</span>`).join('');
@@ -168,8 +169,8 @@
     }
     gauge(){
       const points=this.series[0].data.points?.filter(p=>p.t>=this.view.from&&p.t<=this.view.to)||[];
-      const range=this.scaleMode==='auto'?C.chartRange({...this.tile,scaleMode:'auto'},points,this.a.getSnapshot().settings.capacity||100):this.manual;
-      const tile={...this.tile,reverseSign:false,min:C.unconvert(range.min,this.tile.unit,this.tile.metric),max:C.unconvert(range.max,this.tile.unit,this.tile.metric)};
+      const range=this.scaleMode==='auto'?C.chartRange({...this.tile,scaleMode:'auto'},points,this.a.getSnapshot().settings.capacity||100,{},this.a.getSnapshot()):this.manual;
+      const tile={...this.tile,reverseSign:false,min:C.unconvert(range.min,this.tile.unit,this.tile.metric,this.a.getSnapshot()),max:C.unconvert(range.max,this.tile.unit,this.tile.metric,this.a.getSnapshot())};
       const m=C.CATALOG[tile.metric],estimated=m.modelPower||m.estimated||this.series[0].data.summary?.modelledMillis>0;
       const reading=`<strong class="tile-number">${esc(C.format(this.value,tile))}</strong><span class="tile-unit">${esc(tile.unit)}${estimated?'<small class="tile-estimate-tag"> · geschätzt</small>':''}</span>`;
       return this.d.gauge(tile,this.value,reading);

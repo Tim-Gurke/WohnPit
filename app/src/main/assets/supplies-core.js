@@ -1,11 +1,22 @@
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.WattSuppliesCore=api;})(typeof globalThis==='object'?globalThis:this,function(){
   'use strict';
   const HOUR=3600000,DAY=24*HOUR,finite=n=>typeof n==='number'&&Number.isFinite(n);
+  const quantityUnits=kind=>kind==='gas'?['kg','Flaschen']:['L','Kanister'];
+  function quantity(value,kind,unit,containerSize,inverse=false){
+    if(!finite(value)||!quantityUnits(kind).includes(unit))return null;
+    if(unit===quantityUnits(kind)[0])return value;
+    return finite(containerSize)&&containerSize>0?(inverse?value*containerSize:value/containerSize):null;
+  }
+  function containerHint(kind,size){
+    if(!finite(size)||size<=0)return kind==='gas'?'Flaschengröße unbekannt':'Kanistergröße unbekannt';
+    return '1 '+(kind==='gas'?'Flasche':'Kanister')+' = '+size.toLocaleString('de-DE',{maximumFractionDigits:1})+' '+quantityUnits(kind)[0];
+  }
   function normalize(input={}){
     if(input.version!=null&&input.version!==1)throw Error('Unbekanntes Gas-/Wasserformat.');
-    const defaults={water:20,gas:11,...input.defaults},events=[...(input.events||[])].map((e,i)=>({...e,order:finite(e.order)?e.order:i}));
+    const defaults={water:20,gas:11,waterContainer:20,...input.defaults},events=[...(input.events||[])].map((e,i)=>({...e,order:finite(e.order)?e.order:i}));
     if(events.length>5000||!Array.isArray(input.events||[]))throw Error('Ungültiges Versorgungsjournal.');
     for(const kind of ['water','gas'])if(!finite(defaults[kind])||defaults[kind]<=0||defaults[kind]>(kind==='water'?10000:100))throw Error('Bitte gültige Standardmengen eingeben.');
+    if(!finite(defaults.waterContainer)||defaults.waterContainer<=0||defaults.waterContainer>10000)throw Error('Bitte eine gültige Kanistergröße eingeben.');
     const ids=new Set();for(const e of events){if(!/^[A-Za-z0-9_-]{8,80}$/.test(e.id)||ids.has(e.id)||!['water','gas'].includes(e.kind)||!['stock',e.kind==='gas'?'swap':'supply'].includes(e.type)||!finite(e.at)||!finite(e.amount)||e.amount<(e.type==='stock'?0:.01)||e.amount>(e.kind==='water'?10000:100))throw Error('Ungültiger Gas-/Wassereintrag.');ids.add(e.id);}
     return {...input,version:1,defaults,events:events.sort((a,b)=>a.at-b.at||a.order-b.order||a.id.localeCompare(b.id))};
   }
@@ -92,7 +103,7 @@
     const config=normalize(input),weather=config.weather||{},result={};
     for(const kind of ['water','gas']){
       const {journal,rows}=intervals(config.events,kind,now,weather,config.sites||[]),days=rows.reduce((s,r)=>s+r.days,0),amount=rows.reduce((s,r)=>s+r.amount,0),daily=days>0?amount/days:null,model=kind==='gas'?weatherModel(rows):null;
-      const profile={kind,daily,model,intervals:rows.length,intervalHours:mean(rows.map(r=>r.days*24)),lastAt:journal.at(-1)?.at??null,stock:null,remainingHours:null,rangeHours:null,nextSupplyAt:null,needs:{},weatherCorrected:false,historyWeatherCorrected:false,forecastWeatherCorrected:false,rangeWeatherCorrected:false};
+      const profile={kind,daily,model,containerSize:kind==='gas'?config.defaults.gas:config.defaults.waterContainer,intervals:rows.length,intervalHours:mean(rows.map(r=>r.days*24)),lastAt:journal.at(-1)?.at??null,stock:null,remainingHours:null,rangeHours:null,nextSupplyAt:null,needs:{},weatherCorrected:false,historyWeatherCorrected:false,forecastWeatherCorrected:false,rangeWeatherCorrected:false};
       if(profile.lastAt!==null&&finite(profile.intervalHours))profile.nextSupplyAt=profile.lastAt+profile.intervalHours*HOUR;
       const anchors=config.events.filter(e=>e.kind===kind&&e.at<=now&&(e.type==='stock'||kind==='gas'&&e.type==='swap')),anchor=anchors.at(-1),site=weather.siteKey||anchor?.site?.key;
       if(anchor){let stock=anchor.amount;if(finite(daily)&&daily>0){const moved=(config.sites||[]).some(s=>s.at>anchor.at&&s.at<=now&&s.site?.key!==anchor.site?.key);const used=consumption(moved?{...profile,model:null}:profile,weather,anchor.at,now,anchor.site?.key);stock-=used.amount;profile.historyWeatherCorrected=used.weather;}else if(now-anchor.at>HOUR)stock=null;
@@ -111,5 +122,5 @@
       profile.hint=profile.basis+(profile.stock===null?' · Vorrat unbekannt':'');result[kind]=profile;
     }return result;
   }
-  return {HOUR,DAY,normalize,duration,weatherFeatures,historyRows,intervals,weatherModel,consumption,build};
+  return {HOUR,DAY,normalize,duration,quantityUnits,quantity,containerHint,weatherFeatures,historyRows,intervals,weatherModel,consumption,build};
 });

@@ -73,3 +73,38 @@ test('historical stock correction is distinguished from an unavailable future we
  const fixture=weatherFixture();fixture.events=fixture.events.filter(e=>e.at<now);fixture.events.push(event('status-stock','gas','stock',now-D,8));fixture.weather.updated=now-31*C.HOUR;
  const p=C.build(fixture,now).gas;assert.ok(p.model);assert.equal(p.historyWeatherCorrected,true);assert.equal(p.weatherCorrected,true);assert.equal(p.weatherStatus.state,'stale');assert.match(p.weatherStatus.detail,/bisherige Verbrauch.*Wetterrückblick/);assert.equal(p.forecastWeatherCorrected,false);
 });
+test('gas and water demand can be expressed in fractional containers without changing stock or learning',()=>{
+ const source={defaults:{water:40,gas:11},events:[event('water-before','water','supply',now-4*D,20),event('water-after','water','supply',now-2*D,20),event('gas-before','gas','swap',now-4*D,11),event('gas-after','gas','swap',now-2*D,11)]};
+ const before=structuredClone(source),analysis=C.build(source,now);
+ assert.equal(analysis.water.containerSize,20,'a 40 L purchase default does not change the standard 20 L canister');assert.equal(analysis.gas.containerSize,11);
+ assert.equal(C.quantity(30,'water','Kanister',analysis.water.containerSize),1.5);
+ assert.ok(Math.abs(C.quantity(25.3,'gas','Flaschen',analysis.gas.containerSize)-2.3)<1e-12);
+ assert.equal(C.quantity(25.3,'gas','kg',analysis.gas.containerSize),25.3);
+ assert.equal(C.build({...source,defaults:{water:40,gas:5}},now).gas.containerSize,5);
+ const smaller=C.build({...source,defaults:{water:40,gas:5,waterContainer:10}},now);
+ assert.equal(smaller.water.containerSize,10);assert.equal(C.quantity(30,'water','Kanister',smaller.water.containerSize),3);
+ for(const kind of ['gas','water'])for(const field of ['daily','stock','remainingHours'])assert.equal(smaller[kind][field],analysis[kind][field],'changing the container reference preserves '+kind+' '+field);
+ for(const size of [0,-10,null,Infinity])assert.throws(()=>C.normalize({defaults:{waterContainer:size}}));
+ assert.deepEqual(source,before);assert.deepEqual(C.build(source,now),analysis);
+ assert.equal(C.containerHint('water',20),'1 Kanister = 20 L');assert.equal(C.containerHint('gas',11),'1 Flasche = 11 kg');
+});
+test('unknown quantities and missing container sizes never produce zero or an invented container count',()=>{
+ for(const kind of ['gas','water']){
+  const unit=C.quantityUnits(kind)[1];for(const missing of [null,undefined,NaN,Infinity])assert.equal(C.quantity(missing,kind,unit,20),null);
+  for(const size of [null,undefined,0,-1,Infinity])assert.equal(C.quantity(30,kind,unit,size),null);
+  assert.equal(C.quantity(0,kind,unit,20),0);
+ }
+});
+test('all demand tiles and instrument scales convert with the current container size',()=>{
+ const dashboard=require('../app/src/main/assets/dashboard-core.js'),snapshot={settings:{capacity:100},suppliesAnalysis:{gas:{containerSize:11,needs:{3:25.3,7:25.3,14:25.3}},water:{containerSize:20,needs:{3:30,7:30,14:30}}}};
+ for(const kind of ['gas','water'])for(const horizon of [3,7,14]){
+  const t=dashboard.tile(kind+'Need'+horizon),unit=kind==='gas'?'Flaschen':'Kanister';t.unit=unit;t.min=0;t.max=kind==='gas'?55:100;
+  assert.ok(dashboard.CATALOG[t.metric].units.includes(unit));
+  const base=dashboard.displayValue(t,null,null,null,snapshot),value=dashboard.convert(base,unit,t.metric,snapshot);
+  assert.equal(dashboard.format(value,t),kind==='gas'?'2,3':'1,5');assert.equal(dashboard.fixedRange(t,snapshot).max,5);
+  assert.ok(Math.abs(dashboard.unconvert(value,unit,t.metric,snapshot)-base)<1e-12);
+  assert.equal(dashboard.convert(base,unit,t.metric,{}),null);
+ }
+ snapshot.suppliesAnalysis.gas.containerSize=5;assert.equal(dashboard.convert(25,'Flaschen','gasNeed14',snapshot),5);
+ assert.deepEqual(dashboard.CATALOG.gasStock.units,['kg']);assert.deepEqual(dashboard.CATALOG.waterStock.units,['L']);
+});

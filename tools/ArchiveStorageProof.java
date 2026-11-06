@@ -266,8 +266,15 @@ public final class ArchiveStorageProof {
                 .put("equipment",new JSONObject().put("version",1).put("groups",new JSONArray()));
             backup.getJSONObject("dashboard").put("valueColors",new JSONObject().put("waterStock","#4C65E0").put("gasStock","#C2C200"));
             backup.getJSONObject("dashboard").getJSONArray("tiles").put(new JSONObject().put("id","water-color-proof").put("metric","waterStock").put("colorSource","value").put("color","#4c65e0"));
+            backup.getJSONObject("dashboard").put("supplyUnits",new JSONObject().put("water","Kanister").put("gas","Flaschen").put("unknownField","fictional-field-to-remove"));
+            backup.getJSONObject("dashboard").getJSONArray("tiles").put(new JSONObject().put("id","gas-demand-proof").put("metric","gasNeed14").put("unit","Flaschen"));
             repo.importConfiguration(backup.toString());
             JSONObject restoredColors=new JSONObject(repo.prefs.getString("dashboard-v1","{}"));
+            JSONObject units=restoredColors.getJSONObject("supplyUnits");
+            require(units.length()==2&&units.getString("water").equals("Kanister")&&units.getString("gas").equals("Flaschen"),"native settings import preserves both container choices and excludes unknown fields");
+            require(restoredColors.getJSONArray("tiles").getJSONObject(1).getString("unit").equals("Flaschen"),"native settings import preserves a gas demand tile in bottles");
+            JSONObject invalidUnits=new JSONObject(backup.toString());invalidUnits.getJSONObject("dashboard").getJSONObject("supplyUnits").put("water","Flaschen");boolean unitsRejected=false;try{ConfigurationBackup.normalize(invalidUnits.toString());}catch(IllegalArgumentException expected){unitsRejected=true;}
+            require(unitsRejected,"native settings normalization rejects a unit belonging to the other supply");
             require(restoredColors.getJSONObject("valueColors").getString("waterStock").equals("#4c65e0")&&restoredColors.getJSONArray("tiles").getJSONObject(0).getString("colorSource").equals("value"),"native backup import preserves central colors and tile inheritance");
             JSONObject invalidColor=new JSONObject(backup.toString());invalidColor.getJSONObject("dashboard").getJSONObject("valueColors").put("waterStock","url(example)");boolean colorRejected=false;try{ConfigurationBackup.normalize(invalidColor.toString());}catch(IllegalArgumentException expected){colorRejected=true;}
             require(colorRejected,"native backup normalization rejects invalid color codes");
@@ -282,6 +289,7 @@ public final class ArchiveStorageProof {
         }else if(args[1].equals("config_resume")){
             JSONObject heights=new JSONObject(repo.prefs.getString("dashboard-v1","{}")).getJSONObject("historyHeight");
             require(repo.prefs.getString("miniRange","").equals("month")&&heights.getInt("compact")==460&&heights.getInt("wide")==640,"fresh JVM retains overview range and both history heights");
+            require(new JSONObject(repo.prefs.getString("dashboard-v1","{}")).getJSONObject("supplyUnits").getString("water").equals("Kanister"),"fresh JVM retains the canister display choice");
         }else if(args[1].equals("metadata_resume")){
             // Use the fixture's elapsed time; runner speed must not age past its live buffer.
             JSONArray configs=repo.configs();long now=repo.prefs.getLong("proofFixtureTime",0)+120000;

@@ -6,7 +6,7 @@
 
 **Neu in 2.0.1:** Anzeigehandys laden ihren ersten Statistikstand auch während die Zentrale weiter aufzeichnet. Solarertrag, Verbrauch und Diagramme werden schrittweise sichtbar, statt durch neue Livewerte immer wieder verworfen zu werden. [Update und Prüfung auf dem Anzeigehandy](docs/ANZEIGE-STATISTIK.md) · [Änderungen und Prüfgrenzen](docs/changes-2.0.1.md).
 
-**In Vorbereitung:** ein Symbol mit Flamme und Wassertropfen für Gas / Wasser sowie ein sichtbarer Lernstand der Gasprognose. Die Anzeige unterscheidet geladene Wetterdaten, gelernte Modelle und tatsächlich angewandte Wetterkorrekturen. Diese Änderungen sind noch nicht in der oben verlinkten 2.0.1-APK enthalten. [Berechnungsgrundlage und Lernstand](docs/GAS-WASSER.md#wetter-und-lernen).
+**In Vorbereitung:** Gas- und Wasserbedarf wahlweise in kg/Flaschen beziehungsweise Litern/Kanistern mit einstellbaren Behältergrößen anzeigen, ein Symbol mit Flamme und Wassertropfen sowie ein sichtbarer Lernstand der Gasprognose. Die Anzeige unterscheidet geladene Wetterdaten, gelernte Modelle und tatsächlich angewandte Wetterkorrekturen. Diese Änderungen sind noch nicht in der oben verlinkten 2.0.1-APK enthalten. [Einheitenwahl und Berechnungsgrundlage](docs/GAS-WASSER.md).
 
 WohnPit vereint die bisherigen Apps Watt’n’Pit und WohnPit. **Android 8+**, für das Cockpit mit aktuellem Android-System-WebView. Kein Konto, keine Werbung. Messdaten bleiben auf deinen Geräten; optionaler Wetterabruf nutzt Internet. Im Anlagenverbund werden Daten verschlüsselt im lokalen WLAN übertragen.
 

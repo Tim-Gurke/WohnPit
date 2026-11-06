@@ -222,6 +222,10 @@
       for(const kind of Object.keys(result))result[kind].summary={...this.summary(result[kind].points),last:totals[kind],coverage:1,from:kind==='solar'?solarFrom:window.from,to:kind==='solar'?solarTo:window.to};
       return result;
     }
+    supplyUnitHint(t,unit=t.unit){
+      const m=C.CATALOG[t.metric];
+      return m.resourceNeed&&unit===m.units[1]?window.WattSuppliesCore.containerHint(m.resource,this.a.getSnapshot().suppliesAnalysis?.[m.resource]?.containerSize):'';
+    }
     updateChargeEstimate(shunt=this.a.reading('shunt'),snapshot=this.a.getSnapshot()) {
       const demo=this.a.isDemo();
       if(demo!==this.chargeDemo){this.chargeEstimator.reset();this.chargeDemo=demo;}
@@ -258,7 +262,7 @@
         if(window&&t.period.mode==='sunrise'&&(t.metric==='solar'||m.flow==='solar'))window=C.solarPlotWindow(window,data?.points||[],m.flow==='solar'?data?.summary:null);
         if(window?.solarFrom!=null&&t.metric==='solar'&&!m.flow&&data){const points=(data.points||[]).filter(p=>p.t>=window.from&&p.t<=window.to);data={...data,points,summary:this.summary(points)};}
         let value=C.displayValue(t,data?.summary,shunt,solar,snapshot,this.chargeEstimate);
-        value=C.convert(value,t.unit,t.metric);
+        value=C.convert(value,t.unit,t.metric,snapshot);
         const estimated=m.modelPower||m.estimated||data?.summary?.modelledMillis>0;
         const reading=`<strong class="tile-number">${esc(C.format(value,t))}</strong><span class="tile-unit">${!m.status?esc(t.unit):''}${estimated?'<small class="tile-estimate-tag"> · geschätzt</small>':''}</span>`;
         const visual=el.querySelector('.tile-visual');
@@ -269,6 +273,7 @@
         if(!window && t.metric==='remaining' && !C.finite(value))hint=shunt?.current>.03?'Akku wird geladen':'Wert vom SmartShunt';
         if(t.metric==='chargeTime')hint=C.chargeHint(this.chargeEstimate);
         if(m.resource)hint=(!snapshot.lan||snapshot.lan.role!=='viewer'||snapshot.lan.connected?'':'Letzter Stand · ')+(snapshot.suppliesAnalysis?.[m.resource]?.hint||'Einträge unter Gas / Wasser erfassen');
+        if(this.supplyUnitHint(t))hint+=' · '+this.supplyUnitHint(t);
         if(!window && t.metric==='solar' && solar?.state!=null)hint=C.PHASES[solar.state] || 'Ladephase '+solar.state;
         if(!window && t.metric==='power' && C.finite(shunt?.power))hint=shunt.power>.4?'Akku wird geladen':shunt.power<-.4?'Akku wird entladen':'Bilanz ausgeglichen';
         if(m.energy&&!data?.error)hint=t.period.mode==='sunrise'?`${this.periodLabel(t,window)} · ${Math.floor((data?.summary?.coverage||0)*100)} %`:`Berechnet · ${this.periodLabel(t,window)} · ${Math.floor((data?.summary?.coverage||0)*100)} % erfasst`;
@@ -314,7 +319,7 @@
       return 'letzte '+p.amount+' '+({min:'min',h:'h',d:'Tage'}[p.unit]);
     }
     gauge(t,value,reading) {
-      const {min,max}=C.fixedRange(t),percent=C.finite(value)?C.clamp((value-min)/(max-min),0,1):0;
+      const {min,max}=C.fixedRange(t,this.a.getSnapshot()),percent=C.finite(value)?C.clamp((value-min)/(max-min),0,1):0;
       const point=angle=>{const r=angle*Math.PI/180;return [80+61*Math.cos(r),80+61*Math.sin(r)];};
       let paths='';
       for(let i=0;i<60;i++){
@@ -325,7 +330,7 @@
       const p=point(135+percent*270),arrow=C.finite(value)?`<circle cx="${p[0]}" cy="${p[1]}" r="3.7" fill="var(--text)" stroke="var(--panel)" stroke-width="1.5"/>`:'';
       return `<div class="tile-gauge"><svg viewBox="0 0 160 150" aria-hidden="true"><g fill="none" stroke-width="6" stroke-linecap="round">${paths}</g>${arrow}</svg><div class="gauge-reading">${reading}</div><span class="gauge-min">${esc(this.short(min))}</span><span class="gauge-max">${esc(this.short(max))}</span></div>`;
     }
-    short(n){return Number(n.toFixed(Math.abs(n)<10?1:0)).toLocaleString('de-DE');}
+    short(n){return C.finite(n)?Number(n.toFixed(Math.abs(n)<10?1:0)).toLocaleString('de-DE'):'—';}
     blend(a,b,p){const ca=parseInt(a.slice(1),16),cb=parseInt(b.slice(1),16);return '#'+[16,8,0].map(s=>Math.round(((ca>>s)&255)*(1-p)+((cb>>s)&255)*p).toString(16).padStart(2,'0')).join('');}
     paint(color,t,text=false) {
       if((t.colorSource==='value'||t.adaptiveColor===false)&&!text)return color;
@@ -339,9 +344,9 @@
     }
     sparkline(t,points,window,capacity,summary,state) {
       if(!window)return '';
-      const series=points.map(p=>({...p,v:C.convert(C.signedValue(t,C.historicalValue(t.metric,p.v,capacity)),t.unit,t.metric)})).filter(p=>C.finite(p.v));
+      const series=points.map(p=>({...p,v:C.convert(C.signedValue(t,C.historicalValue(t.metric,p.v,capacity)),t.unit,t.metric,this.a.getSnapshot())})).filter(p=>C.finite(p.v));
       if(!series.length)return `<div class="tile-chart-empty">${state?.pending?'Werte werden geladen …':state?.error?'Werte konnten nicht geladen werden':'Keine gespeicherten Werte'}</div>`;
-      const bounds=C.chartRange(t,points,capacity,summary),low=bounds.min,high=bounds.max,x=p=>4+(p.t-window.from)/(window.to-window.from)*292,y=p=>58-C.clamp((p.v-low)/(high-low),0,1)*52;
+      const bounds=C.chartRange(t,points,capacity,summary,this.a.getSnapshot()),low=bounds.min,high=bounds.max,x=p=>4+(p.t-window.from)/(window.to-window.from)*292,y=p=>58-C.clamp((p.v-low)/(high-low),0,1)*52;
       const zero=low<0&&high>=0?`<path class="tile-zero-line" d="M4 ${y({v:0}).toFixed(2)}H296" stroke="var(--border)" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/>`:'';
       let path='',last=null;
       for(const p of series){const gap=C.seriesGap(last,p,Math.max(this.a.isDemo()?600001:45000,(p.period||0)*1500,(window.to-window.from)/600*3));path+=(last&&!gap?'L':'M')+x(p).toFixed(2)+','+y(p).toFixed(2);last=p;}
@@ -375,10 +380,10 @@
       if(t.colorSource==='value')t.color=C.metricColor(this.config,t.metric);
       if(m.widget){this.widgetEditor(t);return;}
       const types=m.status?[['number','Zahlenwert']]:[['number','Zahlenwert'],['gauge','Rundinstrument'],...(!m.liveOnly?[['chart','Verlauf']]:[])];
-      const fields=`<div class="form-grid">${field('Messwert',select('tileMetric',Object.entries(C.CATALOG).map(([key,m])=>[key,m.label])))}${field('Eigene Beschriftung',input('tileTitle',t.title,'maxlength="60" placeholder="'+esc(m.label)+'"'))}${field('Darstellung',select('tileType',types))}${field('Einheit',select('tileUnit',m.units.map(u=>[u,u || 'Ohne Einheit'])))}</div><p class="muted tile-explanation">${esc(m.hint || (m.kind==='shunt'?'Messwert vom SmartShunt.':'Messwert vom SmartSolar.'))}</p>`;
+      const fields=`<div class="form-grid">${field('Messwert',select('tileMetric',Object.entries(C.CATALOG).map(([key,m])=>[key,m.label])))}${field('Eigene Beschriftung',input('tileTitle',t.title,'maxlength="60" placeholder="'+esc(m.label)+'"'))}${field('Darstellung',select('tileType',types))}${field('Einheit',select('tileUnit',m.units.map(u=>[u,u || 'Ohne Einheit'])))}</div><p class="muted tile-explanation">${esc(m.hint || (m.kind==='shunt'?'Messwert vom SmartShunt.':'Messwert vom SmartSolar.'))}</p><p class="muted" id="tileSupplyUnitHint">${esc(this.supplyUnitHint(t))}</p>`;
       const period=`<details open><summary>Wert & Zeitraum</summary><div class="form-grid">${field('<span id="tilePeriodLabel">Zeitraum</span>',select('tilePeriod',m.liveOnly?[['live','Aktuell']]:[['live','Aktuell'],['last','Letzte …'],['today','Heute'],['sunrise','Seit Sonnenaufgang'],['reset','Seit Zurücksetzen'],['custom','Freier Zeitraum']]))}${field('<span id="tileAggregateLabel">Auswertung</span>',select('tileAggregate',m.status?[['last','Letzter Wert']]:Object.entries(aggregateNames)))}</div><p class="muted" id="tileLiveHint" hidden>Aktuell zeigt den Liveempfang. Ohne frischen Wert erscheint —; die gespeicherte Kurve bleibt sichtbar.</p><p class="muted" id="tileSunriseHint" hidden></p>${m.energy&&!m.flow?'<label class="check-field"><input type="checkbox" id="tileReverseSign"> Vorzeichen umkehren (+/−)</label>':''}${m.flow?'<p class="muted">Der Zeitraum gilt nur für diese Kachel. Andere Kacheln behalten ihre eigene Auswahl. Für einen direkten Energievergleich überall denselben Zeitraum wählen; „Heute“ enthält auch die Nachtstunden. Geräteverbrauch = festes Solar + geschätzte zusätzliche Solarerzeugung − Akkubilanz. Mobile Anteile sind geschätzt; bei Mobil aus zählt ab dem Umschaltzeitpunkt 0 W. Frühere mobile Erträge bleiben erhalten.</p>':''}<div id="tileLastFields" class="form-grid">${field('Anzahl',input('tileAmount',t.period.amount,'type="number" min="1" max="10000"'))}${field('Zeiteinheit',select('tileTimeUnit',[['min','Minuten'],['h','Stunden'],['d','Tage']]))}</div><div id="tileCustomFields" class="form-grid">${field('Von',input('tileFrom',dateInput(t.period.from || Date.now()-86400000),'type="datetime-local"'))}${field('Bis',input('tileTo',dateInput(t.period.to || Date.now()),'type="datetime-local"'))}</div><div id="tileResetFields"><p class="muted" id="tileResetLabel"></p><button class="quiet" id="tileReset">Jetzt zurücksetzen</button></div></details>`;
       const appearance=`<details><summary>Farben & Schrift</summary><div class="form-grid">${field('Farbzuordnung',select('tileColorSource',[['value','Zentrale Messwertfarbe'],['custom','Eigene Kachelfarbe']]))}${field('Wertfarbe',H.field('tileColor',t.color,'Wertfarbe'))}${field('Schriftgröße',input('tileFont',t.fontSize,'type="number" min="18" max="20"'))}${field('Nachkommastellen',select('tileDigits',[[0,'Keine'],[1,'Eine'],[2,'Zwei'],[3,'Drei']]))}${field('Deckkraft der Fläche',input('tileOpacity',t.opacity,'type="range" min="0" max="100"'))}${field('Hintergrund',select('tileBackgroundMode',[['auto','Passend zum Farbschema'],['custom','Eigene Farbe']]))}${field('Eigene Hintergrundfarbe',H.field('tileBackground',t.background==='auto'?'#18303b':t.background,'Eigene Hintergrundfarbe'))}</div><label class="check-field"><input type="checkbox" id="tileAdaptiveColor"> Kurven- und Instrumentfarben an Hell/Dunkel anpassen</label></details>`;
-      const scale=`<details><summary>Skala</summary><div id="tileChartScale">${field('Verlaufsskala',select('tileScaleMode',[['fixed','Feste Skala'],['auto','Automatisch nach bisherigen Werten']]))}<p class="muted" id="tileScaleHint" hidden>Passt sich den Messwerten im gewählten Zeitraum an, mit etwas Platz über dem Maximum. Spannung, Temperatur und Akkustand passen auch die Untergrenze an. Für die bisherigen Tageswerte den Zeitraum „Heute“ wählen.</p></div><div class="form-grid">${field('Minimum',input('tileMin',this.shortInput(C.fixedRange(t).min),'type="number" step="any"'))}${field('Maximum',input('tileMax',this.shortInput(C.fixedRange(t).max),'type="number" step="any"'))}</div><label class="check-field"><input type="checkbox" id="tileMulticolor"> Mehrfarbiges Rundinstrument</label><div class="form-grid">${field('Mittlere Farbe',H.field('tileColorMid',t.colorMid,'Mittlere Farbe'))}${field('Endfarbe',H.field('tileColorEnd',t.colorEnd,'Endfarbe'))}</div><label class="check-field"><input type="checkbox" id="tileInvert"> Farbverlauf umkehren</label></details>`;
+      const scale=`<details><summary>Skala</summary><div id="tileChartScale">${field('Verlaufsskala',select('tileScaleMode',[['fixed','Feste Skala'],['auto','Automatisch nach bisherigen Werten']]))}<p class="muted" id="tileScaleHint" hidden>Passt sich den Messwerten im gewählten Zeitraum an, mit etwas Platz über dem Maximum. Spannung, Temperatur und Akkustand passen auch die Untergrenze an. Für die bisherigen Tageswerte den Zeitraum „Heute“ wählen.</p></div><div class="form-grid">${field('Minimum',input('tileMin',this.shortInput(C.fixedRange(t,this.a.getSnapshot()).min),'type="number" step="any"'))}${field('Maximum',input('tileMax',this.shortInput(C.fixedRange(t,this.a.getSnapshot()).max),'type="number" step="any"'))}</div><label class="check-field"><input type="checkbox" id="tileMulticolor"> Mehrfarbiges Rundinstrument</label><div class="form-grid">${field('Mittlere Farbe',H.field('tileColorMid',t.colorMid,'Mittlere Farbe'))}${field('Endfarbe',H.field('tileColorEnd',t.colorEnd,'Endfarbe'))}</div><label class="check-field"><input type="checkbox" id="tileInvert"> Farbverlauf umkehren</label></details>`;
       const arrangement=`<details><summary>Größe & Ebene</summary><div class="form-grid">${field('Breite',input('tileWidth',p.w,'type="range" min="'+(m.resourceDuration?4:2)+'" max="12" step="0.5"'))}${field('Höhe',input('tileHeight',p.h,'type="range" min="'+(m.resourceDuration?6:2)+'" max="18" step="0.5"'))}</div><div class="row"><button class="quiet" id="tileBack">Nach hinten</button><button class="quiet" id="tileFront">Nach vorne</button><button class="quiet" id="duplicateTile">Duplizieren</button></div><p class="muted">Gilt für die ${this.profile==='wide'?'breite':'schmale'} Ansicht. Andere Kacheln behalten ihre Position.</p></details>`;
       this.a.openModal('Kachel anpassen',`<div class="tile-editor">${fields}${period}${appearance}${m.status?'':scale}${arrangement}<p class="form-error" id="tileError" hidden></p><div class="form-actions"><button class="quiet danger-text" id="removeTile">Entfernen</button><button class="primary" id="saveTile">Übernehmen</button></div></div>`);
       const values={tileMetric:t.metric,tileType:t.type,tileUnit:t.unit,tilePeriod:t.period.mode,tileAggregate:m.status?'last':t.period.aggregate,tileTimeUnit:t.period.unit,tileDigits:t.digits,tileColorSource:t.colorSource,tileBackgroundMode:t.background==='auto'?'auto':'custom'};
@@ -418,7 +423,7 @@
         valueOptions(chart&&wasLive?'live':value==='live'?t.period.aggregate:value);periodChanged();scaleChanged();
       };
       let previousUnit=t.unit;
-      $('tileUnit').onchange=()=>{if($('tileMin'))for(const id of ['tileMin','tileMax'])$(id).value=this.shortInput(C.convert(C.unconvert(Number($(id).value),previousUnit,t.metric),$('tileUnit').value,t.metric));previousUnit=$('tileUnit').value;};
+      $('tileUnit').onchange=()=>{if($('tileMin'))for(const id of ['tileMin','tileMax'])$(id).value=this.shortInput(C.convert(C.unconvert(Number($(id).value),previousUnit,t.metric,this.a.getSnapshot()),$('tileUnit').value,t.metric,this.a.getSnapshot()));previousUnit=$('tileUnit').value;$('tileSupplyUnitHint').textContent=this.supplyUnitHint(t,previousUnit);};
       $('tileMetric').onchange=()=>{const changed=C.tile($('tileMetric').value,id);changed.layouts=copy(t.layouts);changed.title=$('tileTitle').value;this.editor(id,changed);};
       $('tileBackgroundMode').onchange=()=>{H.disabled('tileBackground',$('tileBackgroundMode').value==='auto');};$('tileBackgroundMode').onchange();
       $('tileBack').onclick=()=>{layer='back';this.a.toast('Wird hinter die anderen Kacheln gelegt.');};
@@ -433,7 +438,7 @@
           if(t.type==='chart' && t.period.mode==='live')t.period.mode='last';
           if(t.period.mode==='last' && (!C.finite(t.period.amount)||t.period.amount<1||t.period.amount>10000))throw new Error('Bitte einen Zeitraum zwischen 1 und 10.000 wählen.');
           if(t.period.mode==='custom' && (!C.finite(t.period.from)||!C.finite(t.period.to)||t.period.from>=t.period.to))throw new Error('Bitte einen gültigen Zeitraum wählen.');
-          if($('tileMin')){t.scaleMode=$('tileScaleMode').value;if(t.type!=='chart'||t.scaleMode!=='auto'){const min=C.unconvert(Number($('tileMin').value),t.unit,t.metric),max=C.unconvert(Number($('tileMax').value),t.unit,t.metric);t.min=t.reverseSign?-max:min;t.max=t.reverseSign?-min:max;if(!C.finite(t.min)||!C.finite(t.max)||t.min>=t.max)throw new Error('Das Skalenmaximum muss größer als das Minimum sein.');}t.multicolor=$('tileMulticolor').checked;t.invert=$('tileInvert').checked;t.colorMid=H.read('tileColorMid');t.colorEnd=H.read('tileColorEnd');}
+          if($('tileMin')){t.scaleMode=$('tileScaleMode').value;if(t.type!=='chart'||t.scaleMode!=='auto'){const min=C.unconvert(Number($('tileMin').value),t.unit,t.metric,this.a.getSnapshot()),max=C.unconvert(Number($('tileMax').value),t.unit,t.metric,this.a.getSnapshot());t.min=t.reverseSign?-max:min;t.max=t.reverseSign?-min:max;if(!C.finite(t.min)||!C.finite(t.max)||t.min>=t.max)throw new Error('Das Skalenmaximum muss größer als das Minimum sein.');}t.multicolor=$('tileMulticolor').checked;t.invert=$('tileInvert').checked;t.colorMid=H.read('tileColorMid');t.colorEnd=H.read('tileColorEnd');}
           t.adaptiveColor=$('tileAdaptiveColor').checked;t.colorSource=$('tileColorSource').value;t.color=t.colorSource==='value'?C.metricColor(this.config,t.metric):H.read('tileColor');t.digits=Number($('tileDigits').value);t.fontSize=Number($('tileFont').value);t.opacity=Number($('tileOpacity').value);t.background=$('tileBackgroundMode').value==='auto'?'auto':H.read('tileBackground');
           t.layouts[this.profile]={...t.layouts[this.profile],w:Number($('tileWidth').value),h:Number($('tileHeight').value)};
           t.layouts[this.profile].x=Math.min(t.layouts[this.profile].x,12-t.layouts[this.profile].w);
@@ -450,7 +455,7 @@
       $('removeTile').onclick=()=>{this.config.tiles=this.config.tiles.filter(old=>old.id!==t.id);if(this.commit())this.a.closeModal();};
       $('saveTile').onclick=()=>{t.title=$('tileTitle').value.trim();t.opacity=Number($('tileOpacity').value);t.layouts[this.profile]={...p,w:Number($('tileWidth').value),h:Number($('tileHeight').value)};t.layouts[this.profile].x=Math.min(p.x,12-t.layouts[this.profile].w);this.config.tiles=this.config.tiles.map(old=>old.id===t.id?t:old);if(this.commit()){this.a.closeModal();this.a.toast(label+' gespeichert.');}};
     }
-    shortInput(n){return Math.round(n*1e6)/1e6;}
+    shortInput(n){return C.finite(n)?Math.round(n*1e6)/1e6:'';}
     reset() {
       this.a.openModal('Standardübersicht wiederherstellen?',`<p class="muted">Alle Kacheln, Größen, Positionen, Kachelfarben und Blockreihenfolgen werden für Hoch- und Queransicht auf die Standardübersicht zurückgesetzt. Auch die Verlaufshöhe wird zurückgesetzt. Geräte, Rollerprofil und Messdaten bleiben erhalten.</p><div class="form-actions"><button class="quiet" id="keepDashboard">Behalten</button><button class="primary" id="confirmDashboardReset">Wiederherstellen</button></div>`);
       $('keepDashboard').onclick=()=>this.a.closeModal();$('confirmDashboardReset').onclick=()=>{this.config=C.defaults();if(this.commit())this.a.closeModal();};

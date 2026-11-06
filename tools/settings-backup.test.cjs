@@ -3,6 +3,15 @@ const assert=require('node:assert/strict');
 const C=require('../app/src/main/assets/settings-backup.js');
 const D=require('../app/src/main/assets/dashboard-core.js');
 const sample=()=>C.create({settings:{theme:'light',palette:'green',capacity:150,sampleSeconds:30,miniRange:'sunrise',weatherPlace:{name:'Testort',latitude:48,longitude:8}}},D.defaults(),{version:1,groups:[{id:'test-group',label:'Testmodule',count:2,watts:90,placement:'fixed',controller:'Regler',measurement:'solar'}]});
+test('container display choices and demand tiles survive settings backup without moving existing tiles',()=>{
+ const backup=sample(),layouts=backup.dashboard.tiles.map(t=>t.layouts);
+ backup.dashboard.supplyUnits={water:'Kanister',gas:'Flaschen'};
+ for(const [metric,unit] of [['gasNeed14','Flaschen'],['waterNeed14','Kanister']])backup.dashboard.tiles.push({...D.tile(metric),unit});
+ const restored=C.normalize(JSON.parse(JSON.stringify(backup)));
+ assert.deepEqual(restored.dashboard.supplyUnits,backup.dashboard.supplyUnits);
+ assert.equal(restored.dashboard.tiles.at(-2).unit,'Flaschen');assert.equal(restored.dashboard.tiles.at(-1).unit,'Kanister');assert.deepEqual(restored.dashboard.tiles.slice(0,-2).map(t=>t.layouts),layouts);
+ const old=sample();delete old.dashboard.supplyUnits;assert.deepEqual(C.normalize(old).dashboard.supplyUnits,{water:'L',gas:'kg'});
+});
 test('PWM loss model selection and custom totals round trip without changing either handset layout',()=>{
  for(const model of [{controller:'PWM',yieldFactor:.8},{controller:'PWM',yieldFactor:.65},{controller:'PWM',controllerType:'mppt',yieldMode:'manual',yieldFactor:.8}]){
   const backup=sample(),layout=structuredClone(backup.dashboard);Object.assign(backup.equipment.groups[0],model);if(!model.yieldMode)delete backup.equipment.groups[0].yieldMode;
