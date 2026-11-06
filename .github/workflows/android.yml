@@ -21,6 +21,7 @@ jobs:
           python3 tools/check-public-files.py
           npm install --no-save --prefix "$RUNNER_TEMP/wohnpit-supplies-ui" playwright@1.51.1
           NODE_PATH="$RUNNER_TEMP/wohnpit-supplies-ui/node_modules" WATTPIT_CHROMIUM=/usr/bin/google-chrome node tools/supplies-smoke.cjs
+          NODE_PATH="$RUNNER_TEMP/wohnpit-supplies-ui/node_modules" WATTPIT_CHROMIUM=/usr/bin/google-chrome node tools/mobile-solar-smoke.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
