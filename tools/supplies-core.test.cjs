@@ -29,3 +29,47 @@ test('a fresh multi-day forecast influences the whole gas reach, including after
  const p=C.build({events,weather:{updated:now,siteKey:site.key,history,forecast}},now).gas;assert.ok(p.model);assert.ok(Math.abs(p.remainingHours-8/1.8*24)<2);assert.ok(Math.abs(p.needs[14]-1.8*14)<.3);
 });
 test('a configured location change and return inside one bottle cycle prevents false weather training',()=>{const events=[event('0001','gas','swap',now-4*D,11),event('0002','gas','swap',now-2*D,11)],sites=[{at:now-3.5*D,site:{key:'elsewhere'}},{at:now-2.5*D,site:{key:'site-1'}}];assert.equal(C.intervals(events,'gas',now,{},sites).rows[0].features,null);});
+
+function weatherFixture(count=9,{wind=false,constantHeat=false,constantRate=false}={}){
+ const events=[],history=[],forecast=[],heats=[2,12,7,17,4,14,9,19,6],winds=[12,1,25,4,20,2,28,6,15],site={key:'site-1'};
+ for(let i=0;i<count;i++){
+  const from=now-(count-i)*2*D,heat=constantHeat?10:heats[i],windHeat=heat*winds[i]/20,rate=constantRate?1:.2+.08*heat+(wind?.2*windHeat:0);
+  events.push(event('status-'+i,'gas','swap',from,rate*2,{site}));
+  for(let d=0;d<2;d++)history.push({from:from+d*D,to:from+(d+1)*D,site:site.key,source:'archive',heat,windHeat});
+ }
+ events.push(event('status-last','gas','swap',now,8,{site}));
+ for(let d=0;d<15;d++)forecast.push({from:now+d*D,to:now+(d+1)*D,site:site.key,source:'forecast',heat:20,windHeat:10});
+ return {events,weather:{updated:now,siteKey:site.key,history,forecast}};
+}
+test('loaded history alone reports learning progress rather than active weather correction',()=>{
+ const p=C.build(weatherFixture(5),now).gas;
+ assert.equal(p.weatherStatus.state,'learning');assert.equal(p.weatherStatus.weatherIntervals,5);assert.equal(p.weatherStatus.intervals,5);assert.match(p.weatherStatus.detail,/5 von mindestens 6/);assert.equal(p.weatherCorrected,false);
+ const none=C.build({},now).gas;assert.equal(none.weatherStatus.state,'no-intervals');
+ const missing=weatherFixture(6);missing.weather.history=[];const incomplete=C.build(missing,now).gas;
+ assert.equal(incomplete.weatherStatus.weatherIntervals,0);assert.match(incomplete.weatherStatus.detail,/6 Abschnitte.*Wetterzuordnung/);
+});
+test('weather readiness explains similar temperatures and rejected weather models',()=>{
+ assert.equal(C.build(weatherFixture(9,{constantHeat:true}),now).gas.weatherStatus.state,'similar-weather');
+ assert.equal(C.build(weatherFixture(9,{constantRate:true}),now).gas.weatherStatus.state,'not-improved');
+});
+test('active temperature and wind status follows the model that actually changes the forecasts',()=>{
+ const p=C.build(weatherFixture(6),now).gas;assert.equal(p.weatherStatus.state,'active');assert.equal(p.weatherStatus.model,'temperature');assert.equal(p.forecastWeatherCorrected,true);assert.equal(p.rangeWeatherCorrected,true);assert.notEqual(p.needs[3],p.daily*3);
+ const wind=C.build(weatherFixture(9,{wind:true}),now).gas;assert.equal(wind.weatherStatus.model,'temperature-wind');assert.match(wind.weatherStatus.title,/Temperatur und Wind/);
+});
+test('disabled, stale, wrong-place and wrong-source forecasts preserve baseline needs and explain the reason',()=>{
+ for(const [state,change] of [
+  ['disabled',f=>f.weather.enabled=false],
+  ['stale',f=>f.weather.updated=now-31*C.HOUR],
+  ['stale',f=>delete f.weather.updated],
+  ['missing-forecast',f=>f.weather.forecast=[]],
+  ['missing-forecast',f=>f.weather.forecast.forEach(r=>r.site='elsewhere')],
+  ['missing-forecast',f=>f.weather.forecast.forEach(r=>r.source='archive')]
+ ]){
+  const fixture=weatherFixture();change(fixture);const p=C.build(fixture,now).gas;
+  assert.ok(p.model);assert.equal(p.weatherStatus.state,state);assert.equal(p.forecastWeatherCorrected,false);assert.equal(p.rangeWeatherCorrected,false);assert.equal(p.needs[3],p.daily*3);
+ }
+});
+test('historical stock correction is distinguished from an unavailable future weather correction',()=>{
+ const fixture=weatherFixture();fixture.events=fixture.events.filter(e=>e.at<now);fixture.events.push(event('status-stock','gas','stock',now-D,8));fixture.weather.updated=now-31*C.HOUR;
+ const p=C.build(fixture,now).gas;assert.ok(p.model);assert.equal(p.historyWeatherCorrected,true);assert.equal(p.weatherCorrected,true);assert.equal(p.weatherStatus.state,'stale');assert.match(p.weatherStatus.detail,/bisherige Verbrauch.*Wetterrückblick/);assert.equal(p.forecastWeatherCorrected,false);
+});

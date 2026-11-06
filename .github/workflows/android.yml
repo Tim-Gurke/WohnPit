@@ -114,6 +114,7 @@ jobs:
             app/build/reports/lan-proof/viewer-results.log
             app/build/reports/lan-proof/mobile-viewer-results.log
             app/build/reports/lan-proof/solar-inputs.json
+            docs/images/supplies-weather-active-*.png
 
   emulator:
     needs: build

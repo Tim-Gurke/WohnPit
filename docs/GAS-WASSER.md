@@ -49,6 +49,20 @@ Eine erste vorläufige Bedarfsschätzung ist nach einem abgeschlossenen Abschnit
 
 Beim Gas wird ein Temperaturmodell frühestens mit sechs geeigneten, unterschiedlich kalten Abschnitten geprüft; ein zusätzliches Windmodell frühestens mit neun. Das Modell wird nur verwendet, wenn es zurückgehaltene Abschnitte besser erklärt als der durchschnittliche Verbrauch. Wetterlücken und erkennbare Ortswechsel verhindern eine unbelegte Wetterzuordnung. Ohne geeignetes Wettermodell bleibt die Schätzung aus den Wechselintervallen verfügbar. Wetterkorrekturen verwenden eine ausreichend aktuelle Vorhersage; außerhalb ihrer zeitlichen Abdeckung gilt wieder der übliche Bedarf.
 
+**Der übliche Tagesbedarf ist der Durchschnitt aus abgeschlossenen Flaschenabschnitten.** Auch die Kachel „Gas · Tagesbedarf“ zeigt diesen Durchschnitt. Wetterkorrekturen können dagegen den geschätzten Verbrauch seit dem letzten bekannten Vorrat, den Bedarf für 3 / 7 / 14 Tage und die Reichweite verändern. Eine geladene Wetterhistorie allein beweist keine aktive Wetterkorrektur. Sechs abgeschlossene Abschnitte brauchen mindestens sieben passende Flaschenwechsel; ein vorzeitiger Wechsel oder eine Bestandskorrektur kann einen Abschnitt vom Lernen ausschließen.
+
+### Sichtbarer Lernstand – nächste Aktualisierung, noch nicht in 2.0.1
+
+Unter der Gaskarte steht künftig immer der Zustand der Wetterberechnung:
+
+| Anzeige | Bedeutung |
+|---|---|
+| Wetterkorrektur noch nicht aktiv | Es fehlen vollständige Abschnitte, ausreichend zugeordnetes Wetter oder unterschiedlich kalte Abschnitte; alternativ verbessert das Wettermodell die Schätzung noch nicht zuverlässig. Die Anzahl geeigneter Abschnitte und der konkrete Grund stehen dabei. |
+| Wetterkorrektur aktiv · Temperatur / Temperatur und Wind | Das geprüfte Modell fließt tatsächlich in die Bedarfsschätzung oder Reichweite ein. Für nicht abgedeckte Vorhersagezeiträume gilt weiterhin der Durchschnitt. |
+| Wettermodell gelernt · Prognose ohne Wetterkorrektur | Das Modell ist vorhanden, aber Wetter ist ausgeschaltet oder eine aktuelle, passende Vorhersage fehlt. Die Vorhersage muss jünger als 30 Stunden sein. |
+
+Die Anzeige nennt die Zahl der wettergeeigneten und aller abgeschlossenen Flaschenabschnitte. Eine bereits angewandte Korrektur des vergangenen Verbrauchs mit Wetterrückblick wird gesondert genannt; sie wird nicht als aktive Korrektur der zukünftigen Prognose ausgegeben. Mit „Wetter ergänzen“ lassen sich fehlende Vorhersagen erneut anfordern.
+
 ## Anzeigen und zusätzliche Kacheln
 
 Die Versorgungsseite zeigt den geschätzten Restvorrat, die Reichweite samt Schätzbereich, üblichen Tagesbedarf, Bedarf für **3 / 7 / 14 Tage**, letzten Eintrag und übliche Abstände. Beim Wasser wird außerdem der aus dem Beschaffungsrhythmus erwartete nächste Termin angezeigt. Dieser Termin ist eine Planungshilfe und kein gemessener Leerstand.

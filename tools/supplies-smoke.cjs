@@ -21,6 +21,9 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),path
   });
   await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));await page.locator('[data-page="supplies"]').click();
   assert.match(await page.locator('#supplies-gas .supply-range').textContent(),/1 Tag 17 Stunden/);assert.match(await page.locator('#supplies-water').textContent(),/12 L verbleibend/);
+  assert.equal(await page.locator('#navSupplies svg path').count(),2);assert.equal(await page.locator('.supply-symbol svg').count(),2);
+  assert.match(await page.locator('#supplies-gas .supply-weather').textContent(),/Wetterkorrektur noch nicht aktiv/);
+  assert.match(await page.locator('#supplies-gas .supply-weather').textContent(),/0 von mindestens 6/);
   assert.equal(await page.evaluate(()=>document.body.scrollWidth>innerWidth),false);
   const out=process.env.WATTPIT_SUPPLIES_SCREENSHOTS||path.resolve(__dirname,'../docs/images');fs.mkdirSync(out,{recursive:true});
   await page.screenshot({path:path.join(out,'supplies-1.9.0-dark.png'),animations:'disabled'});
@@ -37,7 +40,31 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),path
   assert.match(await page.locator('[data-tile] .tile-number').last().textContent(),/Tag|Stunde/);assert.deepEqual(await page.evaluate(()=>dashboard.config.tiles.filter(t=>t.metric!=='gasRange').map(t=>({id:t.id,layouts:t.layouts}))),layouts);
   const rangeFits=async()=>{const rects=await page.locator('[data-tile]').last().evaluate(el=>{const number=el.querySelector('.tile-number').getBoundingClientRect(),visual=el.querySelector('.tile-visual').getBoundingClientRect();return {top:number.top,bottom:number.bottom,from:visual.top,to:visual.bottom};});assert.ok(rects.top>=rects.from-1&&rects.bottom<=rects.to+1,'days/hours text must fit entirely inside its tile: '+JSON.stringify(rects));};await rangeFits();
   await page.evaluate(()=>{document.getElementById('toast').hidden=true;document.getElementById('plantActionStatus').hidden=true;});await page.locator('[data-tile]').last().screenshot({path:path.join(out,'supplies-tile-1.9.0.png'),animations:'disabled'});await page.setViewportSize({width:832,height:620});await waitForPage(page,()=>dashboard.profile==='wide');await rangeFits();await page.setViewportSize({width:390,height:900});await waitForPage(page,()=>dashboard.profile==='compact');
-  await page.locator('[data-page="supplies"]').click();await page.evaluate(()=>{window.online=false;poll();});assert.equal(await page.locator('#suppliesWater').isDisabled(),true);assert.match(await page.locator('#suppliesStatus').textContent(),/Letzter Stand/);
+  await page.locator('[data-page="supplies"]').click();
+  const previousFixture=await page.evaluate(()=>JSON.parse(JSON.stringify(window.suppliesFixture)));
+  await page.evaluate(()=>{
+   const now=Date.now(),D=86400000,site=window.suppliesFixture.weather.place,heats=[2,12,7,17,4,14],events=[],history=[],forecast=[];
+   for(let i=0;i<6;i++){
+    const from=now-(6-i)*2*D,heat=heats[i];events.push({id:'weather-example-'+i,kind:'gas',type:'swap',at:from,amount:(.2+.08*heat)*2,empty:true,site});
+    for(let d=0;d<2;d++)history.push({site:site.key,source:'archive',from:from+d*D,to:from+(d+1)*D,heat,windHeat:heat*.5});
+   }
+   events.push({id:'weather-example-last',kind:'gas',type:'swap',at:now,amount:8,empty:true,site});
+   for(let d=0;d<15;d++)forecast.push({site:site.key,source:'forecast',from:now+d*D,to:now+(d+1)*D,heat:20,windHeat:10});
+   Object.assign(window.suppliesFixture,{events,weather:{updated:now,siteKey:site.key,place:site,history,forecast}});poll();
+  });
+  assert.equal(await page.locator('.supply-weather').getAttribute('data-state'),'active');
+  assert.match(await page.locator('.supply-weather strong').textContent(),/aktiv · Temperatur/);
+  assert.match(await page.locator('.supply-weather').textContent(),/6 von 6 abgeschlossenen/);
+  await page.setViewportSize({width:950,height:1050});await page.evaluate(()=>{document.getElementById('toast').hidden=true;});
+  await page.screenshot({path:path.join(out,'supplies-weather-active-dark.png'),animations:'disabled'});
+  await page.evaluate(()=>{window.testTheme='light';poll();});await page.screenshot({path:path.join(out,'supplies-weather-active-light.png'),animations:'disabled'});
+  await page.evaluate(()=>{window.suppliesFixture.weather.enabled=false;poll();});
+  assert.equal(await page.locator('.supply-weather').getAttribute('data-state'),'disabled','changing only weather availability must refresh the calculation');
+  await page.evaluate(()=>{window.suppliesFixture.weather.enabled=true;window.suppliesFixture.weather.forecast=[];poll();});
+  assert.equal(await page.locator('.supply-weather').getAttribute('data-state'),'missing-forecast','changing only forecast rows must refresh the calculation');
+  await page.evaluate(fixture=>{window.suppliesFixture=fixture;window.testTheme='dark';poll();},previousFixture);
+  await page.setViewportSize({width:390,height:900});assert.equal(await page.evaluate(()=>document.body.scrollWidth>innerWidth),false);
+  await page.evaluate(()=>{window.online=false;poll();});assert.equal(await page.locator('#suppliesWater').isDisabled(),true);assert.match(await page.locator('#suppliesStatus').textContent(),/Letzter Stand/);
   await page.evaluate(()=>{window.online=true;delete window.suppliesFixture.protocol;poll();});assert.equal(await page.locator('#suppliesGas').isDisabled(),true);assert.match(await page.locator('#suppliesStatus').textContent(),/0\.0\.4/);
   assert.deepEqual(errors,[]);console.log('PASS supplies UI: days/hours, delayed host acknowledgement, additions, early gas changes, delete/cancel, shared defaults, optional tiles, retained layouts, offline/update states and screenshots.');
  }finally{await browser.close();}

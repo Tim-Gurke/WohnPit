@@ -38,6 +38,9 @@ const icons = {
   overview:'<rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/>',
   history:'<path d="M3 3v18h18M6 15l4-5 4 3 6-8"/>',
   devices:'<path d="M7 7l10 10-5 5V2l5 5L7 17"/><path d="M5 5v2m14 10v2"/>',
+  water:'<path d="M12 3S5 10.5 5 15a7 7 0 0 0 14 0c0-4.5-7-12-7-12Z"/><path d="M8 15a4 4 0 0 0 4 4"/>',
+  gas:'<path d="M12 2c1 5-4 6-4 10-2-1-2-3-2-3s-3 4-3 7a9 9 0 0 0 18 0c0-5-4-9-4-9s0 5-3 6c2-5-2-11-2-11Z"/>',
+  supplies:'<path d="M7 3c1 3-2 5-2 8l-2-2s-2 3-2 6a6 6 0 0 0 12 0c0-4-3-7-3-7s0 3-2 4c1-4-1-9-1-9Z"/><path d="M18 7s-4 5-4 9a4 4 0 0 0 8 0c0-4-4-9-4-9Z"/>',
   settings:'<circle cx="12" cy="12" r="3.5"/><polygon points="20.00,12.00 19.96,12.78 21.81,13.95 21.57,14.90 21.24,15.83 20.82,16.71 18.65,16.44 18.18,17.08 17.66,17.66 17.08,18.18 17.56,20.31 16.71,20.82 15.83,21.24 14.90,21.57 13.56,19.85 12.78,19.96 12.00,20.00 11.22,19.96 10.05,21.81 9.10,21.57 8.17,21.24 7.29,20.82 7.56,18.65 6.92,18.18 6.34,17.66 5.82,17.08 3.69,17.56 3.18,16.71 2.76,15.83 2.43,14.90 4.15,13.56 4.04,12.78 4.00,12.00 4.04,11.22 2.19,10.05 2.43,9.10 2.76,8.17 3.18,7.29 5.35,7.56 5.82,6.92 6.34,6.34 6.92,5.82 6.44,3.69 7.29,3.18 8.17,2.76 9.10,2.43 10.44,4.15 11.22,4.04 12.00,4.00 12.78,4.04 13.95,2.19 14.90,2.43 15.83,2.76 16.71,3.18 16.44,5.35 17.08,5.82 17.66,6.34 18.18,6.92 20.31,6.44 20.82,7.29 21.24,8.17 21.57,9.10 19.85,10.44 19.96,11.22"/>',
   plus:'<path d="M12 5v14M5 12h14"/>',
   import:'<path d="M12 3v12m-4-4 4 4 4-4M4 16v5h16v-5"/>',
@@ -497,7 +500,7 @@ $('exportPlanningDiagnostics').onclick=()=>{if(native?.choosePlanningDiagnostics
 $('saveSettings').onclick=async()=>{const settings={capacity:Number($('capacitySetting').value),sampleSeconds:Number($('sampleSetting').value)};if(!settings.capacity||settings.capacity<=0||settings.capacity>10000){toast('Bitte eine Kapazität zwischen 1 und 10.000 Ah eingeben.');return;}const error=deviceNative?.isLanViewer?.()?await controls.send('settings',[JSON.stringify(settings)],settingsRevision):native?await native.settings(JSON.stringify(settings)):'';if(error){toast(error);return;}Object.assign(snapshot.settings,settings);settingsDirty=false;renderSettings();toast('Einstellungen gespeichert.');renderOverview();};
 $('miniRange').onchange=()=>{const miniRange=$('miniRange').value,error=native?native.settings(JSON.stringify({miniRange})):'';if(error){toast(error);loadMini(true);return;}snapshot.settings.miniRange=miniRange;if(!native)localStorage.setItem('wattpit-mini-range',miniRange);loadMini(true);};
 $('historyImport').innerHTML=icon('import');$('addDevice').innerHTML=icon('plus');
-for(const [id,name] of [['navOverview','overview'],['navStorage','battery'],['navHistory','history'],['navDevices','devices'],['navSettings','settings']])$(id).innerHTML=icon(name);
+for(const [id,name] of [['navOverview','overview'],['navStorage','battery'],['navSupplies','supplies'],['navHistory','history'],['navDevices','devices'],['navSettings','settings']])$(id).innerHTML=icon(name);
 lifecycle=new window.WattLifecycle({native,toast,poll,stateChanged:state=>reads?.state(state),completed:()=>{lastHistoryRevision=-1;lastMiniLoad=0;dashboard?.cache.clear();}});
 lifecycle.poll();
 dashboard = new window.WattDashboard({native,read:historyRead,resizeMini:drawMini,isBlocked:()=>lifecycle.blocked,dataTime,getSnapshot:()=>snapshot,reading,isDemo:()=>demo,openModal,closeModal,toast});
@@ -514,7 +517,7 @@ theme(!native?localStorage.getItem('wattpit-preview-theme')||'dark':'dark',false
 lanUi=new window.WattLan({native:deviceNative,toast,openModal,closeModal});
 presence=new window.WattPresence({native:deviceNative,toast,openModal,closeModal,poll,refresh:()=>{if(solar){solar.renderKey='';solar.render();}}});
 const valueColors=new window.WattValueColors({native:deviceNative,dashboard,openModal,closeModal,toast,repaint:()=>{if(supplies){supplies.renderKey='';supplies.render();}dashboard.update();}});
-supplies=new window.WattSupplies({native:deviceNative,getSnapshot:()=>snapshot,getValueColor:metric=>window.WattDashboardCore.metricColor(dashboard.config,metric),getValueTextColor:metric=>dashboard.paint(window.WattDashboardCore.metricColor(dashboard.config,metric),window.WattDashboardCore.tile(metric),true),openModal,closeModal,toast,poll,repaint:()=>dashboard?.update()});
+supplies=new window.WattSupplies({native:deviceNative,icon,getSnapshot:()=>snapshot,getValueColor:metric=>window.WattDashboardCore.metricColor(dashboard.config,metric),getValueTextColor:metric=>dashboard.paint(window.WattDashboardCore.metricColor(dashboard.config,metric),window.WattDashboardCore.tile(metric),true),openModal,closeModal,toast,poll,repaint:()=>dashboard?.update()});
 selectRange('today');poll();renderSettings();
 if(new URLSearchParams(location.search).get('demo')==='1')setDemo(true);
 window.pullReload=new window.WattPullReload({element:$('overview'),canStart:()=>page==='overview'&&!demo&&!dashboard.editing&&!lifecycle.blocked&&!lifecycle.busy&&!snapshot.archiveBusy&&snapshot.devices.length>0&&Date.now()>=archiveRequestedUntil&&$('modal').hidden,reload:reloadMissingData});
