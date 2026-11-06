@@ -1,12 +1,26 @@
-# WohnPit 2.0.1
+# WohnPit 2.0.2
+
+**WohnPit ist die Zusammenführung von Watt’n’Pit und der bisherigen WohnPit-Zentrale in einer gemeinsamen App.**
 
 **Dein lokales Cockpit für Energie, Gas und Wasser.** Solar, Akku, Verbrauch und Versorgung im Blick – im Wohnwagen, Ferienhaus, Gartenhaus und an passenden Balkonanlagen.
 
-**[WohnPit 2.0.1 herunterladen](https://github.com/Tim-Gurke/WohnPit/releases/download/v2.0.1/WohnPit-v2.0.1.apk)** · [Projektseite](https://wohnpit.extraordinarygrove.chatgpt.site) · [Installieren, einrichten und umziehen](docs/ZUSAMMENFUEHRUNG.md) · [Versionshistorie](CHANGELOG.md)
+**[WohnPit 2.0.2 herunterladen](https://github.com/Tim-Gurke/WohnPit/releases/download/v2.0.2/WohnPit-v2.0.2.apk)** · [Projektseite](https://wohnpit.extraordinarygrove.chatgpt.site) · [Installieren, einrichten und umziehen](docs/ZUSAMMENFUEHRUNG.md) · [Versionshistorie](CHANGELOG.md)
 
-**Neu in 2.0.1:** Anzeigehandys laden ihren ersten Statistikstand auch während die Zentrale weiter aufzeichnet. Solarertrag, Verbrauch und Diagramme werden schrittweise sichtbar, statt durch neue Livewerte immer wieder verworfen zu werden. [Update und Prüfung auf dem Anzeigehandy](docs/ANZEIGE-STATISTIK.md) · [Änderungen und Prüfgrenzen](docs/changes-2.0.1.md).
+**Neu in 2.0.2:** Bedarf für 3 / 7 / 14 Tage wahlweise in **kg oder Flaschen** sowie **Litern oder Kanistern** anzeigen. Kanister- und Gasflaschengröße unter **Gas / Wasser → Einstellen** anpassen; zunächst 20 L und 11 kg. Die Gasansicht zeigt, ob Wetterkorrektur tatsächlich aktiv ist, welche Flaschenabschnitte geeignet sind und welche Grundlage noch fehlt. Ein Symbol aus Flamme und Tropfen ersetzt den bisherigen Punkt. [Bedienen und berechnen](docs/GAS-WASSER.md) · [Änderungen und Prüfgrenzen](docs/changes-2.0.2.md).
 
-**In Vorbereitung:** Gas- und Wasserbedarf wahlweise in kg/Flaschen beziehungsweise Litern/Kanistern mit einstellbaren Behältergrößen anzeigen, ein Symbol mit Flamme und Wassertropfen sowie ein sichtbarer Lernstand der Gasprognose. Die Anzeige unterscheidet geladene Wetterdaten, gelernte Modelle und tatsächlich angewandte Wetterkorrekturen. Diese Änderungen sind noch nicht in der oben verlinkten 2.0.1-APK enthalten. [Einheitenwahl und Berechnungsgrundlage](docs/GAS-WASSER.md).
+**Update:** zuerst die Zentrale, danach die Anzeigehandys auf 2.0.2 aktualisieren. Über die bestehende gemeinsame WohnPit-App installieren, **nicht deinstallieren**. Die eigene Kachelanordnung, Messwerte und Kopplungen bleiben erhalten. Ein abgeschlossener Umzug muss nicht wiederholt werden.
+
+## Gas und Wasser · aktuelle Ansichten in 2.0.2
+
+| Gasbedarf in Flaschen und aktives Wettermodell | Wasserbedarf in Kanistern |
+|---|---|
+| ![Gasbedarf in Flaschen, Bezugsgröße und aktiver Temperaturkorrektur; erfundene Beispieldaten](docs/images/supplies-weather-active-2.0.2-dark.png) | ![Wasserbedarf in Kanistern mit eingestellter Bezugsgröße; erfundene Beispieldaten](docs/images/supplies-water-2.0.2-light.png) |
+
+| Behältergrößen gemeinsam einstellen | Gasansicht im hellen Design |
+|---|---|
+| ![Kanistergröße und Gasflaschengröße von der Beschaffungsmenge unterscheiden](docs/images/supplies-settings-2.0.2.png) | ![Gasbedarf und Wetter-Lernstand im hellen Design](docs/images/supplies-weather-active-2.0.2-light.png) |
+
+Die Aufnahmen stammen aus der geprüften Oberfläche mit neutralen Testdaten. Standardgrößen sind 20 L je Kanister und 11 kg je Gasflasche; beide lassen sich ändern.
 
 WohnPit vereint die bisherigen Apps Watt’n’Pit und WohnPit. **Android 8+**, für das Cockpit mit aktuellem Android-System-WebView. Kein Konto, keine Werbung. Messdaten bleiben auf deinen Geräten; optionaler Wetterabruf nutzt Internet. Im Anlagenverbund werden Daten verschlüsselt im lokalen WLAN übertragen.
 
@@ -46,7 +60,7 @@ Alle Aufnahmen zeigen Demo-, Beispiel- oder Emulatoransichten. Keine persönlich
 
 **Watt’n’Pit auf dem Anzeigehandy:** Die neue WohnPit-APK über Watt’n’Pit installieren, ohne vorher zu deinstallieren. Die Updatesignatur und technische App-Kennung bleiben erhalten. Der sichtbare Name wird WohnPit; die vorhandenen Daten und Kopplungen bleiben erhalten.
 
-**Bisherige WohnPit-Zentrale:** zuerst **[WohnPit 0.0.5 · Übernahme](https://github.com/Tim-Gurke/WohnPit/releases/download/v0.0.5/WohnPit-v0.0.5.apk)** installieren, Aufzeichnung/Archivabruf pausieren und eine vollständige verschlüsselte Sicherung erstellen. Danach in der aktuellen gemeinsamen WohnPit-App einlesen, prüfen lassen, schließen und neu öffnen. Die alte Übernahme-App bis zur Kontrolle behalten. Geräte und Anzeigehandys nötigenfalls neu verknüpfen. [Schritt-für-Schritt-Anleitung](docs/ZUSAMMENFUEHRUNG.md).
+**Bisherige WohnPit-Zentrale:** zuerst **[WohnPit 0.0.5 · Übernahme](https://github.com/Tim-Gurke/WohnPit/releases/download/v2.0.2/WohnPit-Uebernahme-v0.0.5.apk)** installieren, Aufzeichnung/Archivabruf pausieren und eine vollständige verschlüsselte Sicherung erstellen. Danach in der aktuellen gemeinsamen WohnPit-App einlesen, prüfen lassen, schließen und neu öffnen. Die alte Übernahme-App bis zur Kontrolle behalten. Geräte und Anzeigehandys nötigenfalls neu verknüpfen. [Schritt-für-Schritt-Anleitung](docs/ZUSAMMENFUEHRUNG.md).
 
 **Private Umzugsdateien niemals veröffentlichen.** Sie enthalten Geräte- und Verbindungsschlüssel und werden mit deinem eigenen Kennwort verschlüsselt. Die App speichert das Kennwort nicht und lädt die Datei nicht auf einen Server. Die öffentliche APK ist keine Umzugsdatei. Normale CSV- oder Einstellungsexporte ersetzen die vollständige Übernahmesicherung nicht.
 
@@ -65,10 +79,13 @@ Die Bluetooth-Energieanzeige nutzt unterstützte Victron SmartSolar-/SmartShunt-
 - [Messwertfarben, Layout und belegter Wetterrückblick](docs/MESSWERTFARBEN-WETTER.md)
 - [Gas und Wasser: Einträge, Wetter und Schätzungen](docs/GAS-WASSER.md)
 - [Statistiken und Diagramme auf Anzeigehandys](docs/ANZEIGE-STATISTIK.md)
+- [Änderungen und Prüfgrenzen 2.0.2](docs/changes-2.0.2.md)
 - [Änderungen und Prüfgrenzen 2.0.1](docs/changes-2.0.1.md)
 - [Änderungen und Prüfgrenzen 2.0.0](docs/changes-2.0.0.md)
 - [Übernahmeversion 0.0.5](docs/changes-0.0.5.md)
-- [WohnPit-Versionshistorie](CHANGELOG.md) und [bisherige Watt’n’Pit-Versionshistorie](https://github.com/Tim-Gurke/Watt-n-Pit/blob/main/CHANGELOG.md)
+- [WohnPit-Versionshistorie](CHANGELOG.md) und [bisherige Watt’n’Pit-Versionshistorie](docs/wattnpit-archiv/CHANGELOG.md)
+
+Das frühere Watt’n’Pit-Repository wird privat aufbewahrt. Seine vollständige dokumentierte Vorgeschichte liegt im [öffentlichen Dokumentationsarchiv](docs/wattnpit-archiv/HERKUNFT.md) dieses gemeinsamen Projekts.
 
 Je Repository bleiben die drei neuesten Releases veröffentlicht. Tags, Quellhistorie und Änderungsdokumentation bleiben erhalten.
 

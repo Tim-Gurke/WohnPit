@@ -1,21 +1,24 @@
-# Gas und Wasser – Watt’n’Pit 1.9.0 mit WohnPit 0.0.4
+# Gas und Wasser – WohnPit 2.0.2
 
-## Welche App macht was?
+WohnPit führt **Watt’n’Pit und die bisherige WohnPit-Zentrale** in einer gemeinsamen App fort. Dieselbe APK bietet alle drei Betriebsarten.
 
-| Gerät / App | Aufgabe |
+## Welche Betriebsart macht was?
+
+| Gerät / Betriebsart | Aufgabe |
 |---|---|
-| G5 mit WohnPit ab 0.0.4 | Beschaffungen, Flaschenwechsel und bekannte Restvorräte speichern; Wettervorhersagen und Wetterrückblicke sammeln; den gemeinsamen Datenstand bereitstellen. |
-| S20 / S10 mit Watt’n’Pit ab 1.9.0 | Einträge und Einstellungen bedienen; Verbrauchsmuster auswerten; Gas-/Wasserbedarf, Reichweite und Kacheln berechnen und anzeigen. |
+| G5 / Zentrale mit WohnPit 2.0.2 | Beschaffungen, Flaschenwechsel, Restvorräte und Behältergrößen speichern; Wetter sammeln und den gemeinsamen Datenstand bereitstellen. |
+| S20 / S10 / Anzeigehandy mit WohnPit 2.0.2 | Einträge und Größen bedienen; Verbrauchsmuster auswerten; Gas-/Wasserbedarf, Reichweite und Kacheln berechnen und anzeigen. |
+| Eigenständig · Victron direkt | Ein Handy übernimmt Speicherung, Wetter, Lernen und Anzeige ohne zweite Zentrale. |
 
-Das G5 führt keine neue Gas-/Wasser-Lernberechnung aus. Eine laufende Aufzeichnung sammelt die Wetterdaten auch bei geschlossener Statusansicht. Der vorhandene Wetterort gilt für den Wohnwagen. Standortwechsel deshalb über die gemeinsame Wetter-/Anlageneinstellung erfassen, nicht den Aufenthaltsort eines gerade weggefahrenen Anzeigehandys verwenden.
+Das G5 führt im Zentralbetrieb keine Gas-/Wasser-Lernberechnung aus. Eine laufende Aufzeichnung sammelt Wetterdaten auch bei geschlossener Statusansicht. Der Wetterort gilt für den Standort der Anlage; Standortwechsel deshalb in den gemeinsamen Einstellungen erfassen.
 
 ## Aktualisieren
 
-1. WohnPit **0.0.4** über die vorhandene WohnPit-Installation installieren.
-2. Watt’n’Pit **1.9.0** auf S20 und S10 über die vorhandene App installieren.
-3. Den bisherigen Anlagenverbund weiterverwenden. Nach dem Öffnen den neuen Menüpunkt **Gas / Wasser** wählen.
+1. Zuerst die bereits gemeinsame WohnPit-Zentrale auf **2.0.2** aktualisieren.
+2. Danach **WohnPit 2.0.2** auf S20/S10 über die vorhandene App installieren.
+3. Den bisherigen Verbund weiterverwenden und **Gas / Wasser → Einstellen** öffnen.
 
-Geräte, Messwerte, bestehende Kopplungen und eigene Kachelanordnungen bleiben erhalten. Nicht vorher deinstallieren. Eine ältere Zentrale liefert die Energiedaten weiter; die neue Versorgungserfassung verlangt das WohnPit-Update. Watt’n’Pit funktioniert auch weiterhin direkt ohne WohnPit: In diesem Fall werden Einträge und Wetterdaten auf diesem Hauptgerät gespeichert.
+Nicht vorher deinstallieren. Messwerte, Kopplungen und eigene Kachelanordnungen bleiben erhalten. Für die neue Kanistergrößen-Einstellung muss auch die Zentrale aktualisiert sein; eine ältere Zentrale liefert weiterhin die bisherigen Werte, die noch nicht unterstützte Einstellung ist in der Anzeige gekennzeichnet. Einen abgeschlossenen Umzug nicht wiederholen. Wer noch Watt’n’Pit oder die separate WohnPit-Zentrale 0.0.x verwendet, beachtet die [Zusammenführungs- und Umzugsanleitung](ZUSAMMENFUEHRUNG.md).
 
 ## Wasser erfassen
 
@@ -37,7 +40,7 @@ Der neue Flascheninhalt ist ein Ausgangsvorrat. Erst der nächste vollständige 
 
 Unter **Beschaffungen und Wechsel → Bearbeiten** lassen sich Menge, Zeitpunkt, Notiz und die Kennzeichnung eines vorzeitigen Gaswechsels ändern. **Löschen** öffnet eine Bestätigung; **Abbrechen** erhält den Eintrag. Die Auswertung wird aus den verbleibenden Daten neu berechnet. Einträge aus der Zukunft und ungültige Mengen werden abgewiesen. Wiederholte Übertragungen desselben Eintrags erzeugen keine zweite Beschaffung.
 
-**Gas / Wasser → Einstellen** legt die Vorschlagsmengen für Wasser und Gas fest. Sie gelten für alle gekoppelten Anzeigen. Bereits erfasste Mengen werden dadurch nicht verändert. Bedienung und Änderungen erfolgen vollständig in Watt’n’Pit.
+**Gas / Wasser → Einstellen** legt die Vorschlagsmengen für Wasser und Gas fest. Sie gelten für alle gekoppelten Anzeigen. Bereits erfasste Mengen werden dadurch nicht verändert. Bedienung und Änderungen erfolgen vom Anzeigehandy oder im eigenständigen Betrieb vollständig in WohnPit.
 
 ## Wetter und Lernen
 
@@ -51,9 +54,9 @@ Beim Gas wird ein Temperaturmodell frühestens mit sechs geeigneten, unterschied
 
 **Der übliche Tagesbedarf ist der Durchschnitt aus abgeschlossenen Flaschenabschnitten.** Auch die Kachel „Gas · Tagesbedarf“ zeigt diesen Durchschnitt. Wetterkorrekturen können dagegen den geschätzten Verbrauch seit dem letzten bekannten Vorrat, den Bedarf für 3 / 7 / 14 Tage und die Reichweite verändern. Eine geladene Wetterhistorie allein beweist keine aktive Wetterkorrektur. Sechs abgeschlossene Abschnitte brauchen mindestens sieben passende Flaschenwechsel; ein vorzeitiger Wechsel oder eine Bestandskorrektur kann einen Abschnitt vom Lernen ausschließen.
 
-### Sichtbarer Lernstand – nächste Aktualisierung, noch nicht in 2.0.1
+### Sichtbarer Lernstand ab 2.0.2
 
-Unter der Gaskarte steht künftig immer der Zustand der Wetterberechnung:
+Unter der Gaskarte steht immer der Zustand der Wetterberechnung:
 
 | Anzeige | Bedeutung |
 |---|---|
@@ -69,7 +72,7 @@ Die Versorgungsseite zeigt den geschätzten Restvorrat, die Reichweite samt Sch�
 
 **Restvorrat bedeutet die jetzt geschätzte Menge:** letzter bekannter Vorrat minus bisherigem geschätztem Verbrauch und gegebenenfalls zuzüglich Wasserbeschaffungen. Ändert sich die Wettervorhersage für kommende Tage, ändern sich Bedarf und Reichweite. Die heutige Restmenge bleibt dabei gleich. Sie kann sich durch vergangenen Verbrauch, ergänzte Wetterrückblicke oder eine korrigierte Mengenangabe ändern. Ein zukünftiger Restvorrat etwa in 14 Tagen ist kein Wert dieser Anzeige.
 
-### Bedarf in Flaschen und Kanistern – nächste Aktualisierung, noch nicht in 2.0.1
+### Bedarf in Flaschen und Kanistern ab 2.0.2
 
 In der Gas- und Wasserkarte unter **Bedarf anzeigen in** zwischen **kg / Flaschen** und **L / Kanister** wählen. Unter **Einstellen** die **Kanistergröße in Litern** und die **Gasflaschengröße in Kilogramm** anpassen; zunächst sind 20 L und 11 kg hinterlegt. Die Auswahl gilt auf diesem Handy und bleibt beim erneuten Öffnen erhalten. Die zugehörige Bezugsgröße steht dabei:
 
@@ -114,7 +117,7 @@ Die erste Version verwendet manuelle Angaben. Sie misst weder den Wasserstand no
 
 Die folgenden Bilder stammen aus den ausgelieferten Oberflächendateien mit frei erfundenen Einträgen und einem neutralen Wetterort.
 
-![Gas und Wasser im dunklen Design](https://raw.githubusercontent.com/Tim-Gurke/Watt-n-Pit/main/docs/images/supplies-1.9.0-dark.png)
-![Gas und Wasser im hellen Design](https://raw.githubusercontent.com/Tim-Gurke/Watt-n-Pit/main/docs/images/supplies-1.9.0-light.png)
-![Wasserbeschaffung auf dem Anzeigehandy erfassen](https://raw.githubusercontent.com/Tim-Gurke/Watt-n-Pit/main/docs/images/supplies-water-entry-1.9.0.png)
-![Frei wählbare Versorgungskachel im bestehenden Dashboard](https://raw.githubusercontent.com/Tim-Gurke/Watt-n-Pit/main/docs/images/supplies-tile-1.9.0.png)
+![Gas und Wasser im dunklen Design](images/supplies-2.0.2-dark.png)
+![Gas und Wasser im hellen Design](images/supplies-2.0.2-light.png)
+![Wasserbeschaffung auf dem Anzeigehandy erfassen](images/supplies-water-entry-2.0.2.png)
+![Frei wählbare Versorgungskachel im bestehenden Dashboard](images/supplies-gas-demand-2.0.2.png)

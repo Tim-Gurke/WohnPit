@@ -9,7 +9,7 @@ Für Erstinstallation, drei Betriebsarten und den privaten Umzug zuerst die [akt
 Mit WohnPit ab 0.0.4 stehen ein gemeinsames Versorgungsjournal, Verbrauchslernen und Reichweiten in Tagen und Stunden zur Verfügung. [Die vollständige Gas-/Wasseranleitung mit Screenshots](GAS-WASSER.md) erklärt Einrichtung, Wasserbeschaffungen, Gaswechsel, Restvorräte, Korrekturen, Wetterdaten und frei wählbare Kacheln. Zuerst WohnPit, danach die Anzeigehandys aktualisieren.
 
 
-Für Version **1.8.4** · [APK herunterladen](https://github.com/Tim-Gurke/Watt-n-Pit/releases/download/v1.8.4/Watt-n-Pit-v1.8.4.apk) · [Zur Projektübersicht](../README.md)
+Für **WohnPit 2.0.2**, die Zusammenführung von Watt’n’Pit und der bisherigen WohnPit-Zentrale · [Aktuelle APK herunterladen](https://github.com/Tim-Gurke/WohnPit/releases/latest) · [Zur Projektübersicht](../README.md)
 
 WohnPit zeigt Solarleistung, Batteriezustand und gespeicherte Verläufe direkt auf deinem Android-Telefon. Die folgenden Screenshots stammen aus der App-Oberfläche mit **frei erfundenen Beispieldaten**. Wetterort und Gerätekennungen sind Beispiele; es sind keine privaten Verbindungsdaten enthalten. Eine sichtbare Demo liest keine Bluetooth-Geräte aus.
 
@@ -61,7 +61,7 @@ Die Markierung ist manuell; eine unzugeordnete Shuntlast lässt sich nicht siche
 
 Beim ersten Öffnen erscheint der Hinweis **Dein Energie-Cockpit**. Mit **Verstanden** bestätigen. Bei bestehenden Installationen erscheint der seit 1.2.5 enthaltene Hinweis nur, solange er noch nicht bestätigt wurde; anschließend bleibt er bei unverändertem Text bestätigt. Ein Schließen ohne Bestätigung zählt nicht. Die Bestätigung wird nur auf diesem Gerät gespeichert und nicht mit Einstellungen übertragen. Der Hinweis bleibt auch unter **Geräte** und **Einstellungen** nachlesbar.
 
-![Einmaliger Hinweis zur Rolle als Cockpit und zu VictronConnect](https://raw.githubusercontent.com/Tim-Gurke/Watt-n-Pit/v1.9.0/docs/images/cockpit-notice.png)
+![Einmaliger Hinweis zur Rolle als Cockpit und zu VictronConnect](wattnpit-archiv/docs/images/cockpit-notice.png)
 
 Die sechsstellige **Bluetooth-PIN** wird für die Android-Kopplung verwendet. Sie ist ein anderer Code als der 32-stellige Schlüssel der Sofortanzeige. Eine bereits vorhandene Android-Kopplung benötigt keine erneute PIN-Abfrage.
 
@@ -71,7 +71,7 @@ Die Berechtigung für **Geräte in der Nähe** erlauben. Auf Android 8–11 sind
 
 Auf der Übersicht stehen **Play/Pause** und **Daten nachladen** in derselben Zeile. Der kleine Playknopf steuert die laufende Aufzeichnung. **Daten nachladen** gleicht die Archive beider eingerichteten Geräte ab und ergänzt die fehlenden Messgrößen und Zeitabschnitte. Dieser ausdrücklich gestartete Abruf ist auch während der automatischen Wartezeit nach einem Abbruch möglich, sobald der vorige Lauf beendet ist. Unter **Geräte → Gerätearchiv ergänzen** lässt sich weiterhin ein einzelnes Gerät abrufen.
 
-![Play/Pause und Daten nachladen sind getrennte Knöpfe](https://raw.githubusercontent.com/Tim-Gurke/Watt-n-Pit/v1.9.0/docs/images/reload-controls.png)
+![Play/Pause und Daten nachladen sind getrennte Knöpfe](wattnpit-archiv/docs/images/reload-controls.png)
 
 **Synchronisation abbrechen** beendet den Abruf erst nach einem zweiten bewussten Schritt: **Abbruch bestätigen**. **Weiter synchronisieren** schließt die Rückfrage und lässt den Abruf weiterlaufen. Ein versehentlicher Tipp auf die neu eingeblendete Warteanzeige beendet damit nicht unmittelbar die Synchronisation.
 
@@ -79,7 +79,7 @@ Ab 1.3.9 berücksichtigt der Abruf die gerundeten Gerätezeiten und die untersch
 
 Beim Öffnen und nach längerem Aufenthalt im Hintergrund prüft WohnPit zuerst den lokalen Bestand anhand der gespeicherten Archivaufteilung. Nur bei tatsächlichem Bedarf wird die Archivverbindung aufgebaut und der Nachladeplan mit frischen Geräte-Metadaten bestimmt. Nach erfolgreichem Abgleich startet während derselben geöffneten Sitzung kein neuer automatischer Lauf; zusätzliche reine Archivmessgrößen werden beim nächsten Vordergrundabgleich gesammelt nachgeholt. Nach einem Fehler gilt je Gerät eine Wartefrist von fünf Minuten. Ein automatischer Wiederholungsversuch während der geöffneten Sitzung benötigt zusätzlich eine zwischenzeitliche Empfangsunterbrechung und frische gültige Livewerte desselben Geräts. Automatische und manuelle Abrufe haben kein festes Gesamtzeitlimit: Eine echte Lücke von drei Tagen oder drei Wochen kann in einem verbundenen Lauf ergänzt werden, soweit das Gerät sie noch vorhält. Einzelne unbeantwortete Bluetooth-Aufträge werden weiterhin beendet. **Abbrechen** pausiert automatische Abrufe 30 Minuten; manuelles Nachladen bleibt verfügbar.
 
-![Geräteseite mit beispielhaftem Importstatus und neutralen Gerätekennungen](https://raw.githubusercontent.com/Tim-Gurke/Watt-n-Pit/v1.9.0/docs/images/devices-archive.png)
+![Geräteseite mit beispielhaftem Importstatus und neutralen Gerätekennungen](wattnpit-archiv/docs/images/devices-archive.png)
 
 *Beispiel einer eingerichteten Anlage: Importstatus, vorhandene Android-Kopplung und manueller Archivabruf stehen auf der Geräteseite.*
 
@@ -94,9 +94,9 @@ Beim Öffnen und nach längerem Aufenthalt im Hintergrund prüft WohnPit zuerst 
 - Archivwerte und selbst aufgezeichnete Werte können unterschiedlich fein sein. Die Standardansicht führt die Quellen zusammen; feinere vorhandene Messwerte haben Vorrang.
 - Leere Archivfelder werden nicht als gemessene Nullwerte ausgegeben. Lücken können deshalb sichtbar bleiben.
 
-![Warteanzeige mit aktuellem Gerät, Fortschritt und Abbrechen](https://raw.githubusercontent.com/Tim-Gurke/Watt-n-Pit/v1.9.0/docs/images/synchronisation.png)
+![Warteanzeige mit aktuellem Gerät, Fortschritt und Abbrechen](wattnpit-archiv/docs/images/synchronisation.png)
 
-![Weiter bedienbares Cockpit mit kompakter Fortschrittsanzeige](https://raw.githubusercontent.com/Tim-Gurke/Watt-n-Pit/v1.9.0/docs/images/synchronisation-hintergrund.png)
+![Weiter bedienbares Cockpit mit kompakter Fortschrittsanzeige](wattnpit-archiv/docs/images/synchronisation-hintergrund.png)
 
 Währenddessen bleibt der letzte verfügbare Datenstand sichtbar. Neue Zeiträume und Vergleichswerte werden ohne Bedienungssperre im Hintergrund geladen; bis zur Antwort erscheint **Daten werden im Hintergrund geladen …**. Die Werte sind während des Imports vorläufig und werden nach dessen Ende gemeinsam aktualisiert.
 
@@ -116,7 +116,7 @@ Die mobile Erzeugung wird bei erkennbarer Ladebegrenzung nicht allein aus verfü
 
 | Dunkles Design | Helles Design |
 |---|---|
-| ![Neue Hochkant-Vorlage mit zehn Kacheln im dunklen Design](https://raw.githubusercontent.com/Tim-Gurke/Watt-n-Pit/v1.9.0/docs/images/portrait-1.3.12-dark.png) | ![Dieselbe Hochkant-Vorlage im hellen Design](https://raw.githubusercontent.com/Tim-Gurke/Watt-n-Pit/v1.9.0/docs/images/portrait-1.3.12-light.png) |
+| ![Neue Hochkant-Vorlage mit zehn Kacheln im dunklen Design](wattnpit-archiv/docs/images/portrait-1.3.12-dark.png) | ![Dieselbe Hochkant-Vorlage im hellen Design](wattnpit-archiv/docs/images/portrait-1.3.12-light.png) |
 
 *Die neue Standardvorlage umfasst zehn Kacheln; Werte, Farben, Größen und Positionen sind frei einstellbar.*
 
@@ -124,7 +124,7 @@ Die neue Hochkant-Vorlage ist dreispaltig: links Ladezustand, automatische Restl
 
 Die breite Ansicht speichert ihre Anordnung weiterhin separat. Die bisherigen acht Kacheln behalten in der breiten Standardvorlage ihre Positionen; Ladephase und automatische Akkuzeit werden darunter ergänzt. Im Querformat wechseln **+ Kachel**, **Anordnen**, Empfangszustand und Ansichtsart zusammen mit „Energie im Blick“ in den kompakten Appkopf. Ab 760 Pixel Breite stehen sie gemeinsam in einer Zeile.
 
-![Breite Ansicht mit Werkzeugen und Empfangszustand oben im kompakten Kopf](https://raw.githubusercontent.com/Tim-Gurke/Watt-n-Pit/v1.9.0/docs/images/overview-landscape.png)
+![Breite Ansicht mit Werkzeugen und Empfangszustand oben im kompakten Kopf](wattnpit-archiv/docs/images/overview-landscape.png)
 
 Die Restlaufzeit kann über **+ Kachel → Akku → Restlaufzeit** ergänzt werden; Stunden sind weiterhin die voreingestellte Einheit.
 
@@ -142,7 +142,7 @@ Stunden sind voreingestellt; Minuten, Tage und Sekunden sowie Zahl und Rundinstr
 
 | Beim Laden | Beim Entladen |
 |---|---|
-| ![Automatische Akkuzeit als Restladezeit bis 100 Prozent](https://raw.githubusercontent.com/Tim-Gurke/Watt-n-Pit/v1.9.0/docs/images/battery-time-charge.png) | ![Dieselbe Kachel als Restlaufzeit vom SmartShunt](https://raw.githubusercontent.com/Tim-Gurke/Watt-n-Pit/v1.9.0/docs/images/battery-time-runtime.png) |
+| ![Automatische Akkuzeit als Restladezeit bis 100 Prozent](wattnpit-archiv/docs/images/battery-time-charge.png) | ![Dieselbe Kachel als Restlaufzeit vom SmartShunt](wattnpit-archiv/docs/images/battery-time-runtime.png) |
 
 Solarleistung und Solarertrag zeigen im Standard die Zeit **seit Sonnenaufgang**. Nach Sonnenuntergang endet ihre Zeitachse dort; der erreichte Wh-Ertrag bleibt sichtbar. Verwertbare Erzeugung davor oder danach erweitert das Fenster und wird mitgezählt. Die Aufzeichnung läuft weiter. Ohne gültigen Sonnenuntergang reicht das Solarfenster mit erkennbarem Hinweis bis jetzt. Verbrauch und Bilanz beziehen sich auf **heute ab Mitternacht** und enthalten damit auch die Nacht. Die vier Verlaufskacheln passen ihre Skalen automatisch an die vorhandenen Werte an. Die breite Ansicht besitzt eine eigene gespeicherte Anordnung.
 
@@ -150,7 +150,7 @@ Solarleistung und Solarertrag zeigen im Standard die Zeit **seit Sonnenaufgang**
 
 Unter **Anordnen** die Kacheln ziehen und an der unteren rechten Ecke vergrößern. Das Raster für Position und Größe ist in beiden Formaten doppelt so fein wie zuvor. Überlappungen sind erlaubt. Andere Kacheln behalten ihre Position. **Fertig** beendet die Anordnung. Schmale und breite Ansichten speichern ihre Positionen und Größen getrennt. Auch die Höhe von **„So läuft deine Energie.“** ist verstellbar: Unter **Anordnen** den ↕-Griff unten rechts nach oben oder unten ziehen, anschließend **Fertig**. Die Höhe bleibt je Ansicht separat gespeichert und ist in der Einstellungssicherung enthalten. Mit Tastatur ändern ↑/↓ die Höhe in 20-Pixel-Schritten.
 
-![Anordnungsmodus mit verschiebbaren Kacheln und Reihenfolge der Übersichtsblöcke](https://raw.githubusercontent.com/Tim-Gurke/Watt-n-Pit/v1.9.0/docs/images/arrange.png)
+![Anordnungsmodus mit verschiebbaren Kacheln und Reihenfolge der Übersichtsblöcke](wattnpit-archiv/docs/images/arrange.png)
 
 *Die Reihenfolge von „Kacheln mit Wetter“, „Verlauf“ und „Start / Pause“ lässt sich über die Pfeile ändern. Innerhalb des Kachelblocks wird direkt gezogen.*
 
@@ -170,7 +170,7 @@ Bei einer Verlaufskachel sind **die große Zahl und die Kurve getrennt einstellb
 | Kurvenzeitraum: **Seit Sonnenaufgang** | Regulär Sonnenaufgang bis jetzt, nach Sonnenuntergang nur bis Sonnenuntergang; gemessene frühere oder spätere Erzeugung erweitert das Fenster. |
 | Skala: **Automatisch nach bisherigen Werten** | Grenzen folgen den Messwerten des gewählten Zeitraums. |
 
-![Kacheleinstellungen mit Sonnenaufgang als Kurvenzeitraum und aktueller Livezahl](https://raw.githubusercontent.com/Tim-Gurke/Watt-n-Pit/v1.9.0/docs/images/tile-sunrise.png)
+![Kacheleinstellungen mit Sonnenaufgang als Kurvenzeitraum und aktueller Livezahl](wattnpit-archiv/docs/images/tile-sunrise.png)
 
 *Beispiel Solarleistung: Livezahl anzeigen und die gespeicherte Kurve seit Sonnenaufgang betrachten. Die Skala kann sich automatisch anpassen.*
 
@@ -182,7 +182,7 @@ Unter **Skala** zwischen festen Grenzen und automatischer Skalierung wählen. Be
 
 **Kachel antippen → Großansicht öffnen** vergrößert die Messgröße. Oben den Zeitraum wählen: Heute, Gestern, Woche, Monat, Seit Sonnenaufgang, Seit Zurücksetzen, Letzte … oder Von / bis. **Ansicht einstellen** öffnet Darstellung, Einheit, große Zahl, automatische oder feste Skalen, Nachkommastellen und Farbe.
 
-![Großansicht der Solarleistung mit Batteriebilanz und Batteriespannung als Vergleich](https://raw.githubusercontent.com/Tim-Gurke/Watt-n-Pit/v1.9.0/docs/images/tile-detail.png)
+![Großansicht der Solarleistung mit Batteriebilanz und Batteriespannung als Vergleich](wattnpit-archiv/docs/images/tile-detail.png)
 
 Unter **Vergleichswerte** weitere Messgrößen einschalten. Gleiche Einheiten werden gemeinsam dargestellt; unterschiedliche Einheiten erhalten eigene Werteskalen bei derselben Zeitachse. **+ / −** zoomt die Zeitachse. Einen Messpunkt antippen oder kurz gedrückt halten: Ein farbiger **Punkt** auf der Kurve und eine **senkrechte Linie** zeigen die Auswahl. Die Auswahl mit einem Finger ziehen; Markierung, Uhrzeit und Messwerte folgen. Bei Vergleichskurven erscheinen Punkte nur an tatsächlich vorhandenen nahen Messwerten; in Messlücken wird kein Wert erfunden. **Auswahl aufheben** beendet die Auswahl. Danach verschiebt ein Finger wieder den Zeitraum; zwei Finger zoomen auch während einer Auswahl. **Gesamter Zeitraum** stellt das vollständige gewählte Zeitfenster wieder her. Berechnete Energiesummen bleiben auf den gewählten Zeitraum bezogen.
 
@@ -210,7 +210,7 @@ Bei bestehenden Kacheln ändern sich die Standardbezeichnungen zu **Geräteverbr
 
 ### Energiekacheln einstellen
 
-![Bilanz in Wh mit Verlauf und automatischer Skala](https://raw.githubusercontent.com/Tim-Gurke/Watt-n-Pit/v1.9.0/docs/images/energy-tile.png)
+![Bilanz in Wh mit Verlauf und automatischer Skala](wattnpit-archiv/docs/images/energy-tile.png)
 
 Unter **+ Kachel → Energie** sind die Energiewerte einzeln ergänzbar; die mobile Leistung steht unter **Solar**. **Kachel antippen → Kachel-Einstellungen** bietet Zahlenwert, Rundinstrument oder Verlauf sowie Wh/kWh, Farben und Skala. Ab **1.8.1** behält jede Kachel ihren eigenen Zeitraum. Eine Änderung beim mobilen Solarertrag stellt Geräteverbrauch und Akkubilanz nicht um. Für einen direkten Vergleich überall denselben Zeitraum wählen; **Heute** enthält auch die Nachtstunden. Bereits durch 1.8.0 ungewollt umgestellte Kacheln einmal wieder auf den gewünschten Zeitraum setzen. Vorzeichen der drei Hauptwerte bleiben ihrer Bedeutung entsprechend; in der Großansicht gelten Änderungen weiterhin nur vorübergehend.
 
@@ -222,7 +222,7 @@ Alle Einstellungen einschließlich beider Anordnungen und der einzelnen Kachelze
 
 Unter **Verlauf** den Zeitraum und die Messgröße wählen. **Alle Daten**, **Aufgezeichnet**, **Gerätearchiv** und **CSV-Import** filtern die Datenquelle.
 
-![Leistungsverlauf mit Quellenwahl und Bedienelementen für die Achsen](https://raw.githubusercontent.com/Tim-Gurke/Watt-n-Pit/v1.9.0/docs/images/history-dark.png)
+![Leistungsverlauf mit Quellenwahl und Bedienelementen für die Achsen](wattnpit-archiv/docs/images/history-dark.png)
 
 *Solarleistung und Batteriebilanz gemeinsam betrachten. Unter „Werteskala“ lassen sich die Grenzen von Hand setzen.*
 
@@ -232,7 +232,7 @@ Die kleine Verlaufskarte auf der Übersicht bietet **Seit Sonnenaufgang**, **Heu
 
 Im **Solar-Tagesarchiv** unter dem Verlauf steht neben dem importierten Ertrag der **berechnete Verbrauch in Wh**. Er gilt für den lokalen Kalendertag einschließlich der Nacht und verwendet die vorhandenen Solar- und Shunt-Messungen. Die Prozentangabe zeigt die zeitliche Abdeckung; Lücken werden nicht hochgerechnet. „—“ bedeutet, dass keine verwertbaren Messabschnitte vorhanden sind, und ist von einem gemessenen Nullverbrauch zu unterscheiden. Der heutige Wert ist vorläufig. Der Regler-Tagesertrag und der berechnete Verbrauch können wegen unterschiedlicher Datenquellen und Abdeckung nicht unmittelbar zu einer Bilanz subtrahiert werden. Die weiteren Tabellenspalten bleiben seitlich erreichbar.
 
-![Solar-Tagesarchiv mit berechnetem Verbrauch und erfasster Zeit](https://raw.githubusercontent.com/Tim-Gurke/Watt-n-Pit/v1.9.0/docs/images/solar-daily-consumption.png)
+![Solar-Tagesarchiv mit berechnetem Verbrauch und erfasster Zeit](wattnpit-archiv/docs/images/solar-daily-consumption.png)
 
 ## 7. Solarvorschau und Solaranlage einstellen
 
@@ -286,7 +286,7 @@ Ein Schonladeprofil kann die mögliche Erzeugung bereits bei einer niedrigeren L
 
 ## 8. Einstellungen und Messdaten sichern
 
-![Einstellungssicherung mit Export und Import als JSON-Datei](https://raw.githubusercontent.com/Tim-Gurke/Watt-n-Pit/v1.9.0/docs/images/settings-backup.png)
+![Einstellungssicherung mit Export und Import als JSON-Datei](wattnpit-archiv/docs/images/settings-backup.png)
 
 *Einstellungen → Einstellungen sichern: die persönliche Gestaltung und Anlagenkonfiguration als Datei sichern.*
 
@@ -300,7 +300,7 @@ Messdaten werden getrennt über **Verlauf → Verlauf exportieren** als CSV gesi
 
 WohnPit benötigt kein Konto und überträgt keine Energiedaten oder Geräteschlüssel an einen Cloud-Dienst. Schlüssel liegen mit dem Android Keystore geschützt auf dem Telefon. Die optionale Wetterfunktion benötigt Internet: Suchtext bzw. gewählte Ortskoordinaten, Montagewinkel und Ausrichtung gehen an Open-Meteo. Wetterdaten: Open-Meteo, CC BY 4.0; Ortsdaten: GeoNames.
 
-Ladezustand und Restlaufzeit stammen vom SmartShunt. Temperatur und Zusatzspannung benötigen einen entsprechend eingerichteten Eingang. Weitere Victron-Geräte sind nicht pauschal als kompatibel bestätigt. [Technische Grundlage und Grenzen](https://github.com/Tim-Gurke/Watt-n-Pit/blob/v1.9.0/docs/ARCHITECTURE.md).
+Ladezustand und Restlaufzeit stammen vom SmartShunt. Temperatur und Zusatzspannung benötigen einen entsprechend eingerichteten Eingang. Weitere Victron-Geräte sind nicht pauschal als kompatibel bestätigt. [Technische Grundlage und Grenzen](wattnpit-archiv/docs/ARCHITECTURE.md).
 
 ## 10. Mehrere Handys
 
@@ -373,15 +373,20 @@ Für beide Korrekturen **Hauptgerät und Anzeigen auf 1.6.4 aktualisieren**. Die
 
 ## Sondernutzungen und die drei Prognosebalken ab 1.8.0
 
-Die Wetterkarte zeigt **Sonne**, **Akku** ohne Sondernutzungen und **Mit Extras**. Beide Akkubalken beziehen sich auf den Wohnwagenakku bei Sonnenuntergang. Über **Extras** Verbraucher frei benennen, Tagesbedarf hinterlegen oder aus bestätigten Nutzungstagen lernen lassen. Unter **Nutzung erfassen** bekannte Verbräuche beziehungsweise konkrete zukünftige Nutzungen eintragen. Fehlende Daten bleiben unbekannt; die Tagesansicht erklärt die zugrunde gelegten Zusatzbedarfe. [Vollständige Einrichtung, Rollerplanung und Lernbedingungen](https://github.com/Tim-Gurke/Watt-n-Pit/blob/v1.9.0/docs/releases/1.8.0.md).
+Die Wetterkarte zeigt **Sonne**, **Akku** ohne Sondernutzungen und **Mit Extras**. Beide Akkubalken beziehen sich auf den Wohnwagenakku bei Sonnenuntergang. Über **Extras** Verbraucher frei benennen, Tagesbedarf hinterlegen oder aus bestätigten Nutzungstagen lernen lassen. Unter **Nutzung erfassen** bekannte Verbräuche beziehungsweise konkrete zukünftige Nutzungen eintragen. Fehlende Daten bleiben unbekannt; die Tagesansicht erklärt die zugrunde gelegten Zusatzbedarfe. [Vollständige Einrichtung, Rollerplanung und Lernbedingungen](wattnpit-archiv/docs/releases/1.8.0.md).
 
-Selbst angelegte Sondernutzungen ab **1.8.1** unter **Extras → Bearbeiten → Löschen** entfernen und bestätigen. Zugehörige manuelle Erfassungen und Planungen werden mit entfernt; Messwerte und andere Verbraucher bleiben erhalten. Auf Anzeigen gilt die Löschung erst nach Bestätigung des Hauptgeräts. Der automatisch mit dem Zusatzspeicher verknüpfte Rollereintrag lässt sich aus der Extras-Prognose ausnehmen; ein selbst angelegter zusätzlicher „Roller“ ist löschbar. [Hinweise zum Update](https://github.com/Tim-Gurke/Watt-n-Pit/blob/v1.9.0/docs/releases/1.8.1.md).
+Selbst angelegte Sondernutzungen ab **1.8.1** unter **Extras → Bearbeiten → Löschen** entfernen und bestätigen. Zugehörige manuelle Erfassungen und Planungen werden mit entfernt; Messwerte und andere Verbraucher bleiben erhalten. Auf Anzeigen gilt die Löschung erst nach Bestätigung des Hauptgeräts. Der automatisch mit dem Zusatzspeicher verknüpfte Rollereintrag lässt sich aus der Extras-Prognose ausnehmen; ein selbst angelegter zusätzlicher „Roller“ ist löschbar. [Hinweise zum Update](wattnpit-archiv/docs/releases/1.8.1.md).
 
 ## GPS-Ortsname ab 1.8.2
 
-Beim GPS-Wetterstandort steht hinter **GPS** der über Android ermittelte Ort, zum Beispiel **GPS · Hockenheim**, in dünnerer Schrift. Für bestehende GPS-Koordinaten wird der Name im Hintergrund nachgeladen; dabei startet keine neue GPS-Messung. Der Name gehört zum gespeicherten Wetterstandort. Nach einem Umzug den neuen Standort wie bisher mit **GPS-Standort übernehmen → Aufstellung speichern** bestätigen. Anzeigen übernehmen den Namen der Zentrale. Ohne Ortsnamendienst oder Treffer bleiben die gespeicherten Koordinaten sichtbar. Ein entsprechend ausgestattetes Anzeigehandy kann den Namen beim erneuten Übernehmen des GPS-Standorts mitspeichern. [Hinweise und Prüfungen](https://github.com/Tim-Gurke/Watt-n-Pit/blob/v1.9.0/docs/releases/1.8.2.md).
+Beim GPS-Wetterstandort steht hinter **GPS** der über Android ermittelte Ort, zum Beispiel **GPS · Hockenheim**, in dünnerer Schrift. Für bestehende GPS-Koordinaten wird der Name im Hintergrund nachgeladen; dabei startet keine neue GPS-Messung. Der Name gehört zum gespeicherten Wetterstandort. Nach einem Umzug den neuen Standort wie bisher mit **GPS-Standort übernehmen → Aufstellung speichern** bestätigen. Anzeigen übernehmen den Namen der Zentrale. Ohne Ortsnamendienst oder Treffer bleiben die gespeicherten Koordinaten sichtbar. Ein entsprechend ausgestattetes Anzeigehandy kann den Namen beim erneuten Übernehmen des GPS-Standorts mitspeichern. [Hinweise und Prüfungen](wattnpit-archiv/docs/releases/1.8.2.md).
 
 
 ## Messwertfarben und historischer Wetterstand ab 1.9.1
 
 Die [Anleitung für Messwertfarben und Wetterrückblick](MESSWERTFARBEN-WETTER.md) erklärt die zentrale Farbverwaltung mit Hexcodes, eigene Kachelfarben, die einmalige Layoutübernahme und den Nachweis gespeicherter historischer Wettertage. WohnPit 0.0.4 bleibt kompatibel.
+
+
+## Neu in WohnPit 2.0.2: Versorgung und Zusammenführung
+
+WohnPit ist die gemeinsame Weiterführung von Watt’n’Pit und der bisherigen WohnPit-Zentrale. Unter **Gas / Wasser → Einstellen** Kanister- und Gasflaschengröße anpassen; in den Bedarfskacheln sowie auf der Versorgungsseite zwischen kg/Flaschen und Litern/Kanistern wählen. Der Wetter-Lernstand der Gasprognose nennt die tatsächlich verwendete Korrektur und fehlende Grundlagen. Die [ausführliche Versorgungsanleitung](GAS-WASSER.md) erklärt Größen, Einheiten, Restvorrat, Wetter und Grenzen. Für Installation und Umzug die [aktuelle Zusammenführungsanleitung](ZUSAMMENFUEHRUNG.md) verwenden. Die historischen Bildschirmaufnahmen dieser ausführlichen Cockpit-Anleitung bleiben als Beschreibung der übernommenen Grundfunktionen erhalten.

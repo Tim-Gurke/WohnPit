@@ -20,3 +20,7 @@ signing.json
 *Signatur-privat*
 *Signierung-Backup*
 private-*/
+
+# Python validation caches.
+__pycache__/
+*.pyc

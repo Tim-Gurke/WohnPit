@@ -24,6 +24,19 @@ def validate_manifest(manifest):
             raise ValueError("Invalid " + key)
     if not isinstance(manifest["asset_size"], int) or not 10000 <= manifest["asset_size"] <= 50 * 1024 * 1024:
         raise ValueError("Unexpected APK size")
+    helpers = manifest.get("helpers", [])
+    if not isinstance(helpers, list) or len(helpers) > 4:
+        raise ValueError("Invalid release helpers")
+    names = {manifest["asset_name"]}
+    for helper in helpers:
+        name = helper.get("asset_name", "")
+        if not re.fullmatch(r"WohnPit-[A-Za-z0-9.-]+\.apk", name) or name in names:
+            raise ValueError("Invalid helper APK filename")
+        names.add(name)
+        if not re.fullmatch(r"[a-f0-9]{40}", helper.get("asset_blob_sha", "")) or not re.fullmatch(r"[a-f0-9]{64}", helper.get("asset_sha256", "")):
+            raise ValueError("Invalid helper APK checksum")
+        if not isinstance(helper.get("asset_size"), int) or not 10000 <= helper["asset_size"] <= 50 * 1024 * 1024:
+            raise ValueError("Unexpected helper APK size")
 
 
 def prepare(manifest, repository, target, api, output):
@@ -40,12 +53,15 @@ def prepare(manifest, repository, target, api, output):
             raise ValueError("The release target must descend from the tested source")
         if any(row["filename"] not in PUBLISH_FILES or row.get("previous_filename", row["filename"]) not in PUBLISH_FILES for row in comparison["files"]):
             raise ValueError("Untested app changes must not be included in this release")
-    blob = api("git/blobs/" + manifest["asset_blob_sha"])
-    if blob.get("encoding") != "base64" or blob.get("sha") != manifest["asset_blob_sha"]:
-        raise ValueError("Unexpected APK object")
-    apk = base64.b64decode("".join(blob["content"].split()), validate=True)
-    if len(apk) != manifest["asset_size"] or hashlib.sha256(apk).hexdigest() != manifest["asset_sha256"]:
-        raise ValueError("The release APK differs from the signed and tested download")
+    assets = []
+    for entry in [manifest, *manifest.get("helpers", [])]:
+        blob = api("git/blobs/" + entry["asset_blob_sha"])
+        if blob.get("encoding") != "base64" or blob.get("sha") != entry["asset_blob_sha"]:
+            raise ValueError("Unexpected APK object")
+        apk = base64.b64decode("".join(blob["content"].split()), validate=True)
+        if len(apk) != entry["asset_size"] or hashlib.sha256(apk).hexdigest() != entry["asset_sha256"]:
+            raise ValueError("A release APK differs from the signed and tested download")
+        assets.append((entry, apk))
     note_path = "docs/changes-" + manifest["tag"][1:] + ".md"
     notes = api("contents/" + note_path + "?ref=" + source)
     if notes.get("encoding") != "base64":
@@ -61,11 +77,16 @@ def prepare(manifest, repository, target, api, output):
              "Installation und Update-Reihenfolge wie oben beschrieben beachten. "
              "Persönliche Sicherungen bleiben privat und gehören niemals in öffentliche Releases.\n")
     output.mkdir(parents=True, exist_ok=True)
-    destination = output / manifest["asset_name"]
-    destination.write_bytes(apk)
-    (output / "SHA256SUMS").write_text(manifest["asset_sha256"] + "  " + manifest["asset_name"] + "\n")
+    paths = []
+    for entry, apk in assets:
+        destination = output / entry["asset_name"]
+        destination.write_bytes(apk)
+        paths.append(str(destination))
+    (output / "SHA256SUMS").write_text("".join(entry["asset_sha256"] + "  " + entry["asset_name"] + "\n" for entry, _ in assets))
+    paths.append(str(output / "SHA256SUMS"))
+    (output / "assets.json").write_text(json.dumps(paths))
     (output / "notes.md").write_text(body)
-    return {"tag": manifest["tag"], "title": "WohnPit " + manifest["tag"][1:], "apk": str(destination)}
+    return {"tag": manifest["tag"], "title": "WohnPit " + manifest["tag"][1:], "apk": paths[0]}
 
 
 def main():

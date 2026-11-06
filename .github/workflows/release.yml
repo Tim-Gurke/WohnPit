@@ -35,14 +35,18 @@ jobs:
           RELEASE_TITLE: ${{ steps.prepare.outputs.title }}
           RELEASE_APK: ${{ steps.prepare.outputs.apk }}
         run: |
-          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
-              --title "$RELEASE_TITLE" --notes-file release-out/notes.md --latest
-          else
-            gh release create "$RELEASE_TAG" "$RELEASE_APK" release-out/SHA256SUMS \
-              --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
-              --title "$RELEASE_TITLE" --notes-file release-out/notes.md --latest
-          fi
+          python3 - <<'PY'
+          import json, os, subprocess
+          tag, repo = os.environ["RELEASE_TAG"], os.environ["GITHUB_REPOSITORY"]
+          assets = json.load(open("release-out/assets.json"))
+          existing = subprocess.run(["gh", "release", "view", tag, "--repo", repo], capture_output=True)
+          if existing.returncode == 0:
+              subprocess.run(["gh", "release", "upload", tag, *assets, "--repo", repo, "--clobber"], check=True)
+              command = ["gh", "release", "edit", tag, "--repo", repo]
+          else:
+              command = ["gh", "release", "create", tag, *assets, "--repo", repo, "--target", os.environ["GITHUB_SHA"]]
+          subprocess.run([*command, "--title", os.environ["RELEASE_TITLE"], "--notes-file", "release-out/notes.md", "--latest"], check=True)
+          PY
       - name: Nur die drei neuesten Releases behalten
         env:
           GH_TOKEN: ${{ github.token }}

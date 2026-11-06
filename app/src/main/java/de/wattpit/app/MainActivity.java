@@ -22,7 +22,7 @@ public final class MainActivity extends Activity {
             try{if(!AppRole.get(this).equals(role))AppRole.save(this,role);launch(role);return;}catch(Exception e){failure("Die bisherige Betriebsart konnte nicht übernommen werden.");return;}
         }
         ScrollView scroll=new ScrollView(this);LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setPadding(32,36,32,36);root.setBackgroundColor(0xff101822);scroll.addView(root);setContentView(scroll);
-        text(root,"WohnPit",30);text(root,"Energie, Gas und Wasser im Blick",20);text(root,"Dein lokales Cockpit für Wohnwagen, Ferienhaus, Gartenhaus oder Balkonkraftwerk. Welche Aufgabe übernimmt dieses Handy?",16);
+        text(root,"WohnPit",30);text(root,"Energie, Gas und Wasser im Blick",20);text(root,"WohnPit vereint Watt’n’Pit und die bisherige WohnPit-Zentrale. Dein lokales Cockpit für Wohnwagen, Ferienhaus, Gartenhaus oder Balkonkraftwerk. Welche Aufgabe übernimmt dieses Handy?",16);
         button(root,"Zentrale","Geräte auslesen, Wetter sammeln und Daten für andere Handys speichern. Schlanke Ansicht für den Dauerbetrieb.","central");
         button(root,"Anzeigehandy","Eine Zentrale koppeln, Werte anzeigen, berechnen und die Anlage bedienen.","viewer");
         button(root,"Eigenständig · Victron direkt","Ohne Zentrale: Victron-Geräte direkt verbinden. Aufzeichnung, Wetter, Berechnung und Anzeige laufen auf diesem Handy.","direct");
