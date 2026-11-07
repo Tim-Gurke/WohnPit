@@ -71,6 +71,7 @@ jobs:
           WATTPIT_SCREENSHOT_DIR: app/build/reports/sync-coverage
           WATTPIT_WEATHER_FIXTURE: app/build/reports/archive-storage-proof/weather-contract-fixture.json
           WATTPIT_QR_FIXTURE: ${{ runner.temp }}/pairing-qr-fixture.json
+          WATTPIT_VIEWER_FIXTURE: app/build/reports/lan-proof/statistics/statistics.json
         run: |
           npm install --no-save --prefix "$RUNNER_TEMP/wattpit-ui" playwright@1.51.1
           mkdir -p "$RUNNER_TEMP/wattpit-java"
@@ -86,6 +87,7 @@ jobs:
           node tools/energy-tile-smoke.cjs
           node tools/tile-period-isolation-smoke.cjs
           node tools/energy-refresh-smoke.cjs
+          node tools/viewer-statistics-smoke.cjs
           node tools/gps-place-smoke.cjs
           node tools/tile-detail-smoke.cjs
           node tools/mini-history-smoke.cjs
@@ -133,6 +135,9 @@ jobs:
             app/build/reports/lan-proof/viewer-results.log
             app/build/reports/lan-proof/mobile-viewer-results.log
             app/build/reports/lan-proof/solar-inputs.json
+            app/build/reports/lan-proof/statistics-results.log
+            app/build/reports/lan-proof/statistics/statistics.json
+            docs/images/viewer-statistics-2.0.3-*.png
             docs/images/supplies-*2.0.2*.png
 
   emulator:

@@ -118,9 +118,15 @@ final class ViewerAnalysis {
         model(a,b);raw(a,b);
     }
     private JSONObject stamp(JSONObject result)throws Exception{
-        JSONObject current=get("analysisInputState",new JSONArray());if(!current.getString("token").equals(metadata.optString("inputToken")))throw new IOException("Die Grundlagen wurden inzwischen aktualisiert. Die letzten Werte bleiben erhalten; neuer Abgleich folgt.");
-        JSONObject state=new JSONObject().put("plant",plant).put("at",metadata.optLong("at")).put("measurementAt",metadata.optLong("measurementAt")).put("revision",rawRevision).put("tables",metadata.getJSONObject("tables")).put("controlRevision",metadata.optLong("controlRevision")).put("algorithm",SolarPlanning.ALGORITHM).put("epoch",epoch).put("local",true);
-        result.put("analysis",state);for(String key:new String[]{"solar","consumption","balance","mobile"})if(result.optJSONObject(key)!=null)result.getJSONObject(key).put("analysis",state);return result;
+        JSONObject current=get("analysisInputState",new JSONArray());
+        if(current.has("epoch")&&(!current.getString("epoch").equals(epoch)||metadata.has("epoch")&&!metadata.getString("epoch").equals(epoch)))throw new IOException("Der Datenbestand der Zentrale wurde gewechselt. Bitte erneut laden.");
+        // Each transferred table and raw block is already checked before installation.
+        // A later weather/configuration update makes that complete snapshot older;
+        // it must not erase the first usable result while recording continues.
+        boolean changed=!current.getString("token").equals(metadata.optString("inputToken"));
+        JSONObject state=new JSONObject().put("plant",plant).put("at",metadata.optLong("at")).put("measurementAt",metadata.optLong("measurementAt")).put("revision",rawRevision).put("tables",metadata.getJSONObject("tables")).put("controlRevision",metadata.optLong("controlRevision")).put("algorithm",SolarPlanning.ALGORITHM).put("epoch",epoch).put("local",true).put("inputsChanged",changed);
+        result.put("analysis",state);if(changed)result.put("stale",true);else result.remove("stale");
+        for(String key:new String[]{"solar","consumption","balance","mobile"})if(result.optJSONObject(key)!=null){JSONObject part=result.getJSONObject(key).put("analysis",state);if(changed)part.put("stale",true);else part.remove("stale");}return result;
     }
     synchronized JSONObject query(String method,JSONArray args,Consumer<String> progress)throws Exception{
         this.progress=progress;downloadedRows=downloadedBlocks=0;

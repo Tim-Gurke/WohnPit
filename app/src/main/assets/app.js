@@ -506,7 +506,7 @@ lifecycle.poll();
 dashboard = new window.WattDashboard({native,read:historyRead,resizeMini:drawMini,isBlocked:()=>lifecycle.blocked,dataTime,getSnapshot:()=>snapshot,reading,isDemo:()=>demo,openModal,closeModal,toast});
 equipment = new window.WattEquipment({native,getSnapshot:()=>snapshot,getValueColor:metric=>window.WattDashboardCore.metricColor(dashboard.config,metric),getValueTextColor:metric=>dashboard.paint(window.WattDashboardCore.metricColor(dashboard.config,metric),window.WattDashboardCore.tile(metric),true),openModal,closeModal,toast,poll,repaint:()=>dashboard?.update()});
 extras = new window.WattExtras({native,renderSolar:()=>solar?.render(),getSnapshot:()=>snapshot,isDemo:()=>demo,toast,poll,cancelArchive:()=>lifecycle.confirmCancellation(),repaint:()=>{dashboard?.update();drawHistory();drawMini();},imported:()=>{dashboard?.clearCache();if(page==='history')loadHistory();lastMiniLoad=0;}});
-solar = new window.WattSolarPlan({native:deviceNative,equipment,getSnapshot:()=>snapshot,getReading:reading,getPresence:()=>presence?.state,openModal,closeModal,toast,poll,symbol:code=>extras.symbol(code)});
+solar = new window.WattSolarPlan({native:deviceNative,canRequestData:()=>!deviceNative?.isLanViewer?.()||!reads?.initialPending(),equipment,getSnapshot:()=>snapshot,getReading:reading,getPresence:()=>presence?.state,openModal,closeModal,toast,poll,symbol:code=>extras.symbol(code)});
 roller = new window.WattRoller({native:deviceNative,isDemo:()=>demo,getSolar:()=>solar,openModal,closeModal,toast,poll});
 configuration = new window.WattSettingsBackup({native,getSnapshot:()=>snapshot,dashboard,equipment,openModal,closeModal,toast,applied:backup=>{
   settingsDirty=false;poll();

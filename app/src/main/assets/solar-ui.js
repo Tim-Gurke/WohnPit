@@ -13,7 +13,7 @@
       this.a=a;this.special=new window.WattSpecialUses({...a,render:()=>{this.renderKey='';this.render();}});$('solarSpecialUses').onclick=()=>this.special.open();this.knowledge={source:'',observations:[],forecasts:[],updated:0};this.renderKey='';this.lastRequest=0;this.contextKey=null;this.lastRemembered='';
       $('solarSetupSettings').onclick=()=>this.openSetup();$('solarSetupButton').onclick=()=>this.openSetup();$('solarConsumptionSettings').onclick=()=>this.openUsage();
       $('solarMobileToggle').onclick=()=>this.mobile();$('solarGpsSettings').onclick=()=>{this.openSetup();this.locate();};
-      window.onSolarPlanData=data=>{if(data.analysis?.plant&&data.analysis.plant!==this.a.getSnapshot().lan?.id)return;if(data.error){this.knowledge.error=data.error;this.lastRequest=Math.min(this.lastRequest,Date.now()-270000);}else{this.knowledge=data;this.knowledge.observations??=[];this.knowledge.forecasts??=[];}this.renderKey='';this.render();};
+      window.onSolarPlanData=data=>{if(data.analysis?.plant&&data.analysis.plant!==this.a.getSnapshot().lan?.id)return;if(data.error){this.knowledge.error=data.error;this.lastRequest=Math.min(this.lastRequest,Date.now()-270000);}else{this.knowledge=data;this.knowledge.observations??=[];this.knowledge.forecasts??=[];if(data.stale)this.lastRequest=Math.min(this.lastRequest,Date.now()-270000);}this.renderKey='';this.render();};
       window.onSolarSunsetSoc=result=>{
         if(result.id!==this.sunsetRead?.id)return;
         Object.assign(this.sunsetRead,{done:true,point:result.point,error:result.error});this.renderKey='';this.render();
@@ -55,7 +55,7 @@
       let rollerState={};try{rollerState=JSON.parse(this.a.native?.rollerSnapshot?.()||'{}');}catch(_){}
       const specialConfig=this.special.read(),rollerLoads=[];
       const snapshot=this.a.getSnapshot(),weather=snapshot.weather||{},eq=this.equipment(),plan=this.plan(),now=Date.now(),shunt=this.a.getReading?.('shunt'),key=JSON.stringify([weather,eq,plan,this.knowledge.updated,this.knowledge.error,Math.floor(now/60000),shunt?[Math.round(shunt.soc),Math.round(shunt.voltage*10)/10]:null,snapshot.settings.capacity,snapshot.deviceSettings,rollerState,specialConfig,this.a.getPresence?.()]);
-      if(this.a.native?.requestSolarData&&!snapshot.archiveBusy&&(Date.now()-this.lastRequest>300000||this.revision!==snapshot.historyRevision&&Date.now()-this.lastRequest>30000)){
+      if(this.a.native?.requestSolarData&&!snapshot.archiveBusy&&this.a.canRequestData?.()!==false&&(Date.now()-this.lastRequest>300000||this.revision!==snapshot.historyRevision&&Date.now()-this.lastRequest>30000)){
         this.lastRequest=Date.now();this.revision=snapshot.historyRevision;this.a.native.requestSolarData();
       }
       if(key===this.renderKey){this.renderNote(snapshot,weather,now);return;}this.renderKey=key;
@@ -84,6 +84,7 @@
       $('solarMobileToggle').hidden=!mobile.length;$('solarMobileToggle').textContent=mobile.length===1?'Mobil '+(active.length?'an':'aus'):`Mobil ${active.length}/${mobile.length}`;$('solarMobileToggle').setAttribute('aria-pressed',String(active.length>0));
       const usage=this.days[0]?.usage||C.consumption(plan,this.knowledge.observations,new Date().toISOString().slice(0,10));
       $('solarLearningNote').textContent=this.knowledge.error||(usage.wh==null?usage.pendingSlots?.length?`Tagesbedarf noch offen: ${usage.pendingSlots.map(i=>C.PARTS[i]).join(', ')} braucht mehr vergleichbare Tage oder Messzeit. Die vorhandenen Schätzungen bleiben unter Datengrundlage sichtbar.`:'Verbrauch wird automatisch aus geeigneten Messabschnitten ermittelt, auch bei mobiler Aufstellung.':`${usage.manual?'Eigener Standard':usage.provisional?'Vorläufiger Bedarf':'Erlernter Bedarf'}: ≈ ${energy(usage.wh)} pro Tag${usage.days?' · Daten aus '+usage.days+' Tagen':''}. ${usage.extrapolated?'Fehlende Tagesabschnitte werden vorläufig hochgerechnet. ':''}${usage.estimatedHours?'Mobiler Beitrag teilweise geschätzt. ':''}Jahreszeit und Tagesabschnitte werden berücksichtigt. Rollerladungen sind als Sondernutzung ausgenommen.`);
+      if(this.knowledge.stale&&!this.knowledge.error)$('solarLearningNote').textContent='Letzter Lernstand · Aktualisierung folgt. '+$('solarLearningNote').textContent;
     }
     savedSunset(snapshot,now){
       for(const day of this.days){

@@ -2,9 +2,9 @@
 
 **Noch Watt’n’Pit 1.8.4 auf dem Anzeigehandy?** Direkt die aktuelle WohnPit-App (mindestens 2.0.1) über die vorhandene Installation installieren. Die Zwischenversionen 1.9.0 und 2.0.0 müssen nicht einzeln installiert werden. Die App-Kennung, Updatesignatur und bisherige Messwertdatenbank werden weiterverwendet. Vorher nicht deinstallieren. Beim ersten Wechsel wird die ausdrücklich gewünschte 20-Kachel-Anordnung einmal übernommen; bei Bedarf das bisherige Layout vorher exportieren. Der Umzug einer separaten WohnPit-Zentrale ist ein eigener Vorgang und hängt von deren tatsächlichem Versionsstand ab.
 
-**Bereits eine gemeinsame WohnPit-Version installiert?** Zuerst die Zentrale und danach die Anzeigen auf 2.0.2 aktualisieren. Für individuelle Kanistergrößen braucht auch die Zentrale 2.0.2. Ein abgeschlossener Umzug muss nicht wiederholt werden.
+**Bereits eine gemeinsame WohnPit-Version installiert?** Zuerst die Zentrale und danach die Anzeigen auf 2.0.3 aktualisieren. Für individuelle Kanistergrößen braucht auch die Zentrale mindestens 2.0.2. Ein abgeschlossener Umzug muss nicht wiederholt werden.
 
-**Zur bisherigen Statistik-Korrektur:** Für die Statistik-Korrektur genügt das Update auf 2.0.1 auf den Anzeigehandys. Ein abgeschlossener Umzug muss nicht wiederholt werden. [Update und Statistikprüfung](ANZEIGE-STATISTIK.md).
+**Statistikabruf auf dem Anzeigehandy:** 2.0.3 erhält vollständig geladene Ergebnisse auch dann, wenn die Zentrale während des Abrufs neue Berechnungsgrundlagen liefert. Ein abgeschlossener Umzug muss nicht wiederholt werden. [Update und Statistikprüfung](ANZEIGE-STATISTIK.md).
 
 WohnPit führt die bisherigen Funktionen von Watt’n’Pit und der schlanken WohnPit-Zentrale in einer Anwendung zusammen. Der Name beschreibt ein lokales Cockpit für Energie, Gas und Wasser – im Wohnwagen, Ferienhaus, Gartenhaus oder an einer passenden Balkonanlage.
 
@@ -34,7 +34,7 @@ Die gemeinsame WohnPit-App behält technisch die bisherige Watt’n’Pit-Update
 
 ## Bisherige WohnPit-Zentrale umziehen
 
-1. **[WohnPit 0.0.5 · Übernahme](https://github.com/Tim-Gurke/WohnPit/releases/download/v2.0.2/WohnPit-Uebernahme-v0.0.5.apk)** über die alte WohnPit-Zentrale installieren. Vorher nichts deinstallieren.
+1. **[WohnPit 0.0.5 · Übernahme](https://github.com/Tim-Gurke/WohnPit/releases/download/v2.0.3/WohnPit-Uebernahme-v0.0.5.apk)** über die alte WohnPit-Zentrale installieren. Vorher nichts deinstallieren.
 2. Aufzeichnung pausieren, Archivabruf beenden und einen Wetterabruf abwarten. Unter **Einstellungen und Daten → Vollständige Übernahmesicherung** eine lokale **.wohnpit-Datei** mit eigenem langem Kennwort erstellen. [Ausführliche Sicherungsanleitung](changes-0.0.5.md).
 3. Nach erfolgreicher Sicherung die alte App **WohnPit · Übernahme** vollständig beenden: Android-App-Info öffnen und **Beenden erzwingen / Stopp erzwingen** wählen. Die App installiert lassen, aber während des neuen Zentralbetriebs nicht wieder öffnen. Das Pausieren der Aufzeichnung allein beendet ihren WLAN-Verbunddienst nicht; dieser darf nicht gleichzeitig mit der neuen Zentrale dieselbe Anlage anbieten. Falls auf dem G5 noch eine alte Watt’n’Pit-Aufzeichnung läuft, auch diese pausieren. Danach **die aktuelle gemeinsame WohnPit-App** auf diesem Handy installieren. Ist das alte Watt’n’Pit noch vorhanden, aktualisiert diese APK dessen Installation; sonst wird die gemeinsame App neu installiert. Die App **WohnPit · Übernahme** bleibt daneben zunächst erhalten.
 4. In WohnPit **Übernahmesicherung einlesen** öffnen – beim Erststart oder später in den Einstellungen. Die .wohnpit-Datei wählen und das zugehörige Kennwort eingeben. Der Import ersetzt die Daten der Zielinstallation; deshalb einen dort benötigten eigenen Stand vorher ebenfalls vollständig sichern.

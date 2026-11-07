@@ -62,8 +62,9 @@
     accept(query,data){
       const error=data?.error||(!data||typeof data!=='object'?'Zeitraum konnte nicht geladen werden.':'');
       const old=error?this.previous(query.method,query.args,query.scope):null;
-      this.remember(query.key,{...query,data:error?old?.data:data,at:error?old?.at:Date.now(),error,generation:query.generation,retryAt:error?Date.now()+5000:0});
+      this.remember(query.key,{...query,data:error?old?.data:data,at:error?old?.at:Date.now(),error,generation:query.generation-(!error&&data.stale?1:0),retryAt:error?Date.now()+5000:0});
     }
+    initialPending(){return [this.inflight,...this.queue.values()].some(query=>query&&!this.previous(query.method,query.args,query.scope)?.data);}
     read(method,args,scope){
       this.source();const key=this.key(method,args,scope),query={key,method,args,scope,generation:this.generation,epoch:this.epoch};
       // Local model/history reads can be just as expensive as LAN queries. Keep

@@ -1,14 +1,24 @@
-# WohnPit 2.0.2
+# WohnPit 2.0.3
 
 **WohnPit ist die Zusammenführung von Watt’n’Pit und der bisherigen WohnPit-Zentrale in einer gemeinsamen App.**
 
 **Dein lokales Cockpit für Energie, Gas und Wasser.** Solar, Akku, Verbrauch und Versorgung im Blick – im Wohnwagen, Ferienhaus, Gartenhaus und an passenden Balkonanlagen.
 
-**[WohnPit 2.0.2 herunterladen](https://github.com/Tim-Gurke/WohnPit/releases/download/v2.0.2/WohnPit-v2.0.2.apk)** · [Projektseite](https://wohnpit.extraordinarygrove.chatgpt.site) · [Installieren, einrichten und umziehen](docs/ZUSAMMENFUEHRUNG.md) · [Versionshistorie](CHANGELOG.md)
+**[WohnPit 2.0.3 herunterladen](https://github.com/Tim-Gurke/WohnPit/releases/download/v2.0.3/WohnPit-v2.0.3.apk)** · [Projektseite](https://wohnpit.extraordinarygrove.chatgpt.site) · [Installieren, einrichten und umziehen](docs/ZUSAMMENFUEHRUNG.md) · [Versionshistorie](CHANGELOG.md)
 
-**Neu in 2.0.2:** Bedarf für 3 / 7 / 14 Tage wahlweise in **kg oder Flaschen** sowie **Litern oder Kanistern** anzeigen. Kanister- und Gasflaschengröße unter **Gas / Wasser → Einstellen** anpassen; zunächst 20 L und 11 kg. Die Gasansicht zeigt, ob Wetterkorrektur tatsächlich aktiv ist, welche Flaschenabschnitte geeignet sind und welche Grundlage noch fehlt. Ein Symbol aus Flamme und Tropfen ersetzt den bisherigen Punkt. [Bedienen und berechnen](docs/GAS-WASSER.md) · [Änderungen und Prüfgrenzen](docs/changes-2.0.2.md).
+**Neu in 2.0.3:** Der Statistikabruf auf dem Anzeigehandy bleibt bei zwischenzeitlich aktualisierten Wetter- und Berechnungsgrundlagen nutzbar. Fertige Werte bleiben sichtbar und werden anschließend aktualisiert. Die sichtbaren Kacheln laden vor dem großen Lernabgleich. [Fehlerbild und Korrektur](docs/changes-2.0.3.md).
 
-**Update:** zuerst die Zentrale, danach die Anzeigehandys auf 2.0.2 aktualisieren. Über die bestehende gemeinsame WohnPit-App installieren, **nicht deinstallieren**. Die eigene Kachelanordnung, Messwerte und Kopplungen bleiben erhalten. Ein abgeschlossener Umzug muss nicht wiederholt werden.
+**Weiterhin enthalten seit 2.0.2:** Bedarf für 3 / 7 / 14 Tage wahlweise in **kg oder Flaschen** sowie **Litern oder Kanistern** anzeigen. Kanister- und Gasflaschengröße unter **Gas / Wasser → Einstellen** anpassen; zunächst 20 L und 11 kg. Die Gasansicht zeigt, ob Wetterkorrektur tatsächlich aktiv ist, welche Flaschenabschnitte geeignet sind und welche Grundlage noch fehlt. Ein Symbol aus Flamme und Tropfen ersetzt den bisherigen Punkt. [Bedienen und berechnen](docs/GAS-WASSER.md) · [Änderungen und Prüfgrenzen](docs/changes-2.0.2.md).
+
+**Update:** zuerst die Zentrale, danach die Anzeigehandys auf 2.0.3 aktualisieren. Über die bestehende gemeinsame WohnPit-App installieren, **nicht deinstallieren**. Die eigene Kachelanordnung, Messwerte und Kopplungen bleiben erhalten. Ein abgeschlossener Umzug muss nicht wiederholt werden.
+
+## Statistikabruf unter wechselnden Grundlagen · 2.0.3
+
+| Dunkle Ansicht | Helle Ansicht |
+|---|---|
+| ![Vollständige native Statistikreihen nach einem Wetterwechsel; erfundene Messungen](docs/images/viewer-statistics-2.0.3-dark.png) | ![Dieselben erfolgreich geladenen Reihen im hellen Design; erfundene Messungen](docs/images/viewer-statistics-2.0.3-light.png) |
+
+Aufnahmen aus der tatsächlichen Oberfläche mit Berechnungsergebnissen der nativen TCP-/SQLite-Prüfung und erfundenen Messungen. Eigene Kachelanordnungen bleiben erhalten. [Statistiken und Ladeanzeigen](docs/ANZEIGE-STATISTIK.md).
 
 ## Gas und Wasser · aktuelle Ansichten in 2.0.2
 
@@ -60,7 +70,7 @@ Alle Aufnahmen zeigen Demo-, Beispiel- oder Emulatoransichten. Keine persönlich
 
 **Watt’n’Pit auf dem Anzeigehandy:** Die neue WohnPit-APK über Watt’n’Pit installieren, ohne vorher zu deinstallieren. Die Updatesignatur und technische App-Kennung bleiben erhalten. Der sichtbare Name wird WohnPit; die vorhandenen Daten und Kopplungen bleiben erhalten.
 
-**Bisherige WohnPit-Zentrale:** zuerst **[WohnPit 0.0.5 · Übernahme](https://github.com/Tim-Gurke/WohnPit/releases/download/v2.0.2/WohnPit-Uebernahme-v0.0.5.apk)** installieren, Aufzeichnung/Archivabruf pausieren und eine vollständige verschlüsselte Sicherung erstellen. Danach in der aktuellen gemeinsamen WohnPit-App einlesen, prüfen lassen, schließen und neu öffnen. Die alte Übernahme-App bis zur Kontrolle behalten. Geräte und Anzeigehandys nötigenfalls neu verknüpfen. [Schritt-für-Schritt-Anleitung](docs/ZUSAMMENFUEHRUNG.md).
+**Bisherige WohnPit-Zentrale:** zuerst **[WohnPit 0.0.5 · Übernahme](https://github.com/Tim-Gurke/WohnPit/releases/download/v2.0.3/WohnPit-Uebernahme-v0.0.5.apk)** installieren, Aufzeichnung/Archivabruf pausieren und eine vollständige verschlüsselte Sicherung erstellen. Danach in der aktuellen gemeinsamen WohnPit-App einlesen, prüfen lassen, schließen und neu öffnen. Die alte Übernahme-App bis zur Kontrolle behalten. Geräte und Anzeigehandys nötigenfalls neu verknüpfen. [Schritt-für-Schritt-Anleitung](docs/ZUSAMMENFUEHRUNG.md).
 
 **Private Umzugsdateien niemals veröffentlichen.** Sie enthalten Geräte- und Verbindungsschlüssel und werden mit deinem eigenen Kennwort verschlüsselt. Die App speichert das Kennwort nicht und lädt die Datei nicht auf einen Server. Die öffentliche APK ist keine Umzugsdatei. Normale CSV- oder Einstellungsexporte ersetzen die vollständige Übernahmesicherung nicht.
 

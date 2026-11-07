@@ -27,7 +27,8 @@ final class AnalysisExchange {
     static JSONObject state(Repository repo,SolarPlanning plan,long controlRevision)throws Exception{
         StringBuilder text=new StringBuilder();for(String key:new String[]{"weatherCache","devices","equipment-v1","solar-setup-v1","weatherPlace","rollerChargeWindows",SpecialUses.KEY})text.append(repo.prefs.getString(key,""));
         String token=java.util.Base64.getEncoder().encodeToString(java.security.MessageDigest.getInstance("SHA-256").digest(text.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
-        return new JSONObject().put("token",token+":"+plan.modelRevision()+":"+controlRevision);
+        String epoch="";try(Cursor c=repo.db.getReadableDatabase().rawQuery("SELECT epoch FROM analysis_meta",null)){if(c.moveToFirst())epoch=c.getString(0);}
+        return new JSONObject().put("token",token+":"+plan.modelRevision()+":"+controlRevision).put("epoch",epoch);
     }
     static SQLiteDatabase database(String table,Repository repo,SolarPlanning plan,RollerLedger ledger,boolean write){
         // schema() is also the table-name whitelist, before any SQL is constructed.
@@ -62,7 +63,7 @@ final class AnalysisExchange {
         try(Cursor c=repo.db.getReadableDatabase().rawQuery("SELECT MAX(ts) FROM readings WHERE ts>=0 AND ts<=?",new String[]{""+System.currentTimeMillis()})){if(c.moveToFirst()&&!c.isNull(0))last=c.getLong(0);}
         return new JSONObject().put("protocol",1).put("algorithm",SolarPlanning.ALGORITHM).put("inputToken",before.getString("token")).put("changed",!before.getString("token").equals(state(repo,plan,controlRevision).getString("token"))).put("firstMeasurement",first).put("measurementAt",Math.min(last,System.currentTimeMillis())).put("settings",settings).put("markers",markers).put("tables",versions)
             .put("presenceHistory",PresenceStore.get(context).history(from)).put("presence",PresenceStore.get(context).snapshot()).put("controlRevision",controlRevision)
-            .put("timezone",TimeZone.getDefault().getID()).put("at",System.currentTimeMillis());
+            .put("epoch",before.getString("epoch")).put("timezone",TimeZone.getDefault().getID()).put("at",System.currentTimeMillis());
     }
     static JSONObject page(Context context,Repository repo,SolarPlanning plan,String table,long from,long to,String expected,long after)throws Exception{
         if(from<0||to<=from||to-from>376L*86400000||to>System.currentTimeMillis()+86400000||after<0)throw new IllegalArgumentException("Ungültiger Datenzeitraum.");

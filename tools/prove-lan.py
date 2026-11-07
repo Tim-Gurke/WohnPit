@@ -23,6 +23,7 @@ classes=out/'classes';classes.mkdir(exist_ok=True)
 sources=list((root/'app/src/main/java').rglob('*.java'))+list((root/'tools/testing').rglob('*.java'))+list(generated.rglob('*.java'))+[root/'tools/LanSyncProof.java',root/'tools/PresenceProof.java',root/'tools/ViewerAnalysisProof.java',root/'tools/SolarInputFixture.java',root/'tools/MobileReplicaProof.java',root/'tools/MobileDisplayProof.java',root/'tools/MigrationProof.java',root/'tools/CentralArchiveProof.java']
 native_cp=os.pathsep.join(map(str,[a.android_jar.resolve(),*a.android_jar.resolve().parent.glob('zxing-*.jar')]))
 sources.append(root/'tools/LearningMigrationProof.java')
+sources.append(root/'tools/ViewerRefreshProof.java')
 subprocess.run(['java','com.sun.tools.javac.Main','-cp',native_cp,'-d',str(classes),*map(str,sources)],check=True)
 classpath=os.pathsep.join(map(str,[classes,a.android_jar.resolve(),a.sqlite_jar.resolve(),a.slf4j_jar.resolve(),*a.android_jar.resolve().parent.glob('zxing-*.jar')]))
 r=subprocess.run(['java','-cp',classpath,'de.wattpit.app.LanSyncProof',str(out/'devices')],capture_output=True,text=True,timeout=90)
@@ -48,3 +49,5 @@ r7=subprocess.run(['java','-Xmx512m','-cp',classpath,'de.wattpit.app.LearningMig
 print(r7.stdout+r7.stderr,end='');(out/'learning-migration-results.log').write_text(r7.stdout+r7.stderr);r7.check_returncode()
 r8=subprocess.run(['node',str(root/'tools/learning-state-check.cjs'),str(out/'learning-migration/learning-states.json')],capture_output=True,text=True,timeout=30)
 print(r8.stdout+r8.stderr,end='');(out/'learning-display-results.log').write_text(r8.stdout+r8.stderr);r8.check_returncode()
+r9=subprocess.run(['java','-Xmx512m','-cp',classpath,'de.wattpit.app.ViewerRefreshProof',str(out/'statistics')],capture_output=True,text=True,timeout=90)
+print(r9.stdout+r9.stderr,end='');(out/'statistics-results.log').write_text(r9.stdout+r9.stderr);r9.check_returncode()

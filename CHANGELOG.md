@@ -6,6 +6,7 @@ Die Dokumentation bleibt vollständig erhalten, auch wenn ältere GitHub-Release
 
 | Version | Änderungen |
 |---|---|
+| [2.0.3](docs/changes-2.0.3.md) | Vollständige Statistikstände bei wechselnden Grundlagen erhalten und aktualisieren; sichtbare Kacheln vor dem Lernabgleich laden. Fehler mit echter TCP-/SQLite-Strecke und tatsächlicher Oberfläche nachgestellt. |
 | [2.0.2](docs/changes-2.0.2.md) | Gas-/Wasserbedarf in Flaschen und Kanistern, einstellbare Behältergrößen, sichtbarer Wetter-Lernstand und passende Symbole. WohnPit klar als Zusammenführung von Watt’n’Pit und der bisherigen Zentrale gekennzeichnet; öffentliche Vorgeschichte und Anleitungen hier erhalten. |
 | [2.0.1](docs/changes-2.0.1.md) | Ersten Statistikabruf auf Anzeigehandys bei laufender Aufzeichnung repariert; vollständige Ergebnisse sichtbar behalten und wartende Diagramme gleichmäßig laden. |
 | [2.0.0](docs/changes-2.0.0.md) | WohnPit und Watt’n’Pit zusammengeführt; Zentrale, Anzeigehandy und eigenständiger Victron-Betrieb, private Vollsicherung, gemeinsame Messwertfarben und belegter Wetterrückblick. |

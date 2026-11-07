@@ -117,3 +117,25 @@ test('an import boundary rejects an overtaken scoped first result',()=>{
  b.result({id:before.id,data:{points:[{v:999}]}});
  assert.deepEqual(JSON.parse(b.read('history',[0,100000,'power','all'],'day')).points,[]);
 });
+
+test('a native snapshot overtaken by weather remains visible and schedules a fresh read',()=>{
+ const {b,requests,reply}=viewer(),args=[0,100000,'all',0,100000];
+ b.read('energyHistoryWindow',args,'overview');
+ const flow=last=>Object.fromEntries(['solar','consumption','balance','mobile'].map(kind=>[kind,{points:[{t:100000,v:last}],summary:{last}}]));
+ reply({accountingVersion:2,stale:true,analysis:{inputsChanged:true},...flow(42)});
+ const retained=JSON.parse(b.read('energyHistoryWindow',args,'overview'));
+ for(const kind of ['solar','consumption','balance','mobile']){assert.equal(retained[kind].summary.last,42);assert.equal(retained[kind].stale,true);assert.equal(retained[kind].pending,true);}
+ assert.equal(requests.length,2,'a native stale result must refresh even when no JS revision has advanced');
+ reply({accountingVersion:2,analysis:{inputsChanged:false},...flow(43)});
+ const current=JSON.parse(b.read('energyHistoryWindow',args,'overview'));assert.equal(current.solar.summary.last,43);assert.equal(current.stale,undefined);assert.equal(current.solar.pending,undefined);assert.equal(requests.length,2);
+});
+
+test('initial visible reads take priority over learning, while later refreshes do not starve learning',()=>{
+ const {b,requests}=viewer();
+ const read=metric=>b.read('dashboardHistory',[0,100000,metric],'tile-'+metric);
+ read('solar');read('power');assert.equal(b.initialPending(),true);
+ b.result({id:requests.at(-1).id,data:{points:[{v:1}],summary:{last:1}}});assert.equal(b.initialPending(),true,'another cold visible query is still waiting');
+ b.result({id:requests.at(-1).id,data:{points:[{v:2}],summary:{last:2}}});assert.equal(b.initialPending(),false);
+ b.invalidate();read('solar');read('power');assert.equal(b.initialPending(),false,'complete earlier series allow learning even as recording continues');
+ b.result({id:requests.at(-1).id,data:{points:[{v:3}],summary:{last:3}}});b.result({id:requests.at(-1).id,data:{points:[{v:4}],summary:{last:4}}});
+});
