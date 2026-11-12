@@ -185,12 +185,12 @@ jobs:
             adb shell am instrument -w -e class de.wattpit.app.UnifiedSmokeTest de.wattpit.app.test/androidx.test.runner.AndroidJUnitRunner | tee unified-emulator.log
             python3 -c "from pathlib import Path; s=Path('unified-emulator.log').read_text(); assert 'OK (3 tests)' in s and 'FAILURES' not in s"
             mkdir -p docs/images
-            adb pull /sdcard/Android/data/de.wattpit.app/files/wohnpit-2.0.0-central.png docs/images/
-            adb pull /sdcard/Android/data/de.wattpit.app/files/wohnpit-2.0.0-direct.png docs/images/
+            adb pull /sdcard/Android/data/de.wattpit.app/files/autarpie-3.0.0-central.png docs/images/
+            adb pull /sdcard/Android/data/de.wattpit.app/files/autarpie-3.0.0-direct.png docs/images/
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: WohnPit-2.0.0-Emulator
+          name: AutarPie-3.0.0-Emulator
           path: |
             unified-emulator.log
-            docs/images/wohnpit-2.0.0-*.png
+            docs/images/autarpie-3.0.0-*.png
