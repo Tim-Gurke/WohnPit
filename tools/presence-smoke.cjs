@@ -1,3 +1,4 @@
+const autarpieControls=require('./autarpie-test-controls.cjs');
 const {chromium}=require('playwright'),assert=require('node:assert/strict'),path=require('node:path'),fs=require('node:fs');
 const preset=require('../app/src/main/assets/dashboard-preset.json');
 (async()=>{
@@ -9,8 +10,8 @@ const preset=require('../app/src/main/assets/dashboard-preset.json');
    window.state={state:'home',mode:'auto',plans:[],pending:[],revision:1};window.savedBoard=JSON.stringify(preset);
    window.WattPit={appVersion:()=> '1.6.8',isLanViewer:()=>false,lanState:()=>'{"role":"host","hosting":true}',dashboardPreset:()=>JSON.stringify(preset),dashboard:()=>window.savedBoard,saveDashboard:()=>'',snapshot:()=>JSON.stringify({running:false,devices:[],readings:[],found:[],stats:{count:0},settings:{theme,palette:'classic',capacity:100,sampleSeconds:10,miniRange:'today'}}),syncState:()=>JSON.stringify({busy:false,cockpitNoticeAccepted:true,theme,palette:'classic'}),settings:()=>'',solarSetup:()=> '{}',rollerSnapshot:()=> '{}',presenceSnapshot:()=>JSON.stringify(window.state),savePresence:mode=>{window.state.mode=mode;return '';},saveAbsence:json=>{const p=JSON.parse(json);window.state.plans=[{...p,id:p.id||'00000000-0000-0000-0000-000000000001',status:'planned'}];window.state.pending=[];window.state.revision++;return '';},resolveAbsence:(id,action)=>{const p=window.state.plans.find(p=>p.id===id);p.status=action==='cancel'?'cancelled':'snoozed';window.state.pending=[];window.state.revision++;return '';}};
   },{preset,theme});
-  await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));
-  await page.locator('[data-page="settings"]').click();await page.locator('#presenceSettings').click();
+  await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));await autarpieControls.prepare(page);
+  await autarpieControls.openSettings(page);await page.locator('#presenceSettings').click();
   assert.match(await page.locator('#presenceLive').textContent(),/Bewohnt.*WLAN/);
   await page.locator('#presenceAdd').click();const originalReturn=await page.locator('#presenceTo').inputValue();await page.locator('#presenceFrom').fill('2026-10-29T14:00');assert.equal(await page.locator('#presenceTo').inputValue(),originalReturn);await page.locator('#presenceSave').click();
   assert.equal(await page.evaluate(()=>window.state.plans.length),1);assert.equal(await page.locator('[data-presence-edit]').textContent(),'Ändern');
