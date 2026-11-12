@@ -10,3 +10,5 @@ body{background:var(--ap-app-background);background-attachment:fixed;letter-spac
 .section-heading{flex-wrap:wrap;min-width:0}.section-heading>div,.brand>div{min-width:0}.pagehead h1{overflow-wrap:anywhere}.cockpit-tile.narrow-tile{padding-left:7px;padding-right:7px}.type-chart .tile-unit{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;flex-shrink:1}.type-chart .tile-estimate-tag{white-space:nowrap}
 
 @media(orientation:landscape){.topbar.with-overview{grid-template-columns:auto minmax(0,1fr) auto auto;min-height:50px;gap:10px;padding:4px 16px}.with-overview #liveStatus{grid-column:3;grid-row:1}.with-overview #autarpieAreas{grid-column:4;grid-row:1;margin-left:0}.with-overview .brandmark{width:28px;height:28px}}
+
+.solar-day>.solar-scale-sun{grid-template-columns:minmax(0,1fr) max-content}.solar-scale-sun>b{display:none}.solar-scale-sun>em{font-size:8px;max-width:100%;overflow:hidden;text-overflow:ellipsis}
