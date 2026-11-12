@@ -29,6 +29,21 @@ jobs:
           name: AutarPie-Oberflaeche
           path: app/build/reports/autarpie-ui/
 
+  period-storage-ui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kachelzeiträume mit alter und neuer Speicherung wiederholt prüfen
+        env:
+          WATTPIT_CHROMIUM: /usr/bin/google-chrome
+        run: |
+          npm install --no-save --prefix "$RUNNER_TEMP/autarpie-period-ui" playwright@1.51.1
+          export NODE_PATH="$RUNNER_TEMP/autarpie-period-ui/node_modules"
+          for attempt in 1 2 3 4 5; do
+            node tools/tile-period-isolation-smoke.cjs
+          done
+
   supplies-ui:
     runs-on: ubuntu-latest
     timeout-minutes: 5
