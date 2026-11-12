@@ -1,3 +1,4 @@
+const autarpieControls=require('./autarpie-test-controls.cjs');
 /* Actual native encrypted-TCP calculation results; invented measurements only. */
 const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const wait=require('./browser-wait.cjs'),C=require('../app/src/main/assets/dashboard-core.js');
@@ -22,7 +23,7 @@ board.tiles=['soc','solarEnergy','consumptionEnergy','energyBalance','mobileSola
     }else setTimeout(()=>window.onHistoryResult({id:q.id,data:q.method==='dailyEnergy'?{days:[]}:{points:[],summary:{}}}),20);
    },requestSolarData:()=>{statTest.learning.push({cold:reads.initialPending()});setTimeout(()=>window.onSolarPlanData({source:'test',observations:[],forecasts:[],updated:now}),20);}};
   },{fixture,board});
-  await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));
+  await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));await autarpieControls.prepare(page);
   await page.evaluate(()=>solar.render());
   assert.equal(await page.evaluate(()=>statTest.learning.length),0,'learning must not occupy the native worker ahead of the first visible statistics');
   const number=metric=>page.locator(`[data-tile="statistics-${metric}"] .tile-number`);
