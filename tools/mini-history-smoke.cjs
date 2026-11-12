@@ -1,3 +1,4 @@
+const autarpieControls=require('./autarpie-test-controls.cjs');
 const waitForPage=require('./browser-wait.cjs');
 const {chromium}=require('playwright');
 const assert=require('node:assert/strict');
@@ -46,7 +47,7 @@ const path=require('node:path');
   await card.evaluate(el=>el.scrollIntoView({block:'center'}));const box=await handle.boundingBox();
   await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();await page.mouse.move(box.x+box.width/2,box.y+box.height/2+delta,{steps:8});await page.mouse.up();
  };
- await page.locator('#editDashboard').click();assert.equal(await handle.isVisible(),true);
+ await autarpieControls.toggleEdit(page);assert.equal(await handle.isVisible(),true);
  const before=await page.evaluate(()=>({tiles:dashboard.config.tiles,calls:window.miniCalls.length,height:dashboard.config.historyHeight.compact}));
  await drag(110);assert.equal(await card.evaluate(el=>el.offsetHeight),before.height+110);assert.equal(await page.evaluate(()=>dashboard.config.historyHeight.compact),before.height+110);
  assert.equal(await page.evaluate(()=>window.miniCalls.length),before.calls,'height adjustment must redraw without requesting history');
@@ -60,7 +61,7 @@ const path=require('node:path');
  await drag(90);assert.equal(await card.evaluate(el=>el.offsetHeight),470);await handle.focus();await page.keyboard.press('ArrowDown');assert.equal(await card.evaluate(el=>el.offsetHeight),490);
  await page.keyboard.press('Home');assert.equal(await card.evaluate(el=>el.offsetHeight),300);await page.keyboard.press('End');assert.equal(await card.evaluate(el=>el.offsetHeight),1000);
  await page.evaluate(()=>window.failSave=true);await page.keyboard.press('ArrowUp');assert.equal(await card.evaluate(el=>el.offsetHeight),1000,'failed storage must restore the saved height');await page.evaluate(()=>window.failSave=false);
- await page.locator('#editDashboard').click();assert.equal(await handle.isVisible(),false);
+ await autarpieControls.toggleEdit(page);assert.equal(await handle.isVisible(),false);
  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('detail-board')).historyHeight.wide),1000,'the bridge must have persisted the wide height before navigation');
  await page.reload();
  // Reload can finish before the ResizeObserver has applied the restored profile.
@@ -87,6 +88,6 @@ const path=require('node:path');
   assert.equal(afterLayout.scrollWidth>width,false,'overview overflow '+JSON.stringify(afterLayout));
   assert.ok(afterLayout.chart.height>=80&&afterLayout.chart.bottom<=afterLayout.card.bottom,'chart escaped its card '+JSON.stringify(afterLayout));
  }
- if(process.env.WATTPIT_SCREENSHOT_DIR){fs.mkdirSync(process.env.WATTPIT_SCREENSHOT_DIR,{recursive:true});await page.setViewportSize({width:390,height:844});await page.locator('#editDashboard').click();await card.evaluate(el=>el.scrollIntoView({block:'center'}));await verifyCurves();await card.screenshot({path:path.join(process.env.WATTPIT_SCREENSHOT_DIR,'mini-history-resized.png')});}
+ if(process.env.WATTPIT_SCREENSHOT_DIR){fs.mkdirSync(process.env.WATTPIT_SCREENSHOT_DIR,{recursive:true});await page.setViewportSize({width:390,height:844});await autarpieControls.toggleEdit(page);await card.evaluate(el=>el.scrollIntoView({block:'center'}));await verifyCurves();await card.screenshot({path:path.join(process.env.WATTPIT_SCREENSHOT_DIR,'mini-history-resized.png')});}
  assert.deepEqual(errors,[]);await browser.close();console.log('Overview calendar ranges, local database queries, touch cancel, height drag, keyboard bounds, storage failure, separate profiles and reload persistence passed.');
 })().catch(e=>{console.error(e);process.exit(1);});
