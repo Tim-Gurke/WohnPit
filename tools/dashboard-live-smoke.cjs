@@ -1,3 +1,4 @@
+const autarpieControls=require('./autarpie-test-controls.cjs');
 const {chromium}=require('playwright');
 const assert=require('node:assert/strict');
 const path=require('node:path');
@@ -17,7 +18,7 @@ const fs=require('node:fs');
    return window.historyError?'{"points":[],"summary":{},"error":"unavailable"}':JSON.stringify({points:[{t:now-3600000,last:now-3600000,v:1,min:1,max:1,n:1,device:'TEST-SOLAR',origin:'archive',period:3600},{t:now-600000,last:now-600000,v:3,min:3,max:6,n:1,device:'TEST-SOLAR',origin:'archive',period:3600}],summary:{last:3,avg:2,min:1,max:6}});
   },energyHistory:()=>JSON.stringify({accountingVersion:2,solar:energy('solar'),battery:energy('shunt')})};
  });
- await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));
+ await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));await autarpieControls.prepare(page);
  const solar=page.locator('[data-tile="test-solar"]'),number=()=>solar.locator('.tile-number').textContent(),curve=async()=>JSON.stringify([...(await solar.locator('.tile-sparkline path').last().getAttribute('d')).matchAll(/([ML])[\d.]+,([\d.]+)/g)].map(m=>[m[1],Number(m[2])]));
  assert.equal(await number(),'3','old chart choices changed on upgrade');const originalCurve=await curve();
  await solar.click();await page.locator('#tileActionSettings').click();assert.equal(await page.locator('#tileAggregate').inputValue(),'last');
@@ -35,11 +36,11 @@ const fs=require('node:fs');
  assert.equal(await page.evaluate(()=>window.testConfig.tiles[0].valueMode),'live');assert.equal(await solar.locator('.tile-sparkline').getAttribute('data-scale-max'),'0.0066');
  // All overview blocks can be moved without changing the tile layout.
  const layouts=await page.evaluate(()=>window.testConfig.tiles[0].layouts);
- await page.locator('#editDashboard').click();
+ await autarpieControls.toggleEdit(page);
  for(let i=0;i<2;i++)await page.getByRole('button',{name:'Start / Pause nach oben',exact:true}).click();
  const order=await page.locator('#overviewBlocks > [data-overview-block]').evaluateAll(nodes=>nodes.map(n=>n.dataset.overviewBlock));assert.deepEqual(order,['record','tiles','history']);
  assert.deepEqual(await page.evaluate(()=>window.testConfig.tiles[0].layouts),layouts);
- await page.locator('#editDashboard').click();assert.equal(await page.locator('#overviewOrder').isVisible(),false);
+ await autarpieControls.toggleEdit(page);assert.equal(await page.locator('#overviewOrder').isVisible(),false);
  await page.reload();assert.deepEqual(await page.locator('#overviewBlocks > [data-overview-block]').evaluateAll(nodes=>nodes.map(n=>n.dataset.overviewBlock)),order);
  // Mini history queries the chosen window and stores it independently from the large history view.
  assert.equal(await page.locator('#miniRange').inputValue(),'sunrise');assert.match(await page.locator('#miniPeriodLabel').textContent(),/SONNENAUFGANG/);
@@ -49,7 +50,7 @@ const fs=require('node:fs');
  await page.reload();assert.equal(await page.locator('#miniRange').inputValue(),'last6h');
  await page.locator('#miniRange').selectOption('sunrise');await page.evaluate(()=>{window.mock.weather.days=[];poll();});assert.equal(await page.locator('#miniPeriodLabel').textContent(),'HEUTE');assert.match(await page.locator('#miniPeriodNote').textContent(),/nicht verfügbar/);
  // The new independent energy totals work as tiles and in the comparison graph, with coverage.
- await page.locator('#addTile').click();await page.locator('.metric-option[data-metric="solarEnergy"]').click();
+ await autarpieControls.addTile(page);await page.locator('.metric-option[data-metric="solarEnergy"]').click();
  const energyTile=page.locator('[data-tile]').last();assert.equal(await energyTile.locator('.tile-number').textContent(),'3,27');assert.match(await energyTile.locator('.tile-hint').textContent(),/Berechnet.*50 % erfasst/);
  await energyTile.click();await page.locator('#tileActionSettings').click();assert.equal(await page.locator('#tileAggregate').isDisabled(),true);assert.equal(await page.locator('#tilePeriod option[value="live"]').evaluate(el=>el.disabled),true);await page.locator('#closeModal').click();
  await page.locator('[data-page="history"]').click();await page.locator('#metricButtons [data-metric="energy"]').click();
