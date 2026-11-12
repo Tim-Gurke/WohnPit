@@ -15,7 +15,7 @@ final class RollerLedger extends SQLiteOpenHelper {
     private double wh;
     private String source="",mac="";
     private RollerLedger(Context c){this(c,"wattpit-roller-input.db");}
-    RollerLedger(Context c,String name){super(c,name,null,1);setWriteAheadLoggingEnabled(true);}
+    RollerLedger(Context c,String name){super(c,name,null,2);setWriteAheadLoggingEnabled(true);}
     synchronized void replace(String plant,long from,long to,JSONArray rows)throws Exception{
         SQLiteDatabase db=getWritableDatabase();db.beginTransaction();try{
             db.delete("input_intervals","source=? AND end>? AND start<?",new String[]{plant,""+from,""+to});
@@ -23,8 +23,21 @@ final class RollerLedger extends SQLiteOpenHelper {
             db.setTransactionSuccessful();
         }finally{db.endTransaction();}
     }
-    @Override public void onCreate(SQLiteDatabase db){db.execSQL("CREATE TABLE input_intervals(source TEXT NOT NULL,start INTEGER NOT NULL,end INTEGER NOT NULL,wh REAL NOT NULL,mac TEXT NOT NULL,session INTEGER NOT NULL,PRIMARY KEY(source,start))");db.execSQL("CREATE INDEX input_end ON input_intervals(source,end)");}
-    @Override public void onUpgrade(SQLiteDatabase db,int old,int next){}
+    @Override public void onCreate(SQLiteDatabase db){db.execSQL("CREATE TABLE input_intervals(source TEXT NOT NULL,start INTEGER NOT NULL,end INTEGER NOT NULL,wh REAL NOT NULL,mac TEXT NOT NULL,session INTEGER NOT NULL,PRIMARY KEY(source,start))");db.execSQL("CREATE INDEX input_end ON input_intervals(source,end)");rawSchema(db);}
+    private static void rawSchema(SQLiteDatabase db){db.execSQL("CREATE TABLE IF NOT EXISTS roller_raw(source TEXT NOT NULL,start INTEGER NOT NULL,end INTEGER NOT NULL,payload TEXT NOT NULL,mac TEXT NOT NULL,PRIMARY KEY(source,start,mac))");}
+    @Override public void onUpgrade(SQLiteDatabase db,int old,int next){if(old<2)rawSchema(db);}
+    synchronized void rawAdd(String plant,String mac,long session,long from,long to,double first,double last,double idle,double efficiency)throws JSONException{
+        if(from<=0||to<=from||to-from>10000)return;long bucket=from/60000*60000;SQLiteDatabase db=getWritableDatabase();JSONArray values=new JSONArray();try(Cursor c=db.rawQuery("SELECT payload FROM roller_raw WHERE source=? AND start=? AND mac=?",new String[]{plant,""+bucket,mac})){if(c.moveToFirst())values=new JSONArray(c.getString(0));}
+        if(values.length()>=128)return;values.put(new JSONArray().put(from).put(to).put(first).put(last).put(idle).put(efficiency).put(session));ContentValues row=new ContentValues();row.put("source",plant);row.put("start",bucket);row.put("end",to);row.put("payload",values.toString());row.put("mac",mac);db.insertWithOnConflict("roller_raw",null,row,SQLiteDatabase.CONFLICT_REPLACE);
+        if(to-lastPrune>3600000){db.delete("roller_raw","end<?",new String[]{""+LearningWindow.since(to)});lastPrune=to;}
+    }
+    synchronized void derive(long from,long to)throws JSONException{
+        try(Cursor c=getReadableDatabase().rawQuery("SELECT source,mac,payload FROM roller_raw WHERE end>? AND start<? ORDER BY start",new String[]{""+from,""+to})){while(c.moveToNext()){JSONArray values=new JSONArray(c.getString(2));for(int i=0;i<values.length();i++){JSONArray v=values.getJSONArray(i);long a=v.getLong(0),b=v.getLong(1);if(b<=from||a>=to)continue;double p=v.getDouble(2),q=v.getDouble(3),idle=v.getDouble(4),eff=v.getDouble(5);double input=(de.wattpit.app.core.RollerEnergy.inputWatts(Math.max(0,p),idle,eff)+de.wattpit.app.core.RollerEnergy.inputWatts(Math.max(0,q),idle,eff))*.5*(b-a)/3600000.0;add(c.getString(0),c.getString(1),v.getLong(6),a,b,input);}}}
+    }
+    synchronized JSONObject summary(String plant,long from,long to)throws JSONException{
+        double battery=0,input=0;long observed=0;try(Cursor c=getReadableDatabase().rawQuery("SELECT payload FROM roller_raw WHERE source=? AND end>? AND start<? ORDER BY start",new String[]{plant,""+from,""+to})){while(c.moveToNext()){JSONArray rows=new JSONArray(c.getString(0));for(int i=0;i<rows.length();i++){JSONArray v=rows.getJSONArray(i);long a=Math.max(from,v.getLong(0)),b=Math.min(to,v.getLong(1));if(b<=a)continue;double p=Math.max(0,v.getDouble(2)),q=Math.max(0,v.getDouble(3)),idle=v.getDouble(4),eff=v.getDouble(5);battery+=(p+q)*.5*(b-a)/3600000.0;input+=(de.wattpit.app.core.RollerEnergy.inputWatts(p,idle,eff)+de.wattpit.app.core.RollerEnergy.inputWatts(q,idle,eff))*.5*(b-a)/3600000.0;observed+=b-a;}}}
+        return new JSONObject().put("batteryWh",observed>0?battery:JSONObject.NULL).put("inputWh",observed>0?input:JSONObject.NULL).put("observedMillis",observed).put("gapMillis",Math.max(0,to-from-observed));
+    }
     static String source(SharedPreferences prefs){try{
         String[] selected={"",""};JSONArray devices=new JSONArray(prefs.getString("devices","[]"));
         for(int i=0;i<devices.length();i++){JSONObject d=devices.getJSONObject(i);if(d.optString("kind").equals("solar"))selected[0]=d.optString("mac");if(d.optString("kind").equals("shunt"))selected[1]=d.optString("mac");}
