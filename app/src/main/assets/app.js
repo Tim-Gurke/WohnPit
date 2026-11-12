@@ -13,7 +13,7 @@ let readRepaint,readsDirty=false;
 function repaintReads(){
   if(!window.wattDisplayActive||!readsDirty||lifecycle?.blocked)return;
   readsDirty=false;dashboard?.cache.clear();lastMiniLoad=0;
-  if(page==='overview'){renderOverview();loadMini(true);}
+  if(page==='overview'||window.AutarPieUI?.active===page){renderOverview();loadMini(true);}
   if(page==='history')loadHistory();
   dashboard?.detail?.refresh(false);
 }
@@ -121,9 +121,11 @@ function reading(kind) {
   if (demo) return kind === 'shunt' ? {kind, t:Date.now(),soc:76.4,voltage:12.94,current:-2.2,power:-28.468,ttg:480,consumed:-23.6,temperature:null,aux:null,alarm:0}
     : {kind,t:Date.now(),voltage:13.04,current:10.5,solar:138,yieldWh:760,state:3,error:0,load:0};
   const config = snapshot.devices.find(d => d.kind === kind);
-  if (!config || config.error || !snapshot.running) return null;
-  const data = snapshot.readings.find(r => r.device === config.mac);
-  return data && Date.now()-data.t < 45000 ? data : null;
+  if (!config || !snapshot.running) return null;
+  const data = config.error?null:snapshot.readings.find(r => r.device === config.mac),fresh=data&&Date.now()-data.t<45000;
+  const output=snapshot.energy?.output,activeFresh=kind==='solar'&&output&&Date.now()>=output.at&&Date.now()-output.at<45000;
+  if(activeFresh){const value=fresh?{...data}:{kind,t:output.at};if(typeof output.pvVoltage==='number')value.pvVoltage=output.pvVoltage;if(typeof output.current==='number')value.load=output.current;return value;}
+  return fresh?data:null;
 }
 function renderOverview() {
   const shunt = reading('shunt'), solar = reading('solar');
@@ -184,7 +186,7 @@ function poll() {
   }
   supplies?.render();presence?.render();extras?.render();equipment?.render();roller?.render();
   window.AutarPieUI?.poll();
-  if (page === 'overview') { renderOverview(); loadMini(); }
+  if (page === 'overview'||window.AutarPieUI?.active===page) { renderOverview();if(dashboard.config.showMiniHistory!==false)loadMini(); }
   if (page === 'devices') renderDevices();
   if (page === 'settings') renderSettings();
   if (page === 'history') {
@@ -427,7 +429,7 @@ $('historyChart').addEventListener('pointerup',releasePointer);
 $('historyChart').addEventListener('pointercancel',event=>{pointers.delete(event.pointerId);gesture=null;});
 
 function renderDaily() {
- const previousScroll=$('solarDailyArchive')?.querySelector('.daily-scroll')?.scrollLeft||0;
+ const previousScroll=$('solarDailyArchive')?.querySelector('.daily-scroll')?.scrollLeft||0,openQuality=new Set([...($('solarDailyArchive')?.querySelectorAll('details[open]')||[])].map(d=>d.closest('tr')?.dataset.day));
  let el=$('solarDailyArchive'); if(!el){el=document.createElement('article');el.id='solarDailyArchive';el.className='card';$('historyStats').after(el);}
  const rows=snapshot.solarDaily||[];el.hidden=!rows.length;
  const months=new Map(),consumption=new Map(),waiting=new Set(),failed=new Set(),outdated=new Set(),oldHosts=new Set();
@@ -445,9 +447,9 @@ function renderDaily() {
   const amount=known?num(day.last,2):waiting.has(r.day.slice(0,7))?'…':'—';
   const coverage=oldHosts.has(r.day.slice(0,7))?'Hauptgerät aktualisieren':known?`${Math.floor(Math.max(0,Math.min(1,day.coverage||0))*100)} % erfasst${day.interpolatedMillis>0?' · kurz interpoliert':''}${day.modelledMillis>0?' · teilweise geschätzt':''}${day.inconsistentMillis>0?' · unplausible Schätzabschnitte fehlen':''}`:waiting.has(r.day.slice(0,7))?'wird berechnet':failed.has(r.day.slice(0,7))?'Abfrage fehlgeschlagen':'keine Messdaten';
   const note=outdated.has(r.day.slice(0,7))?' · letzter Stand'+(waiting.has(r.day.slice(0,7))?' · wird aktualisiert':failed.has(r.day.slice(0,7))?' · Aktualisierung fehlgeschlagen':''):'';
-  return `<tr><td>${escapeHtml(r.day)}</td><td>${num(r['Yield(Wh)'])}</td><td>${amount}<details class="daily-quality"><summary>${known?Math.floor(Math.max(0,Math.min(1,day.coverage||0))*100)+'% erfasst':coverage}</summary><span class="daily-coverage">${coverage}${note}</span></details></td><td>${num(r['Max. PV power(W)'])}</td><td>${num(r['Min. battery voltage(V)'],2)} / ${num(r['Max. battery voltage(V)'],2)}</td></tr>`;
+  return `<tr data-day="${escapeHtml(r.day)}"><td>${escapeHtml(r.day)}</td><td>${num(r['Yield(Wh)'])}</td><td>${amount}<details class="daily-quality"><summary>${known?Math.floor(Math.max(0,Math.min(1,day.coverage||0))*100)+'% erfasst':coverage}</summary><span class="daily-coverage">${coverage}${note}</span></details></td><td>${num(r['Max. PV power(W)'])}</td><td>${num(r['Min. battery voltage(V)'],2)} / ${num(r['Max. battery voltage(V)'],2)}</td></tr>`;
  }).join('')+'</tbody></table></div>';
- el.querySelector('.daily-scroll').scrollLeft=previousScroll;
+ el.querySelector('.daily-scroll').scrollLeft=previousScroll;for(const row of el.querySelectorAll('tr[data-day]'))if(openQuality.has(row.dataset.day))row.querySelector('details').open=true;
 }
 function chooseImport(){if(native)native.chooseImport();else toast('CSV-Dateien werden in der Android-App importiert.');}
 function chooseExport(){if(native)native.chooseExport();else toast('Der Export ist in der Android-App verfügbar.');}
@@ -532,4 +534,4 @@ window.addEventListener('resize',()=>{drawHistory();drawMini();});
 
 for(const [id,method] of [['chooseAppRole','chooseAppRole'],['migrationBackup','migrationBackup'],['migrationImport','migrationImport']])$(id).onclick=()=>{if(typeof deviceNative?.[method]==='function')deviceNative[method]();else toast('Diese Funktion steht in der installierten WohnPit-App bereit.');};
 if(typeof deviceNative?.appRole==='function')$('appRoleLabel').textContent=({central:'Zentrale · Daten sammeln und im WLAN bereitstellen',viewer:'Anzeigehandy · mit einer Zentrale koppeln',direct:'Eigenständig · Victron direkt, ohne Zentrale'})[deviceNative.appRole()]||'Betriebsart wählen';
-window.AutarPieApp={get dashboard(){return dashboard;},get snapshot(){return snapshot;},get solar(){return solar;},get roller(){return roller;},native:deviceNative,read:historyRead,showPage,openModal,closeModal,toast,poll,theme,reading,icon,escapeHtml};
+window.AutarPieApp={get dashboard(){return dashboard;},get snapshot(){return snapshot;},get solar(){return solar;},get roller(){return roller;},native:deviceNative,read:historyRead,loadMini,showPage,openModal,closeModal,toast,poll,theme,reading,icon,escapeHtml};
