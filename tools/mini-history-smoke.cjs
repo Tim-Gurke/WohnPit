@@ -66,7 +66,7 @@ const path=require('node:path');
  await page.reload();
  // Reload can finish before the ResizeObserver has applied the restored profile.
  await waitForPage(page,()=>dashboard.profile==='wide'&&document.getElementById('miniHistory').offsetHeight===1000);
- assert.equal(await card.evaluate(el=>el.offsetHeight),1000);await page.setViewportSize({width:390,height:844});await page.locator('#layoutProfile').filter({hasText:'Schmale Ansicht'}).waitFor();assert.equal(await card.evaluate(el=>el.offsetHeight),before.height+110);
+ assert.equal(await card.evaluate(el=>el.offsetHeight),1000);await page.setViewportSize({width:390,height:844});await waitForPage(page,()=>dashboard.profile==='compact'&&!dashboard.resizePending);assert.equal(await card.evaluate(el=>el.offsetHeight),before.height+110);
  const layoutBounds=()=>page.evaluate(()=>{
   const bounds=document.getElementById('miniChart').getBoundingClientRect(),outer=document.getElementById('miniHistory').getBoundingClientRect();
   return {width:innerWidth,scrollWidth:document.body.scrollWidth,profile:dashboard.profile,boardWidth:dashboard.board.clientWidth,chart:{top:bounds.top,bottom:bounds.bottom,height:bounds.height},card:{top:outer.top,bottom:outer.bottom,height:outer.height}};
