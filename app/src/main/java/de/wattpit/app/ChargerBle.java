@@ -45,6 +45,7 @@ final class ChargerBle {
         main.removeCallbacks(poll);if(!enabled||!repo.running)return;try{
             JSONObject c=new JSONObject(repo.prefs.getString(EnergyStore.CHARGER,"{}"));if(!c.optBoolean("enabled"))return;
             long now=System.currentTimeMillis();if(gatt==null&&now-lastConnect>=15000){lastConnect=now;BluetoothManager manager=context.getSystemService(BluetoothManager.class);BluetoothAdapter adapter=manager==null?null:manager.getAdapter();if(adapter==null||!adapter.isEnabled()){EnergyStore.error(true,"Bluetooth ist ausgeschaltet.");}else gatt=adapter.getRemoteDevice(c.getString("mac")).connectGatt(context,false,callback,BluetoothDevice.TRANSPORT_LE,BluetoothDevice.PHY_LE_1M_MASK,main);}
+            else if(gatt!=null&&!ready&&now-lastConnect>20000){fail("608PD-Anmeldung wurde nicht rechtzeitig bestätigt.");}
             else if(ready){if(lastReceive>0&&now-lastReceive>10000){fail("608PD antwortet nicht mehr.");}else enqueue(()->write(data,EnergyProtocol.chargerPoll()));}
             if(!expected.isEmpty()&&now-expectedAt>8000){EnergyStore.error(true,"Der Lader hat den angeforderten Betriebszustand noch nicht bestätigt.");expected="";}
         }catch(Exception e){fail("608PD-Verbindung nicht möglich. Einrichtung und Berechtigungen prüfen.");}
