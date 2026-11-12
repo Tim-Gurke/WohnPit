@@ -1,16 +1,16 @@
 const autarpieControls=require('./autarpie-test-controls.cjs');
-const {chromium}=require('playwright'),assert=require('node:assert/strict'),path=require('node:path');
+const {chromium}=require('playwright'),assert=require('node:assert/strict'),path=require('node:path'),fs=require('node:fs');
 const C=require('../app/src/main/assets/dashboard-core.js');
 (async()=>{
  const browser=await chromium.launch({headless:true,executablePath:process.env.WATTPIT_CHROMIUM,args:['--no-sandbox','--disable-gpu']});
- try{
+ try{for(const nativeWorkspace of [false,true]){
   const page=await browser.newPage({viewport:{width:390,height:1000},timezoneId:'Europe/Berlin'}),errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.clock.setFixedTime(new Date('2026-11-02T11:44:00Z'));
   const board=C.defaults();board.tiles.push(C.tile('mobileSolarEnergy','mobile-test'),C.tile('energyBalance','second-balance'));
   board.tiles.at(-1).period={...board.tiles.at(-1).period,mode:'last',amount:2};
   // A saved 1.8.0 board still contains this former shared setting.
   board.energyPeriod={...C.tile('energyBalance').period};
-  await page.addInitScript(board=>{
+  await page.addInitScript(({board,nativeWorkspace})=>{
    window.board=JSON.parse(localStorage.getItem('period-test-board')||JSON.stringify(board));window.calls=[];
    const rise=Date.parse('2026-11-02T06:00:00Z'),sunset=Date.parse('2026-11-02T16:00:00Z');
    window.fixture={running:true,status:'Live',devices:[],readings:[],found:[],stats:{count:20},historyRevision:1,equipment:{version:1,groups:[]},settings:{theme:'dark',palette:'classic',capacity:100,sampleSeconds:10,miniRange:'today',weatherPlace:{name:'Testort',latitude:49,longitude:8}},weather:{timezone:'Europe/Berlin',days:[{day:'2026-11-02',sunrise:rise,sunset,hours:8}],updated:Date.now()}};
@@ -19,9 +19,26 @@ const C=require('../app/src/main/assets/dashboard-core.js');
     const series=(kind,rate,start=from,end=to)=>{const value=rate*(end-start)/3600000;return {points:[{t:start,last:start,v:0,min:0,max:0,n:1,gap:true,kind,origin:'calculated'},{t:end,last:end,v:value,min:value,max:value,n:1,gap:false,kind,origin:'calculated'}],summary:{last:value,min:0,max:value,from:start,to:end,coverage:1,measuredCoverage:1}};};
     return JSON.stringify({accountingVersion:2,solar:series('solar',70,Math.max(from,solarFrom),Math.min(to,solarTo)),mobile:series('mobile',20),consumption:series('consumption',30),balance:series('balance',60)});
    }};
-  },board);
-  await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));await autarpieControls.prepare(page);
+   if(nativeWorkspace){
+    WattPit.workspace=()=>localStorage.getItem('period-test-workspace')||'{}';
+    WattPit.saveWorkspace=json=>{const workspace=JSON.parse(json),overview=workspace.pages.find(p=>p.id==='overview').board;localStorage.setItem('period-test-workspace',json);localStorage.setItem('period-test-board',JSON.stringify(overview));window.board=overview;return '';};
+   }
+  },{board,nativeWorkspace});
+  // file: localStorage persistence is browser-dependent. A stable origin keeps
+  // reload assertions about the app, and exercises both bridge generations.
+  const assetRoot=path.resolve(__dirname,'../app/src/main/assets');
+  await page.route('http://autarpie-period.test/**',async route=>{
+   const file=path.resolve(assetRoot,'.'+decodeURIComponent(new URL(route.request().url()).pathname));
+   if(!file.startsWith(assetRoot+path.sep))return route.abort();
+   const mime={'.html':'text/html','.js':'application/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml'};
+   await route.fulfill({status:200,body:fs.readFileSync(file),contentType:mime[path.extname(file)]||'application/octet-stream'});
+  });
+  await page.goto('http://autarpie-period.test/index.html');await autarpieControls.prepare(page);
   const snapshot=()=>page.evaluate(()=>({config:structuredClone(dashboard.config),tiles:Object.fromEntries(dashboard.config.tiles.filter(t=>WattDashboardCore.CATALOG[t.metric].flow).map(t=>{const el=dashboard.elements.get(t.id);return [t.id,{period:structuredClone(t.period),number:el.querySelector('.tile-number').textContent,hint:el.querySelector('.tile-hint').textContent,chart:el.querySelector('.tile-sparkline')?.outerHTML}];}))}));
+  const assertStored=async expected=>{
+   const saved=await page.evaluate(nativeWorkspace=>({legacy:JSON.parse(localStorage.getItem('period-test-board')),workspace:JSON.parse(localStorage.getItem(nativeWorkspace?'period-test-workspace':'autarpie-workspace-v1'))?.pages.find(p=>p.id==='overview').board}),nativeWorkspace);
+   for(const [source,config]of Object.entries(saved))assert.deepEqual(config,expected.config,source+' storage differs before/after reload; bridge='+(nativeWorkspace?'workspace':'legacy'));
+  };
   const initial=await snapshot();assert.equal(initial.config.energyPeriod,undefined);
   assert.notEqual(initial.tiles['default-energyBalance'].number,initial.tiles['second-balance'].number,'duplicate metrics must query their own periods');
   for(const [id,mode] of [['mobile-test','sunrise'],['default-consumptionEnergy','sunrise'],['default-energyBalance','last'],['default-solarEnergy','today']]){
@@ -34,7 +51,7 @@ const C=require('../app/src/main/assets/dashboard-core.js');
    for(const key of Object.keys(before.tiles))if(key!==id)assert.deepEqual(after.tiles[key],before.tiles[key],id+' changed '+key);
    assert.deepEqual(after.config.tiles.map(t=>t.layouts),before.config.tiles.map(t=>t.layouts));
    await page.evaluate(()=>{fixture.historyRevision++;dashboard.clearCache();poll();});assert.deepEqual(await snapshot(),after,'data refresh changed a local tile period');
-   await page.reload();assert.deepEqual(await snapshot(),after,'restart changed a local tile period');
+   await assertStored(after);await page.reload();assert.deepEqual(await snapshot(),after,'restart changed a local tile period; bridge='+(nativeWorkspace?'workspace':'legacy'));await assertStored(after);
   }
   const dayQuery=await page.evaluate(()=>calls.find(c=>c.from===Date.parse('2026-11-01T23:00:00Z')&&c.solarFrom===Date.parse('2026-11-02T06:00:00Z')&&c.solarTo===Date.parse('2026-11-02T16:00:00Z')));
   assert.ok(dayQuery,'full-day energy queries must keep the physical solar window so observed night consumption is included');
@@ -47,7 +64,7 @@ const C=require('../app/src/main/assets/dashboard-core.js');
   await page.locator('#detailClose').click();assert.deepEqual(await snapshot(),saved);
   // Portable backups must not reconnect the periods when restored.
   await page.evaluate(()=>{const backup=WattSettingsCore.create(fixture,dashboard.config,fixture.equipment);dashboard.config=WattSettingsCore.normalize(JSON.parse(JSON.stringify(backup))).dashboard;dashboard.commit();});
-  assert.deepEqual(await snapshot(),saved);await page.reload();assert.deepEqual(await snapshot(),saved);
-  assert.deepEqual(errors,[]);await page.close();console.log('PASS independent tile periods: mobile/consumption/balance/fixed solar, distinct native query windows, duplicate metrics, data refresh, restart, temporary detail and backup round trip.');
- }finally{await browser.close();}
+  assert.deepEqual(await snapshot(),saved);await assertStored(saved);await page.reload();assert.deepEqual(await snapshot(),saved);await assertStored(saved);
+  assert.deepEqual(errors,[]);await page.close();console.log('PASS '+(nativeWorkspace?'workspace':'legacy')+' independent tile periods: mobile/consumption/balance/fixed solar, distinct native query windows, duplicate metrics, data refresh, restart, temporary detail and backup round trip.');
+ }}finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
