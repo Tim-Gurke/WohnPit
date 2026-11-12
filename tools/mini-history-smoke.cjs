@@ -40,7 +40,7 @@ const path=require('node:path');
  await waitForPage(page,()=>document.getElementById('miniRange').value==='month');assert.equal(await page.locator('#miniRange').inputValue(),'month');
  const card=page.locator('#miniHistory'),handle=page.locator('#miniHistoryResize');assert.equal(await handle.isVisible(),false);
  const verifyCurves=async()=>{
-  const colors=await page.locator('#miniChart').evaluate(el=>{const ctx=el.getContext('2d'),data=ctx.getImageData(0,0,el.width,el.height).data;let solar=0,battery=0;for(let y=25;y<el.height-40;y++)for(let x=60;x<el.width-15;x++){const i=(y*el.width+x)*4,r=data[i],g=data[i+1],b=data[i+2];if(r>150&&g>70&&g<200&&b<140)solar++;if(g>120&&g>r*1.2&&b>r*1.1)battery++;}return {solar,battery};});
+  const colors=await autarpieControls.curves(page,'#miniChart');
   assert.ok(colors.solar>30&&colors.battery>30,'both measured curves must remain painted '+JSON.stringify(colors));
  };await verifyCurves();
  const drag=async(delta)=>{
