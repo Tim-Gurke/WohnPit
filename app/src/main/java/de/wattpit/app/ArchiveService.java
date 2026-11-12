@@ -7,6 +7,7 @@ import android.content.*;
 import android.content.pm.ServiceInfo;
 import android.os.*;
 import de.wattpit.app.core.ArchiveCodec;
+import de.wattpit.app.core.EnergyProtocol;
 import de.wattpit.app.core.ArchiveSession;
 import de.wattpit.app.core.ArchiveDiagnostic;
 import de.wattpit.app.core.ArchiveLink;
@@ -41,7 +42,7 @@ public final class ArchiveService extends Service {
     private volatile BluetoothGatt gatt;
     private BluetoothGattCharacteristic control,data;
     private Repository repository;
-    private boolean automatic;
+    private boolean automatic,liveOnly;
     private String mac="",kind="";
     private int changed,missing,unmapped,processed,total,unknown,blocks,skipped;
     private long lastNotification,importStarted;
@@ -91,7 +92,15 @@ public final class ArchiveService extends Service {
         if(AppRole.viewerOnly(this)||LanSync.get(this).viewer()){stopSelf();return START_NOT_STICKY;}
         if(intent==null){stopSelf();return START_NOT_STICKY;}
         if("CANCEL".equals(intent.getAction())){cancelled=true;repository.pauseAutomaticArchives();failOperation(new IOException("cancelled"));received.offer(new byte[0]);if(!started)stopSelf();return START_NOT_STICKY;}
-        if(started)return START_NOT_STICKY;started=true;mac=intent.getStringExtra("mac");
+        if(started)return START_NOT_STICKY;
+        liveOnly="LIVE".equals(intent.getAction())||"OUTPUT".equals(intent.getAction());
+        if(liveOnly){
+            started=true;automatic=true;kind="solar";try{JSONArray configs=repository.configs();for(int i=0;i<configs.length();i++)if(configs.getJSONObject(i).optString("kind").equals("solar")){mac=configs.getJSONObject(i).getString("mac");break;}if(mac.isEmpty())throw new IllegalArgumentException("Kein Solarladeregler eingerichtet.");repository.liveBusy=true;
+                if(Build.VERSION.SDK_INT>=31)startForeground(11,notification("Livewerte / Lastausgang"),ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE);else startForeground(11,notification("Livewerte / Lastausgang"));
+                final Boolean desired=intent.hasExtra("desiredOutput")?intent.getBooleanExtra("desiredOutput",false):null;worker.execute(()->runLive(desired));
+            }catch(Exception e){EnergyStore.error(false,Repository.safeError(e));stopSelf();}return START_NOT_STICKY;
+        }
+        started=true;mac=intent.getStringExtra("mac");
         automatic="AUTO".equals(mac)||"RETRY".equals(mac);
         try {
             if(Build.VERSION.SDK_INT>=31)startForeground(11,notification("Verbindung wird aufgebaut …"),ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE);
@@ -106,9 +115,9 @@ public final class ArchiveService extends Service {
     private Notification notification(String text){
         PendingIntent open=PendingIntent.getActivity(this,2,new Intent(this,MainActivity.class),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
         PendingIntent cancel=PendingIntent.getService(this,3,new Intent(this,ArchiveService.class).setAction("CANCEL"),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
-        return new Notification.Builder(this,CHANNEL).setSmallIcon(R.drawable.ic_bolt).setContentTitle("WohnPit · Gerätearchiv").setContentText(text).setContentIntent(open).setOngoing(true).addAction(new Notification.Action.Builder(null,"Abbrechen",cancel).build()).build();
+        return new Notification.Builder(this,CHANNEL).setSmallIcon(R.drawable.ic_bolt).setContentTitle("AutarPie · Gerätearchiv").setContentText(text).setContentIntent(open).setOngoing(true).addAction(new Notification.Action.Builder(null,"Abbrechen",cancel).build()).build();
     }
-    private void progress(String text){repository.archiveState(mac,true,text,processed,total);long now=SystemClock.elapsedRealtime();if(now-lastNotification>750){lastNotification=now;getSystemService(NotificationManager.class).notify(11,notification(text));}}
+    private void progress(String text){if(liveOnly)return;repository.archiveState(mac,true,text,processed,total);long now=SystemClock.elapsedRealtime();if(now-lastNotification>750){lastNotification=now;getSystemService(NotificationManager.class).notify(11,notification(text));}}
     private void check() throws IOException {if(cancelled||Thread.currentThread().isInterrupted())throw new IOException("cancelled");}
     private interface GattAction {boolean run();}
     private void op(String type,GattAction action) throws Exception {
@@ -236,6 +245,18 @@ public final class ArchiveService extends Service {
             if(bytes!=null&&bytes.length>0)messages.addAll(stream.feed(bytes));
         }
         throw new TimeoutException();
+    }
+    private void runLive(Boolean desired){
+        try{
+            BluetoothManager manager=getSystemService(BluetoothManager.class);BluetoothAdapter adapter=manager==null?null:manager.getAdapter();if(adapter==null||!adapter.isEnabled())throw new IllegalArgumentException("Bluetooth ist ausgeschaltet.");
+            connect(adapter.getRemoteDevice(mac));
+            if(desired!=null){Double mode=EnergyProtocol.solarValue(0xedab,exchange(0xedab,EnergyProtocol.solarRead(0xedab),null,2500));if(mode==null)throw new IllegalArgumentException("Ausgangsmodus nicht lesbar; Schalten nicht ausgeführt.");exchange(0xedab,EnergyProtocol.output(mode.intValue(),desired),null,2500);}
+            JSONObject sample=new JSONObject().put("at",System.currentTimeMillis());
+            for(int register:new int[]{0xedbb,0xedab,0xeda8,0xeda9,0xedad})try{Double value=EnergyProtocol.solarValue(register,exchange(register,EnergyProtocol.solarRead(register),null,2000));if(value!=null)sample.put(register==0xedbb?"pvVoltage":register==0xedab?"mode":register==0xeda8?"state":register==0xeda9?"voltage":"current",value);}catch(TimeoutException ignored){}
+            sample.put("at",System.currentTimeMillis());EnergyStore.live(repository,mac,sample);
+            if(desired!=null&&sample.optInt("state",-1)!=(desired?1:0))EnergyStore.error(false,"Schaltauftrag gesendet; der angeforderte Zustand ist noch nicht bestätigt.");
+        }catch(Exception e){EnergyStore.error(false,e instanceof IllegalArgumentException?e.getMessage():"Liveverbindung nicht möglich. Andere aktive App trennen und Android-Kopplung prüfen.");}
+        finally{closeGatt();main.post(this::stopSelf);}
     }
     private void runImports(){
         try {
@@ -441,6 +462,6 @@ public final class ArchiveService extends Service {
         repository.db.archiveHistory(mac,p);
     }
     private void closeGatt(){BluetoothGatt g=gatt;gatt=null;connected=false;if(g!=null){try{g.disconnect();}catch(SecurityException ignored){}try{g.close();}catch(SecurityException ignored){}}}
-    @Override public void onDestroy(){cancelled=true;failOperation(new IOException("cancelled"));closeGatt();repository.archiveBusy=false;repository.finishArchiveIfActive();repository.archiveRun.finish();worker.shutdownNow();stopForeground(STOP_FOREGROUND_REMOVE);super.onDestroy();}
+    @Override public void onDestroy(){cancelled=true;failOperation(new IOException("cancelled"));closeGatt();repository.liveBusy=false;if(!liveOnly){repository.archiveBusy=false;repository.finishArchiveIfActive();repository.archiveRun.finish();}worker.shutdownNow();stopForeground(STOP_FOREGROUND_REMOVE);super.onDestroy();}
     @Override public IBinder onBind(Intent intent){return null;}
 }
