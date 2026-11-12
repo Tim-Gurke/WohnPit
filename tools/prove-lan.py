@@ -46,10 +46,12 @@ print(r5.stdout+r5.stderr,end='');(out/'migration-results.log').write_text(r5.st
 r5.check_returncode()
 r6=subprocess.run(['java','-cp',classpath,'de.wattpit.app.CentralArchiveProof',str(out/'archive-cadence')],capture_output=True,text=True,timeout=30)
 print(r6.stdout+r6.stderr,end='');(out/'archive-cadence-results.log').write_text(r6.stdout+r6.stderr);r6.check_returncode()
-r7=subprocess.run(['java','-Xmx512m','-cp',classpath,'de.wattpit.app.LearningMigrationProof',str(out/'learning-migration')],capture_output=True,text=True,timeout=120)
-print(r7.stdout+r7.stderr,end='');(out/'learning-migration-results.log').write_text(r7.stdout+r7.stderr);r7.check_returncode()
-r8=subprocess.run(['node',str(root/'tools/learning-state-check.cjs'),str(out/'learning-migration/learning-states.json')],capture_output=True,text=True,timeout=30)
-print(r8.stdout+r8.stderr,end='');(out/'learning-display-results.log').write_text(r8.stdout+r8.stderr);r8.check_returncode()
+for attempt in range(3):
+    fixture=out/('learning-migration' if attempt==0 else 'learning-migration-repeat-'+str(attempt+1))
+    r7=subprocess.run(['java','-Xmx512m','-cp',classpath,'de.wattpit.app.LearningMigrationProof',str(fixture)],capture_output=True,text=True,timeout=120)
+    print(r7.stdout+r7.stderr,end='');(out/('learning-migration-'+str(attempt+1)+'-results.log')).write_text(r7.stdout+r7.stderr);r7.check_returncode()
+    r8=subprocess.run(['node',str(root/'tools/learning-state-check.cjs'),str(fixture/'learning-states.json')],capture_output=True,text=True,timeout=30)
+    print(r8.stdout+r8.stderr,end='');(out/('learning-display-'+str(attempt+1)+'-results.log')).write_text(r8.stdout+r8.stderr);r8.check_returncode()
 r9=subprocess.run(['java','-Xmx512m','-cp',classpath,'de.wattpit.app.ViewerRefreshProof',str(out/'statistics')],capture_output=True,text=True,timeout=90)
 print(r9.stdout+r9.stderr,end='');(out/'statistics-results.log').write_text(r9.stdout+r9.stderr);r9.check_returncode()
 

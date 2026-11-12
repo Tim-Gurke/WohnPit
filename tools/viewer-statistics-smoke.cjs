@@ -3,8 +3,11 @@ const autarpieControls=require('./autarpie-test-controls.cjs');
 const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const wait=require('./browser-wait.cjs'),C=require('../app/src/main/assets/dashboard-core.js');
 const fixture=JSON.parse(fs.readFileSync(process.env.WATTPIT_VIEWER_FIXTURE,'utf8')),board=C.defaults();
+// The mock returns one first result for this shared request family. Independent
+// tile() calls otherwise give it millisecond-dependent reset timestamps/scopes.
+const period={...C.tile('solarEnergy').period,mode:'custom',from:fixture.from,to:fixture.to,aggregate:'last',resetAt:fixture.from};
 board.tiles=['soc','solarEnergy','consumptionEnergy','energyBalance','mobileSolarEnergy','lan'].map((metric,i)=>{
- const t=C.tile(metric,'statistics-'+metric);if(!['soc','lan'].includes(metric)){t.type='chart';t.period={...t.period,mode:'custom',from:fixture.from,to:fixture.to,aggregate:'last'};}
+ const t=C.tile(metric,'statistics-'+metric);if(!['soc','lan'].includes(metric)){t.type='chart';t.period={...period};}
  for(const profile of ['compact','wide'])t.layouts[profile]={x:i%2*6,y:Math.floor(i/2)*7,w:6,h:7};return t;
 });
 (async()=>{
@@ -27,9 +30,9 @@ board.tiles=['soc','solarEnergy','consumptionEnergy','energyBalance','mobileSola
   await page.evaluate(()=>solar.render());
   assert.equal(await page.evaluate(()=>statTest.learning.length),0,'learning must not occupy the native worker ahead of the first visible statistics');
   const number=metric=>page.locator(`[data-tile="statistics-${metric}"] .tile-number`);
-  await wait(page,()=>statTest.first&&statTest.held.length>0);
-  for(let i=0;i<6;i++)await page.evaluate(()=>{statTest.revision++;poll();});
   const metrics={solarEnergy:'solar',consumptionEnergy:'consumption',energyBalance:'balance',mobileSolarEnergy:'mobile'};
+  await wait(page,metrics=>statTest.first&&statTest.held.length>0&&metrics.every(metric=>document.querySelector(`[data-tile="statistics-${metric}"] .tile-number`)?.textContent!=='—'),Object.keys(metrics));
+  for(let i=0;i<6;i++)await page.evaluate(()=>{statTest.revision++;poll();});
   for(const [metric,kind] of Object.entries(metrics)){
    assert.notEqual(await number(metric).textContent(),'—',metric+' must retain the first real native result');
    const expected=C.convert(fixture.first[kind].summary.last,board.tiles.find(t=>t.metric===metric).unit,metric);

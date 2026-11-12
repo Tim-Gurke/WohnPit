@@ -14,6 +14,7 @@ public final class LearningMigrationProof {
     private static void check(boolean value,String label){if(!value)throw new AssertionError(label);System.out.println("PASS "+label);}
     private static long count(SQLiteDatabase db,String table){try(Cursor c=db.rawQuery("SELECT COUNT(*) FROM "+table,null)){return c.moveToFirst()?c.getLong(0):0;}}
     private static void insert(SQLiteDatabase db,String table,ContentValues value){if(db.insertWithOnConflict(table,null,value,SQLiteDatabase.CONFLICT_IGNORE)<0)throw new AssertionError("Fixture insert failed: "+table);}
+    private static Set<String> forecastIds(JSONArray rows)throws Exception{Set<String> ids=new HashSet<>();for(int i=0;i<rows.length();i++){JSONObject r=rows.getJSONObject(i);ids.add(r.getString("key")+":"+r.getLong("from")+":"+r.getLong("to")+":"+r.getLong("issued"));}return ids;}
     private static ContentValues observation(String source,JSONObject row)throws Exception{ContentValues v=new ContentValues();v.put("source",source);v.put("start",row.getLong("from"));v.put("end",row.getLong("to"));v.put("payload",row.toString());return v;}
     private static String invitation(LanSync host)throws Exception{Field c=LanSync.class.getDeclaredField("config"),s=LanSync.class.getDeclaredField("server");c.setAccessible(true);s.setAccessible(true);return de.wattpit.app.core.LanWire.encodeInvitation(new JSONObject(c.get(host).toString()).put("port",((java.net.ServerSocket)s.get(host)).getLocalPort()).put("addresses",new JSONArray().put("127.0.0.1")).toString());}
     private static JSONObject learning(long from,int slot,String key,String solar,String system,boolean away)throws Exception{
@@ -29,7 +30,8 @@ public final class LearningMigrationProof {
         String devices="[{\"mac\":\"AA:11:22:33:44:55\",\"kind\":\"solar\",\"name\":\"Solar\"},{\"mac\":\"AA:11:22:33:44:66\",\"kind\":\"shunt\",\"name\":\"Batterie\"}]";
         JSONObject equipment=Repository.checkedEquipment(new JSONObject("{\"version\":1,\"groups\":[{\"id\":\"fixed\",\"label\":\"Fest\",\"count\":2,\"watts\":100,\"placement\":\"fixed\",\"measurement\":\"solar\",\"tilt\":0}]}"));
         JSONObject setup=SolarPlanning.checked(new JSONObject(),equipment);setup.getJSONObject("groups").getJSONObject("fixed").put("shade",new JSONArray("[0,0,0]"));
-        JSONObject place=new JSONObject("{\"latitude\":52.5,\"longitude\":13.4,\"name\":\"Testort\"}"),weather=new JSONObject().put("version",5).put("timezone","UTC").put("place",place).put("days",new JSONArray()).put("hours",new JSONArray()).put("solar",new JSONArray()).put("windows",new JSONArray()).put("signature",equipment+"|"+setup);
+        JSONObject place=new JSONObject("{\"latitude\":52.5,\"longitude\":13.4,\"name\":\"Testort\"}"),weather=new JSONObject().put("version",5).put("timezone","UTC").put("place",place).put("days",new JSONArray()).put("hours",new JSONArray()).put("solar",new JSONArray()).put("windows",new JSONArray()).put("signature",equipment+"|"+setup).put("updated",now).put("pastDays",92);
+        // Fresh synthetic weather prevents a live refresh from adding unrelated forecasts.
         old.prefs.edit().putString("devices",devices).putString("equipment-v1",equipment.toString()).putString("solar-setup-v1",setup.toString()).putString("weatherPlace",place.toString()).putString("weatherCache",weather.toString()).commit();
         String source=RollerLedger.source(old.prefs),key=SolarKeys.key(equipment,setup,place,source,false,false),solar=SolarKeys.key(equipment,setup,place,source,true,false),system=SolarKeys.key(equipment,setup,new JSONObject("{\"latitude\":0,\"longitude\":0}"),source,true,true);
         JSONObject context=new JSONObject().put("equipment",equipment).put("setup",setup).put("place",place).put("systemKey",system);
@@ -50,11 +52,12 @@ public final class LearningMigrationProof {
         JSONObject oldKnowledge=oldPlan.calculateKnowledge(),diagnostic=oldPlan.diagnosticSnapshot().get();
         check(diagnostic.getJSONArray("observations").length()==66&&diagnostic.getJSONArray("forecasts").length()==66,"the actual diagnostic export contains the old learning observations and original forecast comparisons");
         LanSyncProof.TestContext nextContext=new LanSyncProof.TestContext(out.resolve("central"));Repository next=LanSyncProof.repository(nextContext);
+        nextContext.getSharedPreferences(AppRole.PREFS,0).edit().putString(AppRole.KEY,"central").commit();
         next.prefs.edit().putString("devices",devices).putString("equipment-v1",equipment.toString()).putString("solar-setup-v1",setup.toString()).putString("weatherPlace",place.toString()).putString("weatherCache",weather.toString()).putFloat("capacity",130).putInt("archiveIntervalMinutes",60).putString("credentials-sentinel","keep-private").commit();
         RollerLedger nextLedger=new RollerLedger(nextContext,"wattpit-roller-input.db");SolarPlanning nextPlan=new SolarPlanning(nextContext,next,v->{},"wattpit-planning.db",nextLedger);SQLiteDatabase nextDb=nextPlan.getWritableDatabase();insert(nextDb,"contexts",ctx);
         for(int i=0;i<15;i++)insert(nextDb,"observations",observation(source,rows.getJSONObject(i)));
         confirmed.put("weather",new JSONObject(weather.toString()).put("complete",false).toString());insert(nextDb,"confirmed_setups",confirmed);
-        JSONObject before=nextPlan.calculateKnowledge();check(before.getJSONArray("observations").length()==15,"reproduced: a migrated central retains only five recent days of learned data instead of the older learning history");
+        JSONObject before=nextPlan.diagnosticSnapshot().get();check(before.getJSONArray("observations").length()==15,"reproduced: a migrated central retains only five recent days of learned data instead of the older learning history");
         LanSync host=LanSyncProof.sync(nextContext),one=null,two=null;
         try{
             host.create("Learning migration");host.startHost();String code=invitation(host);
@@ -67,13 +70,20 @@ public final class LearningMigrationProof {
             JSONObject restoredWeather;try(Cursor c=nextDb.rawQuery("SELECT weather FROM confirmed_setups WHERE id='previously-approved'",null)){if(!c.moveToFirst())throw new AssertionError();restoredWeather=new JSONObject(c.getString(0));}
             check(result.updated==1&&restoredWeather.optBoolean("complete")&&restoredWeather.getJSONArray("days").length()==1,"an already installed confirmation receives its missing archived weather through the existing merge routine");
             check(settings.equals(next.prefs.getAll()),"restoring the learning ledger never overwrites current equipment, credentials, capacity or the selected archive interval");
-            JSONObject after=nextPlan.calculateKnowledge(),viewerOne=one.analysisKnowledge(v->{}),viewerTwo=two.analysisKnowledge(v->{});
-            check(after.getJSONArray("observations").length()==66,"the central calculation retains older seasonal learning instead of starting with its recent five days");
+            JSONObject after=nextPlan.diagnosticSnapshot().get(),viewerOne=one.analysisKnowledge(v->{}),viewerTwo=two.analysisKnowledge(v->{});
+            check(after.getJSONArray("observations").length()==66,"the central retains older raw seasonal learning without running display calculations");
             check(viewerOne.getJSONArray("observations").length()==66&&viewerTwo.getJSONArray("observations").length()==66,"both previously paired viewers receive older imported learning rows over the unchanged incremental protocol");
-            check(viewerOne.getJSONArray("forecasts").length()==66&&viewerTwo.getJSONArray("forecasts").length()==66,"original eligible forecast comparisons reach both viewer replicas");
+            check(viewerOne.getJSONArray("forecasts").length()==66&&viewerTwo.getJSONArray("forecasts").length()==66,"original eligible forecast comparisons reach both viewer replicas (first="+viewerOne.getJSONArray("forecasts").length()+", second="+viewerTwo.getJSONArray("forecasts").length()+", weather="+new JSONObject(next.prefs.getString("weatherCache","{}")).optLong("updated")+")");
+            check(next.prefs.getString("weatherCache","").equals(weather.toString()),"the learning migration fixture keeps its synthetic weather unchanged throughout both viewer transfers");
             check(viewerOne.getJSONArray("confirmedSetups").getJSONObject(0).getBoolean("weatherComplete"),"the viewer also sees the recovered confirmation weather as complete");
             JSONObject fixture=new JSONObject().put("now",now).put("setup",setup).put("solarKey",solar).put("systemKey",system).put("before",before).put("original",oldKnowledge).put("central",after).put("s20",viewerOne).put("s10",viewerTwo);
             Files.writeString(out.resolve("learning-states.json"),fixture.toString());
+            // A fresh viewer-provided prediction may legitimately arrive after recovery.
+            // It must add evidence, while keeping every imported original prediction.
+            long predictionFrom=now+13*HOUR;
+            nextPlan.remember(new JSONArray().put(new JSONObject().put("key",solar).put("systemKey",system).put("from",predictionFrom).put("to",predictionFrom+HOUR).put("issued",now).put("wh",100)).toString());nextPlan.flushInputs();
+            Set<String> imported=forecastIds(diagnostic.getJSONArray("forecasts"));
+            for(LanSync display:new LanSync[]{one,two}){JSONArray current=display.analysisKnowledge(v->{}).getJSONArray("forecasts");check(current.length()==67&&forecastIds(current).containsAll(imported),"a fresh forecast reaches the viewer without displacing any of the 66 imported original comparisons");}
             long revision=nextPlan.modelRevision(),observed=count(nextDb,"observations");HistoryMigration.Result repeated=HistoryMigration.restore(next,nextPlan,nextLedger,diagnostic);
             check(repeated.inserted==0&&repeated.updated==0&&nextPlan.modelRevision()==revision,"repeating the complete learning import is idempotent, including confirmation-weather completion");
             JSONObject legacy=new JSONObject(diagnostic.toString()).put("learningAlgorithm",1690);legacy.remove("mobileDisplay");
