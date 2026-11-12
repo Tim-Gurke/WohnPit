@@ -95,33 +95,7 @@ jobs:
           javac -cp "$qr_cp" -d "$RUNNER_TEMP/wattpit-java" tools/PairingQrFixture.java
           java -cp "$RUNNER_TEMP/wattpit-java:$qr_cp" de.wattpit.app.core.PairingQrFixture > "$WATTPIT_QR_FIXTURE"
           export NODE_PATH="$RUNNER_TEMP/wattpit-ui/node_modules"
-          node tools/sync-coverage-smoke.cjs
-          node tools/energy-balance-smoke.cjs
-          node tools/energy-tile-smoke.cjs
-          node tools/tile-period-isolation-smoke.cjs
-          node tools/energy-refresh-smoke.cjs
-          node tools/viewer-statistics-smoke.cjs
-          node tools/gps-place-smoke.cjs
-          node tools/tile-detail-smoke.cjs
-          node tools/mini-history-smoke.cjs
-          node tools/reload-daily-smoke.cjs
-          node tools/charge-time-smoke.cjs
-          node tools/lifecycle-smoke.cjs
-          node tools/background-sync-smoke.cjs
-          node tools/solar-planning-smoke.cjs
-          node tools/special-use-smoke.cjs
-          node tools/supplies-smoke.cjs
-          node tools/value-colors-smoke.cjs
-          node tools/mobile-solar-smoke.cjs
-          node tools/display-layout-smoke.cjs
-          node tools/presence-smoke.cjs
-          node tools/roller-smoke.cjs
-          node tools/lan-smoke.cjs
-          node tools/plant-control-smoke.cjs
-          node tools/history-retention-smoke.cjs
-          node tools/display-pause-smoke.cjs
-          node tools/dashboard-usability-smoke.cjs
-          node tools/dashboard-contrast-smoke.cjs
+          python3 tools/run-ui-checks.py
       - uses: actions/upload-artifact@v4
         with:
           name: Watt-n-Pit-CI-release
