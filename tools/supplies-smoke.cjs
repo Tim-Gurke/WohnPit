@@ -101,7 +101,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),path
   await page.evaluate(()=>{delete window.suppliesFixture.containerSizeSettings;poll();});await page.locator('#suppliesSettings').click();assert.equal(await page.locator('#supplyWaterContainer').isDisabled(),true);assert.match(await page.locator('#modalBody').textContent(),/auch die Zentrale/);await page.locator('#supplyCancel').click();
   await page.evaluate(()=>{window.suppliesFixture.containerSizeSettings=true;poll();});
   await page.evaluate(()=>{window.online=false;poll();});assert.equal(await page.locator('#suppliesWater').isDisabled(),true);assert.match(await page.locator('#suppliesStatus').textContent(),/Letzter Stand/);
-  await page.evaluate(()=>{window.online=true;delete window.suppliesFixture.protocol;poll();});assert.equal(await page.locator('#suppliesGas').isDisabled(),true);assert.match(await page.locator('#suppliesStatus').textContent(),/0\.0\.4/);
+  await page.evaluate(()=>{window.online=true;delete window.suppliesFixture.protocol;poll();});assert.equal(await page.locator('#suppliesGas').isDisabled(),true);assert.match(await page.locator('#suppliesStatus').textContent(),/AutarPie 3\.0\.0/);
   assert.deepEqual(errors,[]);console.log('PASS supplies UI: days/hours, delayed host acknowledgement, additions, early gas changes, delete/cancel, shared defaults, optional tiles, retained layouts, offline/update states and screenshots.');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
