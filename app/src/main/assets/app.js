@@ -219,6 +219,7 @@ function openModal(title,content) {
   if(keep)requestAnimationFrame(()=>{if(!$('modal').hidden&&$('modalTitle').textContent===title)sheet.scrollTop=position;});
 }
 function closeModal() {
+  const closeHook=window.onAutarPieModalClose;window.onAutarPieModalClose=null;closeHook?.();
   if(controls?.pending)return;
   if (currentImport?.busy) return;
   if (currentImport && native) native.cancelImport();
