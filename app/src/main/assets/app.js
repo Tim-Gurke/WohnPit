@@ -238,7 +238,7 @@ window.handleBack = () => {
 function deviceForm(device={},found=false) {
   const original = found ? '' : device.mac || '';
   openModal(original?'Gerät bearbeiten':'Gerät einrichten',`
-    <p class="muted">Übernimm die Details der Sofortanzeige aus VictronConnect. WohnPit speichert den Schlüssel verschlüsselt auf diesem Telefon.</p>
+    <p class="muted">Übernimm die Details der Sofortanzeige aus VictronConnect. AutarPie speichert den Schlüssel verschlüsselt auf diesem Telefon.</p>
     <label class="form-field">Gerätetyp<select id="deviceKind"><option value="shunt">SmartShunt · Batterie</option><option value="solar">SmartSolar · Solar</option></select></label>
     <label class="form-field">Name<input id="deviceName" maxlength="80" value="${escapeHtml(device.name||'')}" placeholder="z. B. SmartShunt 300 A"></label>
     <label class="form-field">Bluetooth-MAC-Adresse<input id="deviceMac" class="monospace" autocapitalize="characters" autocomplete="off" spellcheck="false" maxlength="32" value="${escapeHtml(device.mac||'')}" placeholder="AA:BB:CC:DD:EE:FF"></label>
@@ -532,6 +532,6 @@ window.pullReload=new window.WattPullReload({element:$('overview'),canStart:()=>
 setInterval(poll,2000);setInterval(()=>{if(window.wattDisplayActive&&!lifecycle.blocked&&page==='history'&&snapshot.running&&!demo)loadHistory();},20000);
 window.addEventListener('resize',()=>{drawHistory();drawMini();});
 
-for(const [id,method] of [['chooseAppRole','chooseAppRole'],['migrationBackup','migrationBackup'],['migrationImport','migrationImport']])$(id).onclick=()=>{if(typeof deviceNative?.[method]==='function')deviceNative[method]();else toast('Diese Funktion steht in der installierten WohnPit-App bereit.');};
+for(const [id,method] of [['chooseAppRole','chooseAppRole'],['migrationBackup','migrationBackup'],['migrationImport','migrationImport']])$(id).onclick=()=>{if(typeof deviceNative?.[method]==='function')deviceNative[method]();else toast('Diese Funktion steht in der installierten AutarPie-App bereit.');};
 if(typeof deviceNative?.appRole==='function')$('appRoleLabel').textContent=({central:'Zentrale · Daten sammeln und im WLAN bereitstellen',viewer:'Anzeigehandy · mit einer Zentrale koppeln',direct:'Eigenständig · Victron direkt, ohne Zentrale'})[deviceNative.appRole()]||'Betriebsart wählen';
 window.AutarPieApp={get dashboard(){return dashboard;},get snapshot(){return snapshot;},get solar(){return solar;},get roller(){return roller;},native:deviceNative,read:historyRead,loadMini,showPage,openModal,closeModal,toast,poll,theme,reading,icon,escapeHtml};
