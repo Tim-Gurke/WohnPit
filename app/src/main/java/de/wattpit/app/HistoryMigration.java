@@ -10,13 +10,13 @@ import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-/** Restore existing calculation inputs from the existing WohnPit diagnostic export.
+/** Restore existing calculation inputs from the existing AutarPie diagnostic export.
  * Does not change current equipment, credentials, measurements or BMS ownership. */
 final class HistoryMigration {
     static final int MAX_JSON_BYTES=32*1024*1024;
     private static final int MAX_ROWS=250000;
     private static final long DAY=86400000L;
-    private static final String INVALID="Keine unterstützte WohnPit-Mess- und Lerndiagnose.";
+    private static final String INVALID="Keine unterstützte AutarPie-Mess- und Lerndiagnose.";
     private static final class Table {
         final String name;
         final List<ContentValues> rows=new ArrayList<>();
@@ -46,7 +46,7 @@ final class HistoryMigration {
                 zip.closeEntry();
             }
         }
-        throw new IllegalArgumentException("In dieser ZIP-Datei fehlt diagnose.json. Bitte die Mess- und Lerndiagnose aus WohnPit auswählen.");
+        throw new IllegalArgumentException("In dieser ZIP-Datei fehlt diagnose.json. Bitte die Mess- und Lerndiagnose aus AutarPie auswählen.");
     }
     private static long time(JSONObject row,String key)throws JSONException{
         Object raw=row.get(key);if(!(raw instanceof Number))throw new IllegalArgumentException("Ungültiger Zeitpunkt in der Diagnose.");
