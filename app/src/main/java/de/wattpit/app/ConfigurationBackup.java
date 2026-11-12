@@ -51,7 +51,7 @@ final class ConfigurationBackup {
         if(order.length()!=3&&order.length()!=4&&order.length()!=5)throw new IllegalArgumentException("Ungültige Blockreihenfolge.");
         for(int i=0;i<order.length();i++)if(!Arrays.asList("tiles","weather","history","record","roller").contains(order.getString(i))||!blocks.add(order.getString(i)))throw new IllegalArgumentException("Ungültige Blockreihenfolge.");
         if(!blocks.containsAll(Arrays.asList("tiles","history","record")))throw new IllegalArgumentException("Ungültige Blockreihenfolge.");
-        JSONObject dashboard=new JSONObject().put("version",1).put("blockOrder",order).put("tiles",tiles);
+        JSONObject dashboard=new JSONObject().put("version",1).put("showMiniHistory",board.optBoolean("showMiniHistory",true)).put("showRecording",board.optBoolean("showRecording",true)).put("blockOrder",order).put("tiles",tiles);
         if(board.has("supplyUnits")){
             JSONObject given=board.getJSONObject("supplyUnits");String water=given.optString("water","L"),gas=given.optString("gas","kg");
             if(!Arrays.asList("L","Kanister").contains(water)||!Arrays.asList("kg","Flaschen").contains(gas))throw new IllegalArgumentException("Ungültige Bedarfseinheit.");
