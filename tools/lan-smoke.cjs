@@ -19,7 +19,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=r
   },{theme,qr});
   await page.route('http://wattpit.test/**',route=>route.fulfill({path:path.resolve(__dirname,'../app/src/main/assets',new URL(route.request().url()).pathname.slice(1))}));
   await page.goto('http://wattpit.test/index.html');
-  assert.deepEqual(await page.locator('.bottom-nav .nav-label').evaluateAll(es=>es.map(e=>e.textContent.trim())),['Übersicht','Zusatzspeicher','Gas / Wasser','Verlauf','Geräte','Einstellungen']);
+  assert.deepEqual(await page.locator('.bottom-nav .nav-label').evaluateAll(es=>es.map(e=>e.textContent.trim())),['Übersicht','E-Scooter','Gas / Wasser','Verlauf']);
   const widget=page.locator('.type-lan');assert.equal(await widget.locator('#lanBanner').count(),1);
   await autarpieControls.toggleEdit(page);await widget.scrollIntoViewIfNeeded();
   const original=await page.evaluate(()=>structuredClone(dashboard.config.tiles));let box=await widget.locator('.tile-head').boundingBox();
