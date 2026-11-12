@@ -1,3 +1,4 @@
+const autarpieControls=require('./autarpie-test-controls.cjs');
 const {chromium}=require('playwright'),assert=require('node:assert/strict'),path=require('node:path');
 const C=require('../app/src/main/assets/dashboard-core.js');
 (async()=>{
@@ -19,7 +20,7 @@ const C=require('../app/src/main/assets/dashboard-core.js');
     return JSON.stringify({accountingVersion:2,solar:series('solar',70,Math.max(from,solarFrom),Math.min(to,solarTo)),mobile:series('mobile',20),consumption:series('consumption',30),balance:series('balance',60)});
    }};
   },board);
-  await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));
+  await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));await autarpieControls.prepare(page);
   const snapshot=()=>page.evaluate(()=>({config:structuredClone(dashboard.config),tiles:Object.fromEntries(dashboard.config.tiles.filter(t=>WattDashboardCore.CATALOG[t.metric].flow).map(t=>{const el=dashboard.elements.get(t.id);return [t.id,{period:structuredClone(t.period),number:el.querySelector('.tile-number').textContent,hint:el.querySelector('.tile-hint').textContent,chart:el.querySelector('.tile-sparkline')?.outerHTML}];}))}));
   const initial=await snapshot();assert.equal(initial.config.energyPeriod,undefined);
   assert.notEqual(initial.tiles['default-energyBalance'].number,initial.tiles['second-balance'].number,'duplicate metrics must query their own periods');
