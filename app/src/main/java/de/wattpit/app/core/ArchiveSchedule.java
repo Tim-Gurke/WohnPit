@@ -7,7 +7,7 @@ public final class ArchiveSchedule {
     public static final long RETRY_MS=3600000,CANCEL_PAUSE_MS=1800000;
     public static long intervalMillis(int minutes){
         if(minutes==0||minutes==15||minutes==30||minutes==60)return minutes*60000L;
-        throw new IllegalArgumentException("Bitte 15, 30, 60 Minuten oder nur manuell wählen.");
+        throw new IllegalArgumentException("Bitte ein gültiges Archivintervall wählen.");
     }
     public static boolean automaticDue(long nextAllowed,long now){return nextAllowed<=now||nextAllowed-now>RETRY_MS;}
     public static boolean automaticDue(long nextAllowed,long now,boolean missing){return missing&&automaticDue(nextAllowed,now);}
