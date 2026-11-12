@@ -22,3 +22,7 @@ test('shared 75/15 output clips 350 Wp together and follows battery voltage, ind
 test('phase timeline never fabricates an average state or fills a recording gap',()=>{
  const p=A.phases([{t:1000,v:3},{t:20000,v:4},{t:90000,v:5}],0,100000);assert.deepEqual(p.map(x=>x.state),['unknown',3,4,'unknown',5]);assert.equal(p.reduce((s,x)=>s+x.to-x.from,0),100000);assert.equal(A.phases([],0,100)[0].state,'unknown');
 });
+
+test('live solar surplus excludes external charging and never exceeds measured solar',()=>{
+ assert.equal(A.availableSurplus(500,0),0);assert.equal(A.availableSurplus(500,80),80);assert.equal(A.availableSurplus(-10,160,150),140);assert.equal(A.availableSurplus(100,160,0,140),-40);assert.equal(A.availableSurplus(null,160),null);
+});
