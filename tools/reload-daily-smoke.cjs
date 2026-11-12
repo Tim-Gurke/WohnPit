@@ -1,3 +1,4 @@
+const autarpieControls=require('./autarpie-test-controls.cjs');
 /* Manual reload, deliberate cancellation and daily summaries; all values are fictional. */
 const {chromium}=require('playwright'),assert=require('node:assert/strict'),path=require('node:path'),fs=require('node:fs');
 (async()=>{
@@ -16,7 +17,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),path
    setTimeout(()=>window.onHistoryResult({id:q.id,data}),30);
   },settings:json=>{Object.assign(window.fixture.settings,JSON.parse(json));return '';}};
  });
- await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));
+ await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));await autarpieControls.prepare(page);
  await page.locator('#overviewRecord').scrollIntoViewIfNeeded();await page.locator('#overviewRecord').click();await page.evaluate(()=>poll());assert.equal(await page.evaluate(()=>window.starts),1);
  assert.equal(await page.evaluate(()=>window.reloads),0,'Play must only start recording');
  await page.locator('#reloadArchive').click();await page.locator('#syncWaiting').waitFor({state:'visible'});assert.equal(await page.evaluate(()=>window.reloads),1);
@@ -27,7 +28,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),path
  await page.clock.setFixedTime(new Date('2026-10-22T06:22:02Z'));await page.evaluate(()=>window.finish());await page.locator('#reloadArchive:enabled').waitFor({state:'visible'});
  await page.locator('#reloadArchive').click();await page.locator('#syncWaiting').waitFor({state:'visible'});assert.equal(await page.evaluate(()=>window.reloads),2,'manual reload must remain available immediately after a cancelled run');
  await page.locator('#syncBackground').click();assert.equal(await page.locator('#reloadArchive').isDisabled(),true);
- await page.locator('[data-page="devices"]').click();await page.locator('#archiveCancel').click();assert.equal(await page.locator('#syncCancelChoice').isVisible(),true);assert.equal(await page.evaluate(()=>window.cancels),1,'the device-page cancellation must also ask for confirmation');
+ await autarpieControls.openPage(page,'devices');await page.locator('#archiveCancel').click();assert.equal(await page.locator('#syncCancelChoice').isVisible(),true);assert.equal(await page.evaluate(()=>window.cancels),1,'the device-page cancellation must also ask for confirmation');
  await page.keyboard.press('Escape');await page.keyboard.press('Escape');await page.clock.setFixedTime(new Date('2026-10-22T06:22:04Z'));await page.evaluate(()=>window.finish());
  await page.locator('[data-page="history"]').click();await page.locator('#solarDailyArchive td').filter({hasText:'29,68'}).waitFor({state:'visible'});
  const row=day=>page.locator('#solarDailyArchive tr').filter({has:page.locator('td').filter({hasText:day})});
