@@ -87,6 +87,7 @@ function toast(message) {
   clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').hidden = true,5500);
 }
 function showPage(next) {
+  const resolved=window.AutarPieUI?.beforePage(next);if(resolved)next=resolved;
   dashboard?.detail?.close();
   page = next;
   syncOverviewHeader();
@@ -99,6 +100,7 @@ function showPage(next) {
   if (page === 'overview') loadMini(true);
   if (page === 'devices') renderDevices(true);
   if (page === 'settings') renderSettings();
+  window.AutarPieUI?.afterPage(next);
 }
 function theme(next,save=true) {
   document.documentElement.dataset.theme = next;
@@ -181,6 +183,7 @@ function poll() {
     } catch (error) { console.error('Snapshot unavailable',error); }
   }
   supplies?.render();presence?.render();extras?.render();equipment?.render();roller?.render();
+  window.AutarPieUI?.poll();
   if (page === 'overview') { renderOverview(); loadMini(); }
   if (page === 'devices') renderDevices();
   if (page === 'settings') renderSettings();
@@ -423,6 +426,7 @@ $('historyChart').addEventListener('pointerup',releasePointer);
 $('historyChart').addEventListener('pointercancel',event=>{pointers.delete(event.pointerId);gesture=null;});
 
 function renderDaily() {
+ const previousScroll=$('solarDailyArchive')?.querySelector('.daily-scroll')?.scrollLeft||0;
  let el=$('solarDailyArchive'); if(!el){el=document.createElement('article');el.id='solarDailyArchive';el.className='card';$('historyStats').after(el);}
  const rows=snapshot.solarDaily||[];el.hidden=!rows.length;
  const months=new Map(),consumption=new Map(),waiting=new Set(),failed=new Set(),outdated=new Set(),oldHosts=new Set();
@@ -435,13 +439,14 @@ function renderDaily() {
    months.set(month,data);if(data.pending)waiting.add(month);if(data.error||data.refreshError)failed.add(month);if(data.stale)outdated.add(month);for(const day of data.days||[])consumption.set(day.day,day);
   }catch(_){months.set(month,{});failed.add(month);}
  }
- el.innerHTML='<h2>Solar-Tagesarchiv</h2><p class="muted">Ertrag: Tageswerte des Solarladereglers. Geräteverbrauch: festes Solar + geschätztes mobiles Solar − Akkubilanz, einschließlich der Nacht. Messlücken bleiben unberechnet; heute ist vorläufig.</p><div style="overflow-x:auto" tabindex="0" aria-label="Tagesarchiv, weitere Spalten seitlich erreichbar"><table><thead><tr><th>Tag</th><th>Ertrag Wh</th><th>Geräteverbrauch Wh</th><th>Maximum W</th><th>Batterie min/max V</th></tr></thead><tbody>'+rows.map(r=>{
+ el.innerHTML='<h2>Solar-Tagesarchiv</h2><p class="muted">Ertrag: Tageswerte des Solarladereglers. Geräteverbrauch: festes Solar + geschätztes mobiles Solar − Akkubilanz, einschließlich der Nacht. Messlücken bleiben unberechnet; heute ist vorläufig.</p><div class="daily-scroll" tabindex="0" aria-label="Tagesarchiv, weitere Spalten seitlich erreichbar"><table><thead><tr><th>Tag</th><th>Ertrag Wh</th><th>Geräteverbrauch Wh</th><th>Maximum W</th><th>Batterie min/max V</th></tr></thead><tbody>'+rows.map(r=>{
   const day=consumption.get(r.day),known=day?.last!=null&&Number.isFinite(Number(day.last));
   const amount=known?num(day.last,2):waiting.has(r.day.slice(0,7))?'…':'—';
   const coverage=oldHosts.has(r.day.slice(0,7))?'Hauptgerät aktualisieren':known?`${Math.floor(Math.max(0,Math.min(1,day.coverage||0))*100)} % erfasst${day.interpolatedMillis>0?' · kurz interpoliert':''}${day.modelledMillis>0?' · teilweise geschätzt':''}${day.inconsistentMillis>0?' · unplausible Schätzabschnitte fehlen':''}`:waiting.has(r.day.slice(0,7))?'wird berechnet':failed.has(r.day.slice(0,7))?'Abfrage fehlgeschlagen':'keine Messdaten';
   const note=outdated.has(r.day.slice(0,7))?' · letzter Stand'+(waiting.has(r.day.slice(0,7))?' · wird aktualisiert':failed.has(r.day.slice(0,7))?' · Aktualisierung fehlgeschlagen':''):'';
-  return `<tr><td>${escapeHtml(r.day)}</td><td>${num(r['Yield(Wh)'])}</td><td>${amount}<span class="daily-coverage">${coverage}${note}</span></td><td>${num(r['Max. PV power(W)'])}</td><td>${num(r['Min. battery voltage(V)'],2)} / ${num(r['Max. battery voltage(V)'],2)}</td></tr>`;
+  return `<tr><td>${escapeHtml(r.day)}</td><td>${num(r['Yield(Wh)'])}</td><td>${amount}<details class="daily-quality"><summary>${known?Math.floor(Math.max(0,Math.min(1,day.coverage||0))*100)+'% erfasst':coverage}</summary><span class="daily-coverage">${coverage}${note}</span></details></td><td>${num(r['Max. PV power(W)'])}</td><td>${num(r['Min. battery voltage(V)'],2)} / ${num(r['Max. battery voltage(V)'],2)}</td></tr>`;
  }).join('')+'</tbody></table></div>';
+ el.querySelector('.daily-scroll').scrollLeft=previousScroll;
 }
 function chooseImport(){if(native)native.chooseImport();else toast('CSV-Dateien werden in der Android-App importiert.');}
 function chooseExport(){if(native)native.chooseExport();else toast('Der Export ist in der Android-App verfügbar.');}
@@ -507,7 +512,7 @@ dashboard = new window.WattDashboard({native,read:historyRead,resizeMini:drawMin
 equipment = new window.WattEquipment({native,getSnapshot:()=>snapshot,getValueColor:metric=>window.WattDashboardCore.metricColor(dashboard.config,metric),getValueTextColor:metric=>dashboard.paint(window.WattDashboardCore.metricColor(dashboard.config,metric),window.WattDashboardCore.tile(metric),true),openModal,closeModal,toast,poll,repaint:()=>dashboard?.update()});
 extras = new window.WattExtras({native,renderSolar:()=>solar?.render(),getSnapshot:()=>snapshot,isDemo:()=>demo,toast,poll,cancelArchive:()=>lifecycle.confirmCancellation(),repaint:()=>{dashboard?.update();drawHistory();drawMini();},imported:()=>{dashboard?.clearCache();if(page==='history')loadHistory();lastMiniLoad=0;}});
 solar = new window.WattSolarPlan({native:deviceNative,canRequestData:()=>!deviceNative?.isLanViewer?.()||!reads?.initialPending(),equipment,getSnapshot:()=>snapshot,getReading:reading,getPresence:()=>presence?.state,openModal,closeModal,toast,poll,symbol:code=>extras.symbol(code)});
-roller = new window.WattRoller({native:deviceNative,isDemo:()=>demo,getSolar:()=>solar,openModal,closeModal,toast,poll});
+roller = new window.WattRoller({native,read:historyRead,isDemo:()=>demo,getSolar:()=>solar,openModal,closeModal,toast,poll});
 configuration = new window.WattSettingsBackup({native,getSnapshot:()=>snapshot,dashboard,equipment,openModal,closeModal,toast,applied:backup=>{
   settingsDirty=false;poll();
   dashboard.config=window.WattDashboardCore.normalize(backup.dashboard);dashboard.saved=JSON.parse(JSON.stringify(dashboard.config));dashboard.cache.clear();
@@ -526,3 +531,4 @@ window.addEventListener('resize',()=>{drawHistory();drawMini();});
 
 for(const [id,method] of [['chooseAppRole','chooseAppRole'],['migrationBackup','migrationBackup'],['migrationImport','migrationImport']])$(id).onclick=()=>{if(typeof deviceNative?.[method]==='function')deviceNative[method]();else toast('Diese Funktion steht in der installierten WohnPit-App bereit.');};
 if(typeof deviceNative?.appRole==='function')$('appRoleLabel').textContent=({central:'Zentrale · Daten sammeln und im WLAN bereitstellen',viewer:'Anzeigehandy · mit einer Zentrale koppeln',direct:'Eigenständig · Victron direkt, ohne Zentrale'})[deviceNative.appRole()]||'Betriebsart wählen';
+window.AutarPieApp={get dashboard(){return dashboard;},get snapshot(){return snapshot;},get solar(){return solar;},get roller(){return roller;},native:deviceNative,read:historyRead,showPage,openModal,closeModal,toast,poll,theme,reading,icon,escapeHtml};
