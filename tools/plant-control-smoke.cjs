@@ -1,3 +1,4 @@
+const autarpieControls=require('./autarpie-test-controls.cjs');
 const waitForPage=require('./browser-wait.cjs');
 const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const preset=require('../app/src/main/assets/dashboard-preset.json');
@@ -16,9 +17,9 @@ const preset=require('../app/src/main/assets/dashboard-preset.json');
    };
    window.WattPit={appVersion:()=> '1.6.3',isLanViewer:()=>true,controlRevision:()=>host.revision,requestPlantCommand:q=>requests.push(JSON.parse(q)),refreshLan:()=>{},lanState:()=>JSON.stringify({role:'viewer',name:'Testanlage',connected:true}),snapshot:()=>JSON.stringify(snapshot()),syncState:()=>JSON.stringify({busy:false,cockpitNoticeAccepted:true,theme,palette:'classic'}),dashboardPreset:()=>JSON.stringify(preset),dashboard:()=>JSON.stringify(preset),saveDashboard:()=>'',solarSetup:()=>JSON.stringify(host.setup),rollerSnapshot:()=>JSON.stringify(host.roller),rollerDevices:()=> '[]',specialUses:()=>JSON.stringify(host.specialUses||{version:1,profiles:[],events:[]}),saveSpecialUses:()=>{throw Error('A viewer must use the acknowledged special-use command');},settings:()=>'',saveEquipment:()=>{throw Error('A viewer must use the acknowledged command');},locateSolarSite:()=>{},cancelSolarLocation:()=>{},saveSolarSetup:()=>{throw Error('A viewer must use the acknowledged command');},saveSolarSite:()=>{throw Error('A viewer must use the acknowledged command');},saveRoller:()=>{throw Error('A viewer must use the acknowledged command');},weatherPlace:()=>{throw Error('A viewer must use the acknowledged command');},requestHistory:q=>{q=JSON.parse(q);setTimeout(()=>window.onHistoryResult({id:q.id,data:q.method==='dailyEnergy'?{accountingVersion:2,days:[]}:{points:[],summary:{}}}),1);}};
   },{theme,preset});
-  await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));
+  await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));await autarpieControls.prepare(page);
   assert.deepEqual(await page.evaluate(()=>dashboard.config.tiles.map(t=>t.layouts)),preset.tiles.map(t=>t.layouts));
-  await page.locator('[data-page="settings"]').click();
+  await autarpieControls.openSettings(page);
   for(const id of ['saveSettings','editEquipment','solarSetupSettings','weatherOff','rollerSettings'])assert.equal(await page.locator('#'+id).isEnabled(),true,id);
   await page.locator('#capacitySetting').fill('120');await page.locator('#saveSettings').click();
   assert.equal(await page.evaluate(()=>host.capacity),100);assert.match(await page.locator('#plantActionStatus').textContent(),/erwartet/);
