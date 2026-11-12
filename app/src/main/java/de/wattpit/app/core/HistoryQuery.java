@@ -77,6 +77,7 @@ public final class HistoryQuery {
             case "aux":field="aux";kind="shunt";break;
             case "consumed":field="ABS(consumed)";kind="shunt";break;
             case "storedEnergy":field="soc*voltage/100.0";kind="shunt";break;
+            case "loadPower":field="load*voltage";kind="solar";break;
             case "load":field="load";kind="solar";break;
             case "state":field="state";kind="solar";break;
             case "error":field="error";kind="solar";break;
