@@ -1,3 +1,4 @@
+const autarpieControls=require('./autarpie-test-controls.cjs');
 /* Regression for the reported viewer flicker and monthly day-archive reads. Synthetic data. */
 const {chromium}=require('playwright'),assert=require('node:assert/strict'),path=require('node:path'),fs=require('node:fs');
 const preset=require('../app/src/main/assets/dashboard-preset.json');
@@ -27,7 +28,7 @@ const preset=require('../app/src/main/assets/dashboard-preset.json');
    window.drain=error=>{let limit=0;while(window.pendingReads.length){if(++limit>100)throw Error('Unbounded read loop');window.replyOne(error);}};
    window.WattPit={appVersion:()=> '2.0.1',isLanViewer:()=>true,lanState:()=>JSON.stringify({id:'plant',role:'viewer',name:'Testanlage',connected:true}),snapshot:()=>JSON.stringify({running:true,historyRevision:window.revision,lan:{id:'plant',connected:true},devices:[{mac:'shunt',kind:'shunt',name:'Test-Shunt'},{mac:'solar',kind:'solar',name:'Test-Solar'}],readings:[{device:'shunt',kind:'shunt',t:Date.now(),soc:62,voltage:13.15,current:-2,power:-26},{device:'solar',kind:'solar',t:Date.now(),solar:0,state:0}],found:[],stats:{count:100},settings:{theme,palette:'classic',capacity:100,sampleSeconds:10,miniRange:'last6h'},solarDaily:[{day:'2026-10-27','Yield(Wh)':410},{day:'2026-10-26','Yield(Wh)':0}]}),syncState:()=>JSON.stringify({busy:false,runId:0,cockpitNoticeAccepted:true,theme,palette:'classic'}),dashboardPreset:()=>JSON.stringify(preset),dashboard:()=>JSON.stringify(preset),saveDashboard:()=>'',settings:()=>'',solarSetup:()=> '{}',rollerSnapshot:()=> '{}',history:()=>{throw Error('Blocking viewer read');},dashboardHistory:()=>{throw Error('Blocking viewer read');},energyHistoryWindow:()=>{throw Error('Blocking viewer read');},dailyEnergy:()=>{throw Error('Blocking viewer read');},requestHistory:json=>{const q=JSON.parse(json);if(window.auto)setTimeout(()=>window.onHistoryResult({id:q.id,data:history(q)}),10);else window.pendingReads.push(q);}};
   },{preset,theme});
-  await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));
+  await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));await autarpieControls.prepare(page);
   const consumption=page.locator('.cockpit-tile').filter({has:page.locator('.tile-label',{hasText:'Geräteverbrauch'})});
   await until(()=>window.pendingReads.length>0);
   // Each delayed result is overtaken by another live revision. A cold viewer
