@@ -1,8 +1,8 @@
-name: WohnPit gemeinsam prüfen
+name: AutarPie gemeinsam prüfen
 
 on:
   push:
-    branches: [main, 'test/2.0.*', 'publish/*', 'test/1.5.0*', 'test/1.6.0*', 'test/1.6.1*', 'test/1.6.6*', 'test/1.6.7*', 'test/1.6.8*', 'test/1.6.9*', 'test/1.6.10*', 'test/1.6.11*', 'test/1.6.12*', 'test/1.6.13*', 'test/1.7.0*', 'test/1.8.0*', 'test/1.8.1*', 'test/1.8.2*', 'test/1.8.3*', 'test/1.8.4*', 'test/1.9.0*', 'test/1.9.1*']
+    branches: [main, 'work/autarpie-3.0.0', 'test/2.0.*', 'publish/*', 'test/1.5.0*', 'test/1.6.0*', 'test/1.6.1*', 'test/1.6.6*', 'test/1.6.7*', 'test/1.6.8*', 'test/1.6.9*', 'test/1.6.10*', 'test/1.6.11*', 'test/1.6.12*', 'test/1.6.13*', 'test/1.7.0*', 'test/1.8.0*', 'test/1.8.1*', 'test/1.8.2*', 'test/1.8.3*', 'test/1.8.4*', 'test/1.9.0*', 'test/1.9.1*']
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -11,6 +11,24 @@ permissions:
   contents: read
 
 jobs:
+  autarpie-ui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Eigene Dashboards und bewusste Änderungen prüfen
+        env:
+          WATTPIT_CHROMIUM: /usr/bin/google-chrome
+          WATTPIT_SCREENSHOT_DIR: app/build/reports/autarpie-ui
+        run: |
+          npm install --no-save --prefix "$RUNNER_TEMP/autarpie-ui" playwright@1.51.1
+          NODE_PATH="$RUNNER_TEMP/autarpie-ui/node_modules" node tools/autarpie-smoke.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AutarPie-Oberflaeche
+          path: app/build/reports/autarpie-ui/
+
   supplies-ui:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -40,7 +58,7 @@ jobs:
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
       - name: Dashboard-Berechnungen und Konfiguration prüfen
-        run: node --test tools/value-colors.test.cjs tools/weather-history.test.cjs tools/supplies-core.test.cjs tools/dashboard-core.test.cjs tools/equipment-core.test.cjs tools/settings-backup.test.cjs tools/tile-detail.test.cjs tools/read-bridge.test.cjs tools/energy-window-cache.test.cjs tools/control-bridge.test.cjs tools/solar-core.test.cjs tools/presence-core.test.cjs tools/roller-core.test.cjs tools/special-use-core.test.cjs
+        run: node --test tools/autarpie-core.test.cjs tools/value-colors.test.cjs tools/weather-history.test.cjs tools/supplies-core.test.cjs tools/dashboard-core.test.cjs tools/equipment-core.test.cjs tools/settings-backup.test.cjs tools/tile-detail.test.cjs tools/read-bridge.test.cjs tools/energy-window-cache.test.cjs tools/control-bridge.test.cjs tools/solar-core.test.cjs tools/presence-core.test.cjs tools/roller-core.test.cjs tools/special-use-core.test.cjs
       - name: Private Dateien vor Veröffentlichung ausschließen
         run: python3 tools/check-public-files.py
       - name: Veröffentlichung und Übernahme-Hilfsprogramm prüfen
