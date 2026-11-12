@@ -409,6 +409,9 @@ final class Repository {
         if(!archiveBusy){lastSnapshot=result.toString();lastSnapshotAt=now;}
         return result;
     }
+    void activeSolarReading(String mac,JSONObject sample)throws Exception{
+        Reading reading=new Reading();reading.device=mac;reading.kind="solar";reading.origin="live";reading.timestamp=sample.getLong("at");if(sample.has("pvVoltage"))reading.pvVoltage=sample.getDouble("pvVoltage");if(sample.has("current"))reading.load=sample.getDouble("current");if(reading.pvVoltage!=null||reading.load!=null){db.insert(reading);invalidateStats();}
+    }
     Context applicationContext(){return context;}
     double liveHouseSoc(long now){try{JSONArray configs=new JSONArray(prefs.getString("devices","[]"));for(int i=0;i<configs.length();i++){JSONObject c=configs.getJSONObject(i);if(!c.optString("kind").equals("shunt"))continue;Reading reading=latest.get(c.optString("mac"));if(reading!=null&&reading.soc!=null&&now>=reading.timestamp&&now-reading.timestamp<=45000)return reading.soc;}}catch(JSONException ignored){}return Double.NaN;}
     synchronized void invalidateStats() { statsTime = 0;historyRevision++; }
