@@ -1,3 +1,4 @@
+const autarpieControls=require('./autarpie-test-controls.cjs');
 const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 (async()=>{
  const qr=JSON.parse(fs.readFileSync(process.env.WATTPIT_QR_FIXTURE,'utf8'));
@@ -20,17 +21,17 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=r
   await page.goto('http://wattpit.test/index.html');
   assert.deepEqual(await page.locator('.bottom-nav .nav-label').evaluateAll(es=>es.map(e=>e.textContent.trim())),['Übersicht','Zusatzspeicher','Gas / Wasser','Verlauf','Geräte','Einstellungen']);
   const widget=page.locator('.type-lan');assert.equal(await widget.locator('#lanBanner').count(),1);
-  await page.locator('#editDashboard').click();await widget.scrollIntoViewIfNeeded();
+  await autarpieControls.toggleEdit(page);await widget.scrollIntoViewIfNeeded();
   const original=await page.evaluate(()=>structuredClone(dashboard.config.tiles));let box=await widget.locator('.tile-head').boundingBox();
   await page.mouse.move(box.x+30,box.y+8);await page.mouse.down();await page.mouse.move(box.x+30,box.y+86,{steps:6});await page.mouse.up();
   const after=await page.evaluate(()=>structuredClone(dashboard.config.tiles));assert.equal(after.find(t=>t.metric==='lan').layouts.compact.y,original.find(t=>t.metric==='lan').layouts.compact.y+3);assert.deepEqual(after.filter(t=>t.metric!=='lan'),original.filter(t=>t.metric!=='lan'));
-  await page.locator('#editDashboard').click();await page.reload();assert.equal(await page.evaluate(()=>dashboard.config.tiles.find(t=>t.metric==='lan').layouts.compact.y),after.find(t=>t.metric==='lan').layouts.compact.y);
-  await page.locator('[data-page="settings"]').click();await page.locator('#lanManage').click();await page.locator('#lanCreate').click();await page.locator('#lanCopy').waitFor();
+  await autarpieControls.toggleEdit(page);await page.reload();assert.equal(await page.evaluate(()=>dashboard.config.tiles.find(t=>t.metric==='lan').layouts.compact.y),after.find(t=>t.metric==='lan').layouts.compact.y);
+  await autarpieControls.openSettings(page);await page.locator('#lanManage').click();await page.locator('#lanCreate').click();await page.locator('#lanCopy').waitFor();
   await page.locator('#lanShowCode').click();assert.match(await page.locator('#lanCode').inputValue(),/^WNP1\./);await page.locator('#lanCopy').click();
   await page.locator('#lanShowQr').click();await until(()=>document.getElementById('lanQrImage').naturalWidth===640);assert.equal(await page.locator('#lanQr').isVisible(),true);assert.equal(await page.locator('#toast').isVisible(),false,'a transient message must not cover the QR code');
   if(process.env.WATTPIT_SCREENSHOT_DIR){fs.mkdirSync(process.env.WATTPIT_SCREENSHOT_DIR,{recursive:true});await page.locator('#lanQr').screenshot({path:path.join(process.env.WATTPIT_SCREENSHOT_DIR,`anlagenverbund-qr-${theme}.png`)});}
   await page.locator('#closeModal').click();await page.locator('[data-page="overview"]').click();assert.match(await page.locator('#lanStatus').textContent(),/Hauptgerät.*1 Anzeige/);
-  await page.evaluate(()=>{window.lanRole='off';poll();});await page.locator('#lanOpen').isVisible();await page.locator('[data-page="settings"]').click();await page.locator('#lanManage').click();
+  await page.evaluate(()=>{window.lanRole='off';poll();});await page.locator('#lanOpen').isVisible();await autarpieControls.openSettings(page);await page.locator('#lanManage').click();
   await page.locator('#lanInvitation').fill('WNP1.falsch');await page.locator('#lanJoin').click();assert.match(await page.locator('#lanError').textContent(),/nicht erreichbar/);assert.equal(await page.locator('#lanJoin').isEnabled(),true);
   assert.equal(await page.locator('#lanJoin').textContent(),'Als Anzeige beitreten');
   await page.evaluate(()=>{window.deferJoin=true;});await page.locator('#lanJoin').click();assert.equal(await page.locator('#lanError').isVisible(),false);assert.equal(await page.locator('#lanJoin').isDisabled(),true);
@@ -39,7 +40,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=r
   if(theme==='dark'){await page.locator('#lanInvitation').fill(qr.code);await page.locator('#lanJoin').click();}else{await page.evaluate(()=>{window.scanResult={code:window.qrFixture.code};});await page.locator('#lanScan').click();}
   await until(()=>window.lanRole==='viewer');await page.locator('#lanJoinedDone').waitFor();assert.equal(await page.locator('#modalTitle').textContent(),'Verbindung hergestellt');assert.match(await page.locator('.lan-success').textContent(),/Beispiel-Wohnwagen.*Anzeige.*Datenstand/s);await page.locator('#lanJoinedDone').click();await page.locator('#lanBanner').waitFor();
   assert.match(await page.locator('#lanStatus').textContent(),/Anzeige.*Hauptgerät/);assert.equal(await page.locator('#overviewRecord').isDisabled(),false);assert.equal(await page.locator('#reloadArchive').isDisabled(),false);assert.equal(await page.locator('#editDashboard').isEnabled(),true);
-  await page.locator('[data-page="settings"]').click();await page.locator('#lanManage').click();
+  await autarpieControls.openSettings(page);await page.locator('#lanManage').click();
   assert.equal(await page.locator('#lanBackgroundPresence').isChecked(),false,'a display pauses in the background by default');
   await page.locator('#lanBackgroundPresence').check();assert.equal(await page.evaluate(()=>window.backgroundPresence),true);
   await page.locator('#closeModal').click();await page.locator('#lanManage').click();assert.equal(await page.locator('#lanBackgroundPresence').isChecked(),true);
@@ -53,7 +54,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=r
   await page.locator('[data-page="history"]').click();await until(()=>!historyPending&&points.length>0);assert.equal(await page.evaluate(()=>points[0].v),28);
   await page.evaluate(()=>{window.power=37;window.rev++;poll();});await until(()=>!historyPending&&points[0]?.v===37);
   await page.evaluate(()=>{window.connected=false;poll();});assert.match(await page.locator('#lanStatus').textContent(),/nicht erreichbar.*Stand/);
-  await page.locator('[data-page="settings"]').click();assert.equal(await page.locator('#saveSettings').isDisabled(),false);assert.equal(await page.locator('#editEquipment').isDisabled(),false);assert.equal(await page.locator('#themeButtons button').first().isEnabled(),true);
+  await autarpieControls.openSettings(page);assert.equal(await page.locator('#saveSettings').isDisabled(),false);assert.equal(await page.locator('#editEquipment').isDisabled(),false);assert.equal(await page.locator('#themeButtons button').first().isEnabled(),true);
   await page.locator('[data-page="overview"]').click();await page.evaluate(()=>{window.connected=true;poll();});
   for(const viewport of [{width:320,height:800},{width:844,height:390},{width:390,height:844}]){await page.setViewportSize(viewport);await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));const overflow=await page.evaluate(()=>({extra:document.body.scrollWidth-innerWidth,elements:[...document.querySelectorAll('body *')].filter(e=>e.getBoundingClientRect().right>innerWidth+1&&e.getClientRects().length).slice(0,8).map(e=>({id:e.id,class:e.className,width:e.getBoundingClientRect().width,right:e.getBoundingClientRect().right}))}));assert.ok(overflow.extra<=0,JSON.stringify({viewport,...overflow}));}
   if(process.env.WATTPIT_SCREENSHOT_DIR){fs.mkdirSync(process.env.WATTPIT_SCREENSHOT_DIR,{recursive:true});await page.screenshot({path:path.join(process.env.WATTPIT_SCREENSHOT_DIR,`anlagenverbund-${theme}.png`),fullPage:false});}
