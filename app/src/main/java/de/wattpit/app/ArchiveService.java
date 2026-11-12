@@ -253,7 +253,7 @@ public final class ArchiveService extends Service {
             if(desired!=null){Double mode=EnergyProtocol.solarValue(0xedab,exchange(0xedab,EnergyProtocol.solarRead(0xedab),null,2500));if(mode==null)throw new IllegalArgumentException("Ausgangsmodus nicht lesbar; Schalten nicht ausgeführt.");exchange(0xedab,EnergyProtocol.output(mode.intValue(),desired),null,2500);}
             JSONObject sample=new JSONObject().put("at",System.currentTimeMillis());
             for(int register:new int[]{0xedbb,0xedab,0xeda8,0xeda9,0xedad})try{Double value=EnergyProtocol.solarValue(register,exchange(register,EnergyProtocol.solarRead(register),null,2000));if(value!=null)sample.put(register==0xedbb?"pvVoltage":register==0xedab?"mode":register==0xeda8?"state":register==0xeda9?"voltage":"current",value);}catch(TimeoutException ignored){}
-            sample.put("at",System.currentTimeMillis());EnergyStore.live(repository,mac,sample);
+            sample.put("at",System.currentTimeMillis());EnergyStore.live(repository,mac,sample);try{repository.activeSolarReading(mac,sample);}catch(Exception storage){repository.message("Livewerte empfangen; die Speicherung konnte nicht abgeschlossen werden.");}
             if(desired!=null&&sample.optInt("state",-1)!=(desired?1:0))EnergyStore.error(false,"Schaltauftrag gesendet; der angeforderte Zustand ist noch nicht bestätigt.");
         }catch(Exception e){EnergyStore.error(false,e instanceof IllegalArgumentException?e.getMessage():"Liveverbindung nicht möglich. Andere aktive App trennen und Android-Kopplung prüfen.");}
         finally{closeGatt();main.post(this::stopSelf);}
