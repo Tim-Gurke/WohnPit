@@ -339,7 +339,7 @@
       if((t.colorSource==='value'||t.adaptiveColor===false)&&!text)return color;
       const css=getComputedStyle(document.documentElement);
       if(t.colorSource!=='value'&&t.adaptiveColor!==false&&color===C.CATALOG[t.metric]?.color){const tone=['solar','mobileSolarPower','mobileSolarEnergy','yieldWh','solarEnergy','solarVoltage','solarCurrent','pvVoltage','state','error'].includes(t.metric)?'--orange':['energyBalance','batteryEnergy','temperature','aux','load'].includes(t.metric)?'--blue':'--mint';color=css.getPropertyValue(tone).trim()||color;}
-      const background=t.background==='auto'?css.getPropertyValue('--panel').trim():t.background;
+      const background=t.backgroundSurface&&window.AutarPieCore?window.AutarPieCore.surfaceBase(t.backgroundSurface):t.background==='auto'?css.getPropertyValue('--panel').trim():t.background;
       const page=css.getPropertyValue('--bg').trim(),target=text?7:4.5,key=[color,background,page,t.opacity,target].join(':');this.paintCache=this.paintCache || new Map();
       if(this.paintCache.has(key))return this.paintCache.get(key);
       const result=C.readableColor(color,background,page,t.opacity,target);
