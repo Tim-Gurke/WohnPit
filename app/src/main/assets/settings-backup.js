@@ -4,10 +4,10 @@
   else root.WattSettingsCore=api;
 })(typeof globalThis==='object'?globalThis:this,function(D,E,S){
   'use strict';
-  const fail=message=>{throw new Error(message||'Keine gültige WohnPit-Einstellungsdatei.');};
+  const fail=message=>{throw new Error(message||'Keine gültige AutarPie-Einstellungsdatei.');};
   function normalize(input){
-    if(!input||input.format!=='wattnpit-settings'||input.version!==1)fail('Diese Datei ist keine unterstützte WohnPit-Einstellungssicherung.');
-    if(JSON.stringify(input).length>256000)fail('Die Einstellungsdatei ist zu groß.');
+    if(!input||input.format!=='wattnpit-settings'||input.version!==1)fail('Diese Datei ist keine unterstützte AutarPie-Einstellungssicherung.');
+    if(JSON.stringify(input).length>1800000)fail('Die Einstellungsdatei ist zu groß.');
     const s=input.settings;
     if(!s||!['light','dark'].includes(s.theme)||!['classic','blue','green','turquoise','orange','neutral'].includes(s.palette)||!['sunrise','today','last6h','last24h','yesterday','week','month'].includes(s.miniRange)||typeof s.capacity!=='number'||!Number.isFinite(s.capacity)||s.capacity<1||s.capacity>10000||![5,10,30,60].includes(s.sampleSeconds))fail('Die allgemeinen Einstellungen sind ungültig.');
     const board=input.dashboard,ids=new Set();
@@ -24,6 +24,9 @@
     }
     const result={format:'wattnpit-settings',version:1,settings:{theme:s.theme,palette:s.palette,capacity:s.capacity,sampleSeconds:s.sampleSeconds,miniRange:s.miniRange},dashboard:D.normalize(board),equipment:E.normalize(input.equipment),weatherPlace};
     if(input.specialUses)result.specialUses=(typeof module==='object'&&module.exports?require('./special-use-core.js'):globalThis.WattSpecialUseCore).normalize(input.specialUses);
+    const A=typeof module==='object'&&module.exports?require('./autarpie-core.js'):globalThis.AutarPieCore;
+    if(input.workspace){if(!Array.isArray(input.workspace.pages)||input.workspace.pages.length>40)fail('Ungültige Dashboards.');result.workspace=A.normalize(input.workspace,result.dashboard);for(const p of result.workspace.pages)if(p.board)p.board=D.normalize(p.board);}
+    if(input.appearance)result.appearance=A.appearance(input.appearance);
     result.solarSetup=S.normalize(input.solarSetup||{},result.equipment);
     for(const g of result.equipment.groups)if(g.placement==='mobile')result.solarSetup.groups[g.id].active=false;
     if(typeof input.createdAt==='string'&&input.createdAt.length<=40&&Number.isFinite(Date.parse(input.createdAt)))result.createdAt=input.createdAt;
@@ -31,7 +34,7 @@
   }
   function create(snapshot,dashboard,equipment){
     const s=snapshot.settings||{};
-    return normalize({format:'wattnpit-settings',version:1,createdAt:new Date().toISOString(),settings:{theme:s.theme||'dark',palette:s.palette||'classic',capacity:s.capacity??100,sampleSeconds:s.sampleSeconds??10,miniRange:s.miniRange||'sunrise'},dashboard,equipment,weatherPlace:s.weatherPlace||{},solarSetup:s.solarSetup||{},specialUses:s.specialUses||{version:1,profiles:[],events:[]}});
+    return normalize({format:'wattnpit-settings',version:1,createdAt:new Date().toISOString(),settings:{theme:s.theme||'dark',palette:s.palette||'classic',capacity:s.capacity??100,sampleSeconds:s.sampleSeconds??10,miniRange:s.miniRange||'sunrise'},dashboard,equipment,weatherPlace:s.weatherPlace||{},solarSetup:s.solarSetup||{},specialUses:s.specialUses||{version:1,profiles:[],events:[]},workspace:globalThis.AutarPieUI?.workspace||snapshot.workspace,appearance:globalThis.AutarPieUI?.appearance||s.appearance});
   }
   return {normalize,create};
 });
