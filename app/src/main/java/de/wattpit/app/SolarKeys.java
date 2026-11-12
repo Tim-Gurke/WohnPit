@@ -17,7 +17,7 @@ final class SolarKeys {
             JSONArray row=new JSONArray().put(id).put(g.getInt("count")).put(g.getDouble("watts")).put(hardware?0:g.opt("tilt")).put(g.optString("measurement")).put(g.optString("placement"))
                 .put(hardware||p.optBoolean("active")).put(hardware?180:p.opt("azimuth")).put(hardware?new JSONArray("[0,0,0]"):p.getJSONArray("shade"));
             if(own!=null)row.put(own).put(controller);
-            if(type.equals("pwm")&&mode.equals("auto"))row.put("pwm-start-v1");groups.add(row);
+            if(type.equals("pwm")&&mode.equals("auto"))row.put("pwm-start-v1");if(g.has("electrical")){JSONObject e=g.getJSONObject("electrical");row.put("electrical-v1");for(String k:new String[]{"regulator","series","voc","vmp","isc","imp","maxVoltage","maxChargeA","maxPower","systemVoltage"})row.put(e.opt(k));}groups.add(row);
         }
         java.text.Collator order=java.text.Collator.getInstance(Locale.US);groups.sort((a,b)->order.compare(a.optString(0),b.optString(0)));
         JSONArray sorted=new JSONArray();for(JSONArray row:groups)sorted.put(row);
