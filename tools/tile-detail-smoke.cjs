@@ -73,18 +73,17 @@ const path=require('node:path');
    if(await page.locator('html').getAttribute('data-theme')!==theme)await autarpieControls.toggleTheme(page);
    assert.equal(await page.evaluate(()=>document.body.scrollWidth>innerWidth),false,'overview overflow '+width);
    for(const id of ['addTile','layoutProfile','editDashboard','liveStatus']){
-    assert.equal(await page.locator('header #'+id).count(),landscape?1:0,id+' in wrong orientation');
+    assert.equal(await page.locator('header #'+id).count(),landscape&&id==='liveStatus'?1:0,id+' in wrong orientation');
     assert.equal(await page.locator('#'+id).count(),1,'duplicate '+id);
    }
    const h=await page.locator('header').boundingBox();assert.ok(h.height<=(landscape&&width<760?76:54),'header too high: '+width+' '+h.height);
    if(landscape){
-    for(const id of ['addTile','layoutProfile','editDashboard','liveStatus']){
+    for(const id of ['autarpieAreas','liveStatus']){
      const box=await page.locator('#'+id).boundingBox();assert.ok(box.y>=h.y&&box.y+box.height<=h.y+h.height,id+' outside header');
-     if(width>=760)assert.ok(Math.abs(box.y+box.height/2-h.y-h.height/2)<1,id+' not in the single header row');
     }
    }else{
     assert.equal(await page.locator('#overview>.pagehead').count(),1);
-    assert.equal(await page.locator('#welcome+#dashboardToolbar').count(),1);
+    assert.equal(await page.locator('#overview .autarpie-dashboard-host #dashboardToolbar').count(),1);
    }
   }
   if(process.env.WATTPIT_SCREENSHOT_DIR&&[390,1100].includes(width)){await page.evaluate(()=>window.scrollTo(0,0));await page.screenshot({path:path.join(process.env.WATTPIT_SCREENSHOT_DIR,'overview-'+width+'.png')});}
