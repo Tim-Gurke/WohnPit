@@ -1,3 +1,4 @@
+const autarpieControls=require('./autarpie-test-controls.cjs');
 const {chromium}=require('playwright');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
@@ -15,7 +16,7 @@ const path=require('node:path');
   };
   window.WattPit={snapshot:()=>JSON.stringify(window.mock),dashboard:()=>localStorage.getItem('detail-board')||'{}',saveDashboard:json=>{window.saves++;localStorage.setItem('detail-board',json);return '';},settings:json=>{Object.assign(window.mock.settings,JSON.parse(json));return '';},history:()=>'{"points":[]}',dashboardHistory:(from,to,metric)=>{window.calls.push({from,to,metric});return JSON.stringify(series(from,to,metric));},energyHistory:(from,to)=>JSON.stringify({accountingVersion:2,solar:series(from,to,'solarEnergy'),consumption:series(from,to,'consumptionEnergy'),balance:series(from,to,'batteryEnergy')})};
  });
- await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));
+ await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));await autarpieControls.prepare(page);
  const source=await page.evaluate(()=>({config:JSON.stringify(dashboard.config),saved:localStorage.getItem('detail-board'),saves:window.saves}));
  const verifyUnchanged=async()=>assert.deepEqual(await page.evaluate(()=>({config:JSON.stringify(dashboard.config),saved:localStorage.getItem('detail-board'),saves:window.saves})),source);
  const open=async(id='default-solar')=>{await page.locator(`[data-tile="${id}"]`).click();assert.equal(await page.locator('#tileActionSettings').isVisible(),true);await page.locator('#tileActionDetail').click();assert.equal(await page.locator('#tileDetail').isVisible(),true);};
@@ -69,7 +70,7 @@ const path=require('node:path');
   await page.setViewportSize(viewport);
   await page.locator(landscape?'body.overview-landscape':'body:not(.overview-landscape)').waitFor();
   for(const theme of ['light','dark']){
-   if(await page.locator('html').getAttribute('data-theme')!==theme)await page.locator('#themeToggle').click();
+   if(await page.locator('html').getAttribute('data-theme')!==theme)await autarpieControls.toggleTheme(page);
    assert.equal(await page.evaluate(()=>document.body.scrollWidth>innerWidth),false,'overview overflow '+width);
    for(const id of ['addTile','layoutProfile','editDashboard','liveStatus']){
     assert.equal(await page.locator('header #'+id).count(),landscape?1:0,id+' in wrong orientation');
@@ -90,7 +91,7 @@ const path=require('node:path');
  }
  await verifyUnchanged();
  // Controls leave the header on other pages, even when rotating there.
- await page.locator('[data-page="settings"]').click();assert.equal(await page.locator('header #addTile').count(),0);
+ await autarpieControls.openSettings(page);assert.equal(await page.locator('header #addTile').count(),0);
  await page.setViewportSize({width:390,height:844});await page.setViewportSize({width:832,height:390});
  assert.equal(await page.locator('#addTile').isVisible(),false);
  await page.locator('[data-page="overview"]').click();assert.equal(await page.locator('header #addTile').count(),1);
@@ -102,14 +103,14 @@ const path=require('node:path');
  assert.equal(await page.evaluate(()=>dashboard.config.tiles.find(t=>t.id==='default-solar').title),'Meine Solarleistung');
  // Half-cell keyboard movement and pointer resizing persist separately per profile.
  for(const width of [390,1100]){
-  await page.setViewportSize({width,height:1000});await page.locator('#editDashboard').click();const profile=width<700?'compact':'wide';
+  await page.setViewportSize({width,height:1000});await autarpieControls.toggleEdit(page);const profile=width<700?'compact':'wide';
   const soc=page.locator('[data-tile="default-soc"]'),origin=await page.evaluate(p=>({...dashboard.config.tiles[0].layouts[p]}),profile);
   await soc.focus();await page.keyboard.press('ArrowRight');await page.keyboard.press('ArrowDown');
   const moved=await page.evaluate(p=>({...dashboard.config.tiles[0].layouts[p]}),profile);assert.equal(moved.x,origin.x+.5);assert.equal(moved.y,origin.y+.5);
   const power=page.locator('[data-tile="default-power"]'),original=await page.evaluate(p=>({...dashboard.config.tiles.find(t=>t.id==='default-power').layouts[p]}),profile);
   await power.locator('.tile-resize').scrollIntoViewIfNeeded();const handle=await power.locator('.tile-resize').boundingBox(),dx=await page.locator('#dashboardBoard').evaluate(el=>el.clientWidth/24),dy=profile==='wide'?15:13;
   await page.mouse.move(handle.x+handle.width/2,handle.y+handle.height/2);await page.mouse.down();await page.mouse.move(handle.x+handle.width/2+dx,handle.y+handle.height/2+dy,{steps:6});await page.mouse.up();
-  const resized=await page.evaluate(p=>({...dashboard.config.tiles.find(t=>t.id==='default-power').layouts[p]}),profile);assert.equal(resized.w,original.w+.5);assert.equal(resized.h,original.h+.5);await page.locator('#editDashboard').click();
+  const resized=await page.evaluate(p=>({...dashboard.config.tiles.find(t=>t.id==='default-power').layouts[p]}),profile);assert.equal(resized.w,original.w+.5);assert.equal(resized.h,original.h+.5);await autarpieControls.toggleEdit(page);
  }
  const saved=await page.evaluate(()=>dashboard.config);await page.reload();assert.deepEqual(await page.evaluate(()=>dashboard.config),saved);
  await open('default-consumptionEnergy');await page.locator('#detailSettings>summary').click();assert.equal(await page.locator('#detailReverse').count(),0);await page.locator('#detailUnit').selectOption('kWh');await page.keyboard.press('Escape');assert.deepEqual(await page.evaluate(()=>dashboard.config),saved);
