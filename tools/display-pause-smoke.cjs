@@ -1,3 +1,4 @@
+const autarpieControls=require('./autarpie-test-controls.cjs');
 const {chromium}=require('playwright'),assert=require('node:assert/strict'),path=require('node:path');
 const preset=require('../app/src/main/assets/dashboard-preset.json');
 (async()=>{
@@ -14,7 +15,7 @@ const preset=require('../app/src/main/assets/dashboard-preset.json');
     requestSolarData:()=>{window.calls.planning++;setTimeout(()=>window.onSolarPlanData({analysis:{plant:'plant'},source:'test-source',observations:[],forecasts:[],updated:1}),10);}
    };
   },{preset});
-  await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));await page.waitForTimeout(400);
+  await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));await autarpieControls.prepare(page);await page.waitForTimeout(400);
   const config=await page.evaluate(()=>JSON.stringify(dashboard.config));await page.evaluate(()=>window.onDisplayActive({active:false}));await page.waitForTimeout(100);
   const before=await page.evaluate(()=>({...window.calls}));await page.waitForTimeout(2300);assert.deepEqual(await page.evaluate(()=>window.calls),before,'hidden display must not poll snapshots or submit calculations');
   await page.evaluate(()=>window.onSolarPlanData({analysis:{plant:'plant'},source:'test-source',observations:[],forecasts:[],updated:2}));assert.deepEqual(await page.evaluate(()=>window.calls),before,'completed background data must not render or start more work');
