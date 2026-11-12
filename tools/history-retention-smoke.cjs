@@ -42,11 +42,7 @@ const preset=require('../app/src/main/assets/dashboard-preset.json');
   assert.equal(await yieldTile.locator('.tile-number').textContent(),'410,00');
   await page.evaluate(()=>{window.auto=true;window.drain(false);});await until(()=>!reads.inflight&&!reads.queue.size);
   for(const tile of [consumption,yieldTile])assert.ok((await tile.locator('.tile-sparkline path').last().getAttribute('d')).split('L').length>100,'a complete energy curve must be drawn');
-  const colors=await page.locator('#miniChart').evaluate(canvas=>{
-   const pixels=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;let solar=0,battery=0;
-   for(let i=0;i<pixels.length;i+=4){const [r,g,b]=pixels.slice(i,i+3);if(r>150&&g>70&&g<200&&b<140)solar++;if(g>120&&g>r*1.2&&b>r*1.1)battery++;}
-   return {solar,battery};
-  });
+  const colors=await autarpieControls.curves(page,'#miniChart');
   assert.ok(colors.solar>30&&colors.battery>30,'solar and battery curves must be painted '+JSON.stringify(colors));
   if(process.env.WATTPIT_SCREENSHOT_DIR){fs.mkdirSync(process.env.WATTPIT_SCREENSHOT_DIR,{recursive:true});await page.screenshot({path:path.join(process.env.WATTPIT_SCREENSHOT_DIR,'viewer-first-statistics-'+theme+'.png'),fullPage:true});}
   await page.evaluate(()=>{const tile=dashboard.config.tiles.find(t=>t.metric==='consumptionEnergy');if(!dashboard.detail)dashboard.detail=new WattTileDetail(dashboard);dashboard.detail.open(tile.id);});
