@@ -71,10 +71,10 @@ function syncOverviewHeader() {
   // Move the same controls so handlers, state and focus survive rotation.
   if (compact) {
     header.insertBefore(head,$('themeToggle'));
-    header.insertBefore(toolbar,$('themeToggle'));
+    if(!window.AutarPieUI)header.insertBefore(toolbar,$('themeToggle'));
   } else {
     $('overview').prepend(head);
-    $('welcome').after(toolbar);
+    if(!window.AutarPieUI)$('welcome').after(toolbar);
   }
 }
 overviewLandscape.addListener(syncOverviewHeader);
@@ -110,7 +110,7 @@ function theme(next,save=true) {
   if (save && native) { const error = native.settings(JSON.stringify({theme:next})); if(error) toast(error); }
   if (save && !native) localStorage.setItem('wattpit-preview-theme',next);
   if (page === 'history') drawHistory();
-  if (page === 'overview') {drawMini();dashboard?.update();}
+  if (page === 'overview'||window.AutarPieUI?.active===page) {drawMini();dashboard?.update();}
 }
 function setDemo(enabled) {
   demo = enabled; $('demoBar').hidden = !enabled; lastMiniLoad = 0;
@@ -400,7 +400,7 @@ function drawHistory(){
   scale=canvasChart($('historyChart'),points,viewFrom,viewTo,metric);
   $('chartLegend').innerHTML=scale.series.map(s=>`<span><i class="dot ${s.kind==='balance'?'blue':s.kind==='solar'?'orange':'mint'}"></i>${escapeHtml(seriesLabel(s))}${s.origin==='csv'||s.kind==='balance'?' · gestrichelt':''}</span>`).join('');
 }
-function drawMini(){if(page==='overview'&&miniWindow)canvasChart($('miniChart'),miniPoints,miniWindow.from,Math.max(miniWindow.from+1,miniWindow.to),'power',true);}
+function drawMini(){if($('miniChart').closest('.page')?.classList.contains('active')&&miniWindow)canvasChart($('miniChart'),miniPoints,miniWindow.from,Math.max(miniWindow.from+1,miniWindow.to),'power',true);}
 function clampView(from,to){const span=Math.min(baseTo-baseFrom,Math.max(60000,to-from));let start=Math.max(baseFrom,Math.min(from,baseTo-span));viewFrom=start;viewTo=start+span;selectedPoint=null;$('chartTooltip').hidden=true;drawHistory();delayedHistory();}
 function zoom(factor,anchor=.5){const span=(viewTo-viewFrom)*factor,center=viewFrom+(viewTo-viewFrom)*anchor;clampView(center-span*anchor,center+span*(1-anchor));}
 function scaleForm(){
