@@ -17,9 +17,24 @@ final class PlantCommands {
         }catch(Exception ignored){}return out;
     }
     static void apply(Context context,Repository repo,SolarPlanning planning,String action,JSONArray args)throws Exception{
-        boolean changesSolar=java.util.Arrays.asList("saveSolarSetup","saveSolarSite","weatherPlace","saveEquipment","saveDevice","removeDevice","importSettings").contains(action);
+        boolean changesSolar=java.util.Arrays.asList("saveSolarInstallation","saveSolarSetup","saveSolarSite","weatherPlace","saveEquipment","saveDevice","removeDevice","importSettings").contains(action);
         if(changesSolar)planning.captureNative();
         switch(action){
+            case "saveSolarInstallation":{
+                arity(args,1);String json=args.getString(0);if(json.length()>70000)throw new IllegalArgumentException("Die Solaranlage ist zu groß.");JSONObject input=new JSONObject(json),equipment=Repository.checkedEquipment(input.getJSONObject("equipment")),setup=SolarPlanning.checked(input.getJSONObject("setup"),equipment),place=input.getJSONObject("place");
+                if(place.length()>0)place=WeatherClient.checkedPlace(place);SharedPreferences.Editor edit=repo.prefs.edit().putString("equipment-v1",equipment.toString()).putString("solar-setup-v1",setup.toString()).remove("weatherCache").remove("weatherError");if(place.length()>0)edit.putString("weatherPlace",place.toString());if(!edit.commit())throw new java.io.IOException();WeatherClient.refresh(repo,true);break;
+            }
+            case "saveLoadConfiguration":arity(args,1);EnergyStore.configure(repo,args.getString(0));break;
+            case "setLoadOutput":arity(args,1);bluetoothReady(context);EnergyStore.manual(context,args.getBoolean(0));break;
+            case "submitChargePlan":arity(args,1);EnergyStore.permit(context,args.getString(0));break;
+            case "saveCharger":arity(args,1);ChargerBle.configure(context,args.getString(0));break;
+            case "chargerCommand":arity(args,1);ChargerBle.get(context).command(args.getString(0));break;
+            case "saveAppearance":arity(args,1);if(!repo.prefs.edit().putString(AutarPieConfig.APPEARANCE,AutarPieConfig.appearance(args.getString(0)).toString()).commit())throw new java.io.IOException();break;
+            case "saveCentralSettings":{
+                arity(args,1);JSONObject value=new JSONObject(args.getString(0));int seconds=value.getInt("archiveSeconds");
+                if(!java.util.Arrays.asList(0,900,1800,3600).contains(seconds))throw new IllegalArgumentException("Ungültiges Archivintervall.");
+                repo.saveArchiveInterval(seconds/60);if(!repo.prefs.edit().putBoolean("autostart",value.getBoolean("autostart")).commit())throw new java.io.IOException();break;
+            }
             case "saveSolarSetup":arity(args,2);planning.save(args.getString(0),args.getBoolean(1));break;
             case "saveSolarSite":arity(args,2);planning.saveSite(args.getString(0),args.getString(1));break;
             case "weatherPlace":arity(args,1);WeatherClient.place(repo,new JSONObject(args.getString(0)));break;
@@ -48,7 +63,7 @@ final class PlantCommands {
                 arity(args,action.equals("importArchive")?1:0);bluetoothReady(context);
                 String mac=action.equals("importArchive")?args.getString(0):"MANUAL";
                 if(!mac.equals("MANUAL")){boolean found=false;JSONArray devices=repo.configs();for(int i=0;i<devices.length();i++)if(mac.equals(devices.getJSONObject(i).optString("mac")))found=true;if(!found)throw new IllegalArgumentException("Dieses Gerät ist am Hauptgerät nicht eingerichtet.");}
-                if(repo.archiveBusy)throw new IllegalArgumentException("Eine Synchronisation läuft bereits.");
+                if(repo.archiveBusy||repo.liveBusy)throw new IllegalArgumentException("Ein Geräteabruf läuft bereits. Bitte kurz warten.");if(EnergyStore.holdsRegulator())throw new IllegalArgumentException("Vor dem Archivabruf die automatische Rollerladung ausschalten.");
                 context.startForegroundService(new Intent(context,ArchiveService.class).putExtra("mac",mac));break;
             }
             case "cancelArchive":arity(args,0);if(repo.archiveBusy)context.startService(new Intent(context,ArchiveService.class).setAction("CANCEL"));break;
@@ -62,7 +77,7 @@ final class PlantCommands {
     @SuppressLint("MissingPermission")
     private static void bluetoothReady(Context c){
         boolean allowed=Build.VERSION.SDK_INT>=31?c.checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN)==PackageManager.PERMISSION_GRANTED&&c.checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT)==PackageManager.PERMISSION_GRANTED:c.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)==PackageManager.PERMISSION_GRANTED;
-        if(!allowed)throw new IllegalArgumentException("Bitte WohnPit am Hauptgerät öffnen und die Bluetooth-Berechtigung erteilen.");
+        if(!allowed)throw new IllegalArgumentException("Bitte AutarPie am Hauptgerät öffnen und die Bluetooth-Berechtigung erteilen.");
         BluetoothManager manager=c.getSystemService(BluetoothManager.class);BluetoothAdapter adapter=manager==null?null:manager.getAdapter();
         if(adapter==null||!adapter.isEnabled())throw new IllegalArgumentException("Bitte Bluetooth am Hauptgerät einschalten.");
     }
