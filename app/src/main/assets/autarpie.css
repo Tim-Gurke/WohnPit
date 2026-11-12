@@ -14,3 +14,5 @@ body{background:var(--ap-app-background);background-attachment:fixed;letter-spac
 .solar-day>.solar-scale-sun{grid-template-columns:minmax(0,1fr) max-content}.solar-scale-sun>b{display:none}.solar-scale-sun>em{font-size:8px;max-width:100%;overflow:hidden;text-overflow:ellipsis}
 
 .cockpit-tile.type-weather{padding-left:5px;padding-right:5px}
+
+#rollerPanel{--mint:var(--ap-scooter)}#apChargerPanel .ap-energy-values strong{color:var(--ap-model)}
