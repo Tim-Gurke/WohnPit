@@ -409,7 +409,8 @@ final class Repository {
         if(!archiveBusy){lastSnapshot=result.toString();lastSnapshotAt=now;}
         return result;
     }
-    double liveHouseSoc(long now){for(Reading reading:latest.values())if(reading.kind.equals("shunt")&&reading.soc!=null&&now>=reading.timestamp&&now-reading.timestamp<=45000)return reading.soc;return Double.NaN;}
+    Context applicationContext(){return context;}
+    double liveHouseSoc(long now){try{JSONArray configs=new JSONArray(prefs.getString("devices","[]"));for(int i=0;i<configs.length();i++){JSONObject c=configs.getJSONObject(i);if(!c.optString("kind").equals("shunt"))continue;Reading reading=latest.get(c.optString("mac"));if(reading!=null&&reading.soc!=null&&now>=reading.timestamp&&now-reading.timestamp<=45000)return reading.soc;}}catch(JSONException ignored){}return Double.NaN;}
     synchronized void invalidateStats() { statsTime = 0;historyRevision++; }
     void saveSettings(JSONObject settings) throws Exception { if(!settingsEditor(settings).commit())throw new java.io.IOException(); }
     private SharedPreferences.Editor settingsEditor(JSONObject settings) throws Exception {
