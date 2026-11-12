@@ -19,6 +19,7 @@
   }
   function category(metric,m={}){if(metric==='solarEnergy'||metric==='yieldWh')return 'solar';if(m.resourceCategory)return m.resourceCategory;if(m.resource)return m.resource;if(/^roller|^scooter/.test(metric))return 'scooter';if(/^isdt|^charger/.test(metric))return 'model';if(m.calculated||m.flow||m.estimated||m.modelPower||/Energy$|chargeTime/.test(metric))return 'calculated';if(m.kind==='solar'||m.group==='Solar')return 'solar';if(m.kind==='shunt'||m.group==='Akku')return 'storage';return 'system';}
   function metricColor(a,metric,m){return a.metricColors?.[metric]||a.colors[category(metric,m)]||a.colors.system;}
+  function availableSurplus(batteryPower,solarPower,loadPower=0,externalPower=0){if(![batteryPower,solarPower,loadPower,externalPower].every(finite))return null;return Math.min(Math.max(0,Number(solarPower)),Number(batteryPower)+Math.max(0,Number(loadPower))-Math.max(0,Number(externalPower)));}
   function mix(a,b,t){return '#'+[1,3,5].map(i=>Math.round(parseInt(a.slice(i,i+2),16)+(parseInt(b.slice(i,i+2),16)-parseInt(a.slice(i,i+2),16))*t).toString(16).padStart(2,'0')).join('');}
   function scaleColor(s,p){s=appearance({scales:s}).scales;p=limit(p,0,0,100);const low=s.low,high=Math.max(low+.01,s.high),half=Math.min(s.width/2,low,100-high,s.count===2?100:(high-low)/2),c=s.colors;
     if(p>=low-half&&p<=low+half)return mix(c[0],s.count===2?c[2]:c[1],(p-low+half)/(2*half));
@@ -51,5 +52,5 @@
     for(let i=0;i<rows.length;i++){const p=rows[i],end=Math.min(to,p.t+Math.max(45000,(p.period||0)*1500),rows[i+1]?.t??to);if(p.t>cursor)push(cursor,p.t,'unknown');if(end>cursor){push(Math.max(cursor,p.t),end,p.v);cursor=end;}}
     if(cursor<to)push(cursor,to,'unknown');return segments;
   }
-  return {surfaceBase,textOn,phases,CATEGORIES,PAGES,clone,appearance,surface,surfaceCss,category,metricColor,scaleColor,normalize,createPage,deletePage,chargeSettings,chargeDecision};
+  return {availableSurplus,surfaceBase,textOn,phases,CATEGORIES,PAGES,clone,appearance,surface,surfaceCss,category,metricColor,scaleColor,normalize,createPage,deletePage,chargeSettings,chargeDecision};
 });
