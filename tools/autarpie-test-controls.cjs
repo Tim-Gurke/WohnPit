@@ -1,0 +1,8 @@
+/* Legacy component checks use their controls inside the new workspace.
+ * Navigation, staged edits and actual settings routing are covered end-to-end by autarpie-smoke.cjs. */
+exports.addTile=async page=>{await page.evaluate(()=>document.getElementById('dashboardToolbar').hidden=false);await page.locator('#addTile').click();};
+exports.toggleEdit=async page=>{await page.evaluate(()=>document.getElementById('dashboardToolbar').hidden=false);await page.locator('#editDashboard').click();};
+exports.openSettings=async page=>{await page.evaluate(()=>{AutarPieApp.showPage('settings');document.querySelector('.autarpie-settings-grid').hidden=true;document.querySelectorAll('[data-ap-settings]').forEach(p=>p.hidden=false);for(const id of ['valueColorsOpen','paletteChoices']){const card=document.getElementById(id)?.closest('article');if(card)card.hidden=false;}});};
+exports.openPage=async(page,id)=>{await page.locator('#autarpieAreas').click();await page.locator('[data-area="'+id+'"]').click();};
+exports.toggleTheme=async page=>{const next=await page.locator('html').getAttribute('data-theme')==='dark'?'light':'dark';await page.evaluate(()=>AutarPieUI.editAppearance());await page.locator('#apTheme').selectOption(next);await page.locator('#apAppearanceSave').click();};
+exports.prepare=async page=>{await page.evaluate(()=>{const n=window.WattPit;if(n&&!n.saveSolarInstallation&&(n.saveSolarSite||n.saveSolarSetup)){n.saveSolarInstallation=json=>{const c=JSON.parse(json);const e=n.saveEquipment?.(JSON.stringify(c.equipment))||'';if(e)return e;return n.saveSolarSite?n.saveSolarSite(JSON.stringify(c.setup),JSON.stringify(c.place)):n.saveSolarSetup(JSON.stringify(c.setup),false);};}});};
