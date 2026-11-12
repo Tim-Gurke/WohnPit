@@ -28,7 +28,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),path
  // Existing charge tiles acquire the automatic behavior without being recreated.
  assert.equal(await page.locator('[data-tile="default-chargeTime"] .tile-label').textContent(),'Restladezeit');
  assert.equal(await page.locator('[data-tile="default-chargeTime"] .tile-number').textContent(),'≈ 3,0');
- await page.locator('[data-tile="default-chargeTime"]').click();await page.locator('#tileActionSettings').click();await page.locator('#removeTile').click();
+ await page.locator('[data-tile="default-chargeTime"]').click();await page.locator('#tileActionSettings').click();await page.locator('#removeTile').click();await page.locator('#confirmRemoveTile').click();
  const before=await page.evaluate(()=>structuredClone(dashboard.config.tiles));
  await autarpieControls.addTile(page);await page.locator('#tileSearch').fill('Restladezeit');await page.locator('[data-metric="chargeTime"]').click();
  const id=await page.evaluate(()=>dashboard.config.tiles.find(t=>t.metric==='chargeTime').id),tile=page.locator('[data-tile="'+id+'"]');
