@@ -1,3 +1,4 @@
+const autarpieControls=require('./autarpie-test-controls.cjs');
 const {chromium}=require('playwright');const assert=require('node:assert/strict');const fs=require('node:fs');const path=require('node:path');const http=require('node:http');
 (async()=>{
  const assets=path.resolve(__dirname,'../app/src/main/assets');const server=http.createServer((req,res)=>{const p=path.join(assets,new URL(req.url,'http://localhost').pathname==='/'?'index.html':new URL(req.url,'http://localhost').pathname);if(!p.startsWith(assets+path.sep)||!fs.existsSync(p)){res.writeHead(404);res.end();return;}res.setHeader('Content-Type',p.endsWith('.js')?'text/javascript':p.endsWith('.css')?'text/css':p.endsWith('.svg')?'image/svg+xml':'text/html');res.end(fs.readFileSync(p));});await new Promise(r=>server.listen(0,'127.0.0.1',r));
@@ -22,26 +23,26 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  await page.locator('#weatherRefresh').click();assert.ok(await page.evaluate(()=>window.calls.some(c=>c[0]==='refresh')));assert.equal(await page.locator('#modal').isVisible(),false);
  const refreshCount=await page.evaluate(()=>window.calls.filter(c=>c[0]==='refresh').length);await page.locator('#weatherRefresh').focus();await page.keyboard.press('Enter');assert.equal(await page.evaluate(()=>window.calls.filter(c=>c[0]==='refresh').length),refreshCount+1);assert.equal(await page.locator('#modal').isVisible(),false,'keyboard refresh opens the tile editor');
  const original=await page.evaluate(()=>JSON.parse(localStorage.getItem('wattpit-dashboard-v1')||JSON.stringify(WattDashboardCore.defaults())));
- await page.locator('#editDashboard').click();await weatherTile.focus();await page.keyboard.press('ArrowUp');
+ await autarpieControls.toggleEdit(page);await weatherTile.focus();await page.keyboard.press('ArrowUp');
  const moved=await page.evaluate(()=>JSON.parse(localStorage.getItem('wattpit-dashboard-v1')));
  assert.equal(moved.tiles.find(t=>t.metric==='weather').layouts.compact.y,original.tiles.find(t=>t.metric==='weather').layouts.compact.y-.5);
  for(const t of original.tiles.filter(t=>t.metric!=='weather'))assert.deepEqual(moved.tiles.find(x=>x.id===t.id).layouts,t.layouts,'weather move changed another tile');
- await weatherTile.locator('.tile-menu').click();await page.locator('#tileTitle').fill('Meine Sonne');await page.locator('#tileWidth').fill('6');await page.locator('#saveTile').click();await page.locator('#editDashboard').click();
+ await weatherTile.locator('.tile-menu').click();await page.locator('#tileTitle').fill('Meine Sonne');await page.locator('#tileWidth').fill('6');await page.locator('#saveTile').click();await autarpieControls.toggleEdit(page);
  assert.equal(await page.locator('#weatherPlaceName').textContent(),'Meine Sonne');assert.ok((await weatherTile.boundingBox()).width<180);
  await page.reload();assert.equal(await page.locator('.type-weather').count(),1);assert.equal(await page.locator('#weatherPlaceName').textContent(),'Meine Sonne');assert.ok((await weatherTile.boundingBox()).width<180);
  await weatherTile.click({position:{x:12,y:10}});await page.locator('#tileActionSettings').click();await page.locator('#tileWidth').fill('12');await page.locator('#tileTitle').fill('');await page.locator('#saveTile').click();
  if(process.env.WATTPIT_SCREENSHOT_DIR){fs.mkdirSync(process.env.WATTPIT_SCREENSHOT_DIR,{recursive:true});await weatherTile.screenshot({path:path.join(process.env.WATTPIT_SCREENSHOT_DIR,'weather-tile-dark.png')});}
  const dashboard=await page.evaluate(()=>document.getElementById('dashboardBoard').innerHTML);
  for(const theme of ['light','dark']){
-  await page.locator('[data-page="settings"]').click();await page.locator(`#themeButtons [data-theme="${theme}"]`).click();
+  await autarpieControls.openSettings(page);await page.locator(`#themeButtons [data-theme="${theme}"]`).click();
   for(const palette of ['classic','blue','green','turquoise','orange','neutral']){
    await page.locator(`.palette-choice[data-palette="${palette}"]`).click();assert.equal(await page.locator('html').getAttribute('data-palette'),palette);assert.equal(await page.locator('.palette-choice[aria-pressed="true"]').count(),1);
    await page.locator('[data-page="overview"]').click();assert.equal(await page.evaluate(()=>document.body.scrollWidth>innerWidth),false);if(process.env.WATTPIT_SCREENSHOT_DIR&&theme==='light'&&palette==='green'){fs.mkdirSync(process.env.WATTPIT_SCREENSHOT_DIR,{recursive:true});await page.screenshot({path:path.join(process.env.WATTPIT_SCREENSHOT_DIR,'weather-green-light.png')});}
-   await page.locator('[data-page="settings"]').click();
+   await autarpieControls.openSettings(page);
   }
  }
  await page.locator('#weatherQuery').fill('Berlin');await page.locator('#weatherSearchButton').click();assert.equal(await page.locator('#weatherResults img').count(),0,'untrusted place name interpreted as HTML');await page.locator('.weather-place').click();assert.equal(await page.locator('#weatherLocation').textContent(),'<img src=x onerror=bad()>');
- await page.locator('[data-page="devices"]').click();assert.equal(await page.locator('.archive-import').isDisabled(),true);await page.locator('#archiveCancel').click();await page.waitForTimeout(2200);assert.equal(await page.locator('.archive-import').isDisabled(),false);await page.locator('.archive-import').click();assert.ok(await page.evaluate(()=>window.calls.some(c=>c[0]==='import')));
+ await autarpieControls.openPage(page,'devices');assert.equal(await page.locator('.archive-import').isDisabled(),true);await page.locator('#archiveCancel').click();await page.waitForTimeout(2200);assert.equal(await page.locator('.archive-import').isDisabled(),false);await page.locator('.archive-import').click();assert.ok(await page.evaluate(()=>window.calls.some(c=>c[0]==='import')));
  await page.locator('[data-page="history"]').click();await page.locator('#historySource').selectOption('archive');
  await page.locator('[data-range="week"]').click();
  const view=await page.evaluate(()=>[viewFrom,viewTo,metric,source]);
@@ -57,6 +58,6 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  assert.equal(await page.evaluate(()=>points[0].v),17,'same row count hid a newly merged archive field');
  await page.evaluate(()=>{window.mock.archive={active:false,text:'Bluetooth getrennt. 1 Archivwerte übernommen',updated:4};poll();});
  assert.match(await page.locator('#historyArchiveStatus').textContent(),/1 Archivwerte übernommen/);
- await page.locator('[data-page="settings"]').click();await page.locator('#weatherOff').click();await page.locator('[data-page="overview"]').click();assert.equal(await page.locator('#weatherStrip').isVisible(),false);assert.equal(errors.length,0,errors.join('\n'));
+ await autarpieControls.openSettings(page);await page.locator('#weatherOff').click();await page.locator('[data-page="overview"]').click();assert.equal(await page.locator('#weatherStrip').isVisible(),false);assert.equal(errors.length,0,errors.join('\n'));
  console.log('Compact 14-day weather tile, swipe/refresh without opening the editor, independent movement, resize/title/restart, 12 palette modes, safe location names and archive/history controls passed.');await browser.close();await new Promise(r=>server.close(r));
 })().catch(e=>{console.error(e);process.exit(1)});

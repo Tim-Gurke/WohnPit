@@ -23,7 +23,7 @@ final class Repository {
     private final Map<String,Long> stored = new HashMap<>();
     private final Map<String,Long> archiveReception = new ConcurrentHashMap<>();
     volatile boolean running = false;
-    volatile boolean archiveBusy=false;
+    volatile boolean archiveBusy=false,liveBusy=false;
     final ArchiveRun archiveRun=new ArchiveRun();
     private volatile String lastSnapshot="{}";
     private volatile long lastSnapshotAt;
@@ -44,7 +44,7 @@ final class Repository {
         catch(JSONException e){return "{}";}
     }
     private JSONObject settingsSnapshot()throws JSONException{
-        return new JSONObject().put("theme",prefs.getString("theme","dark")).put("palette",prefs.getString("palette","classic"))
+        return new JSONObject().put("appearance",new JSONObject(prefs.getString(AutarPieConfig.APPEARANCE,"{}"))).put("archiveSeconds",archiveIntervalMinutes()*60).put("autostart",prefs.getBoolean("autostart",true)).put("theme",prefs.getString("theme","dark")).put("palette",prefs.getString("palette","classic"))
             .put("miniRange",prefs.getString("miniRange","today")).put("weatherPlace",GpsPlaceNames.display(context,prefs,new JSONObject(prefs.getString("weatherPlace","{}"))))
             .put("specialUses",SpecialUses.read(prefs)).put("capacity",prefs.getFloat("capacity",100f)).put("sampleSeconds",prefs.getInt("sampleSeconds",10)).put("solarSetup",new JSONObject(prefs.getString("solar-setup-v1","{}")));
     }
@@ -57,7 +57,7 @@ final class Repository {
                 JSONObject c=list.getJSONObject(i),device=new JSONObject();
                 if(previous!=null)for(int j=0;j<previous.length();j++)if(c.optString("mac").equals(previous.getJSONObject(j).optString("mac"))){device=new JSONObject(previous.getJSONObject(j).toString());break;}
                 Reading current=latest.get(c.optString("mac"));
-                if(current!=null){live.put(HistoryDb.json(current));device.put("seen",current.timestamp);}
+                if(current!=null){JSONObject reading=HistoryDb.json(current);EnergyStore.overlay(c.optString("mac"),reading,System.currentTimeMillis());live.put(reading);device.put("seen",current.timestamp);}
                 else if(oldReadings!=null)for(int j=0;j<oldReadings.length();j++)if(c.optString("mac").equals(oldReadings.getJSONObject(j).optString("device"))){live.put(oldReadings.getJSONObject(j));break;}
                 devices.put(device.put("mac",c.optString("mac")).put("name",c.optString("name")).put("kind",c.optString("kind")).put("hasKey",true));
             }
@@ -65,7 +65,7 @@ final class Repository {
             if(!result.has("stats"))result.put("found",new JSONArray()).put("stats",new JSONObject());
             return result.put("syncing",true).put("dataAt",lastSnapshotAt).put("settings",settingsSnapshot()).put("running",running).put("status",status)
                 .put("equipment",new JSONObject(prefs.getString("equipment-v1","{\"version\":1,\"groups\":[]}")))
-                .put("archive",archive).put("archiveBusy",archiveBusy).put("weather",new JSONObject(prefs.getString("weatherCache","{}")))
+                .put("energy",EnergyStore.snapshot(this)).put("archive",archive).put("archiveBusy",archiveBusy).put("weather",new JSONObject(prefs.getString("weatherCache","{}")))
                 .put("weatherError",prefs.getString("weatherError","")).toString();
         }catch(Exception e){return "{\"syncing\":true}";}
     }
@@ -102,7 +102,7 @@ final class Repository {
     }
     private static Double number(JSONObject values,String key){double value=values.optDouble(key,Double.NaN);return Double.isFinite(value)?value:null;}
     synchronized String diagnosticText()throws JSONException{
-        JSONObject all=new JSONObject(prefs.getString("archiveDiagnostics","{}"));StringBuilder text=new StringBuilder("WohnPit "+BuildConfig.VERSION_NAME+" · Archivdiagnose\n");
+        JSONObject all=new JSONObject(prefs.getString("archiveDiagnostics","{}"));StringBuilder text=new StringBuilder("AutarPie "+BuildConfig.VERSION_NAME+" · Archivdiagnose\n");
         for(String kind:new String[]{"solar","shunt"}){
             JSONObject d=all.optJSONObject(kind);if(d==null)continue;text.append(kind.equals("solar")?"\nSolarladeregler\n":"\nBatteriewächter\n");
             text.append(d.optString("result")).append('\n');JSONArray lines=d.optJSONArray("steps");if(lines!=null)for(int i=0;i<lines.length();i++)text.append("· ").append(lines.getString(i)).append('\n');
@@ -317,6 +317,10 @@ final class Repository {
             String type=row.optString("controllerType","auto"),mode=SolarEquipment.yieldMode(row.optString("yieldMode"),factor);
             double effective=SolarEquipment.yieldFactor(group.getString("controller"),type,mode,factor);
             group.put("controllerType",type).put("yieldMode",mode).put("yieldFactor",effective);
+            if(row.has("electrical")){
+                JSONObject in=row.getJSONObject("electrical"),e=new JSONObject();String regulator=in.optString("regulator").trim();int series=in.optInt("series",1);double voltage=in.optDouble("systemVoltage",12.8);if(regulator.length()>80||series<1||series>group.getInt("count")||group.getInt("count")%series!=0||!Double.isFinite(voltage)||voltage<1||voltage>1000)throw new IllegalArgumentException("Bitte Verkabelung und Systemspannung prüfen.");e.put("regulator",regulator).put("series",series).put("systemVoltage",voltage);
+                for(String k:new String[]{"voc","vmp","isc","imp","maxVoltage","maxChargeA","maxPower"}){if(in.isNull(k))e.put(k,JSONObject.NULL);else{double v=in.getDouble(k);if(!Double.isFinite(v)||v<=0||v>100000)throw new IllegalArgumentException("Ungültige elektrische Angabe.");e.put(k,v);}}group.put("electrical",e);
+            }
         }
         return new JSONObject().put("version",1).put("groups",clean).put("ratedWatts",setup.ratedWatts());
     }
@@ -391,7 +395,7 @@ final class Repository {
             publicConfig.put("seen",r == null ? 0 : r.timestamp);
             if (found.containsKey(mac)) publicConfig.put("rssi",found.get(mac).getInt("rssi"));
             devices.put(publicConfig);
-            if (r != null) readings.put(HistoryDb.json(r));
+            if (r != null){JSONObject reading=HistoryDb.json(r);EnergyStore.overlay(mac,reading,now);readings.put(reading);}
         }
         Iterator<Map.Entry<String,JSONObject>> iterator = found.entrySet().iterator();
         while (iterator.hasNext()) {
@@ -401,10 +405,15 @@ final class Repository {
         if (now - statsTime > 30_000) { cachedStats = db.stats(); statsTime = now; }
         JSONObject result=new JSONObject().put("dataAt",now).put("archiveBusy",archiveBusy).put("historyRevision",historyRevision).put("running",running).put("status",status).put("devices",devices).put("found",discovery)
                 .put("equipment",equipment()).put("archiveDiagnostics",new JSONObject(prefs.getString("archiveDiagnostics","{}"))).put("archive",archive).put("deviceHistory",db.histories()).put("weatherError",prefs.getString("weatherError","")).put("weather",new JSONObject(prefs.getString("weatherCache","{}"))).put("readings",readings).put("stats",cachedStats).put("solarDaily",db.daily()).put("event",event).put("eventId",eventId)
-                .put("settings",settingsSnapshot()).put("deviceSettings",deviceSettingsSnapshot());
+                .put("energy",EnergyStore.snapshot(this)).put("settings",settingsSnapshot()).put("deviceSettings",deviceSettingsSnapshot());
         if(!archiveBusy){lastSnapshot=result.toString();lastSnapshotAt=now;}
         return result;
     }
+    void activeSolarReading(String mac,JSONObject sample)throws Exception{
+        Reading reading=new Reading();reading.device=mac;reading.kind="solar";reading.origin="live";reading.timestamp=sample.getLong("at");if(sample.has("pvVoltage"))reading.pvVoltage=sample.getDouble("pvVoltage");if(sample.has("current"))reading.load=sample.getDouble("current");if(reading.pvVoltage!=null||reading.load!=null){db.insert(reading);invalidateStats();}
+    }
+    Context applicationContext(){return context;}
+    double liveHouseSoc(long now){try{JSONArray configs=new JSONArray(prefs.getString("devices","[]"));for(int i=0;i<configs.length();i++){JSONObject c=configs.getJSONObject(i);if(!c.optString("kind").equals("shunt"))continue;Reading reading=latest.get(c.optString("mac"));if(reading!=null&&reading.soc!=null&&now>=reading.timestamp&&now-reading.timestamp<=45000)return reading.soc;}}catch(JSONException ignored){}return Double.NaN;}
     synchronized void invalidateStats() { statsTime = 0;historyRevision++; }
     void saveSettings(JSONObject settings) throws Exception { if(!settingsEditor(settings).commit())throw new java.io.IOException(); }
     private SharedPreferences.Editor settingsEditor(JSONObject settings) throws Exception {
@@ -429,6 +438,7 @@ final class Repository {
             .putString("dashboard-v1",backup.getJSONObject("dashboard").toString())
             .putString("equipment-v1",backup.getJSONObject("equipment").toString())
             .putString("solar-setup-v1",backup.getJSONObject("solarSetup").toString()).putString(SpecialUses.KEY,backup.optJSONObject("specialUses")==null?SpecialUses.read(prefs).toString():backup.getJSONObject("specialUses").toString());
+        importAutarPie(edit,backup,true);
         if(weather.isEmpty())edit.remove("weatherPlace");else edit.putString("weatherPlace",weather);
         if(changed)edit.remove("weatherCache").remove("weatherError");
         if(!edit.commit())throw new java.io.IOException();
@@ -439,13 +449,20 @@ final class Repository {
         SharedPreferences.Editor edit=prefs.edit().putFloat("capacity",(float)settings.getDouble("capacity")).putInt("sampleSeconds",settings.getInt("sampleSeconds"))
             .putString("equipment-v1",backup.getJSONObject("equipment").toString()).putString("solar-setup-v1",backup.getJSONObject("solarSetup").toString()).putString(SpecialUses.KEY,backup.optJSONObject("specialUses")==null?SpecialUses.read(prefs).toString():backup.getJSONObject("specialUses").toString())
             .remove("weatherCache").remove("weatherError");
+        importAutarPie(edit,backup,false);
         if(place.length()==0)edit.remove("weatherPlace");else edit.putString("weatherPlace",place.toString());
         if(!edit.commit())throw new java.io.IOException();
     }
     void importLocalAppearance(String json)throws Exception{
         JSONObject backup=ConfigurationBackup.normalize(json),settings=backup.getJSONObject("settings");
-        if(!prefs.edit().putString("theme",settings.getString("theme")).putString("palette",settings.getString("palette")).putString("miniRange",settings.getString("miniRange"))
-            .putString("dashboard-v1",backup.getJSONObject("dashboard").toString()).commit())throw new java.io.IOException();
+        SharedPreferences.Editor edit=prefs.edit().putString("theme",settings.getString("theme")).putString("palette",settings.getString("palette")).putString("miniRange",settings.getString("miniRange")).putString("dashboard-v1",backup.getJSONObject("dashboard").toString());
+        importAutarPie(edit,backup,true);if(!edit.commit())throw new java.io.IOException();
+    }
+    private void importAutarPie(SharedPreferences.Editor edit,JSONObject backup,boolean local)throws JSONException{
+        if(backup.has("appearance"))edit.putString(AutarPieConfig.APPEARANCE,backup.getJSONObject("appearance").toString());
+        if(local){if(backup.has("workspace"))edit.putString(AutarPieConfig.WORKSPACE,backup.getJSONObject("workspace").toString());else if(prefs.contains(AutarPieConfig.WORKSPACE)){
+            JSONObject workspace=new JSONObject(prefs.getString(AutarPieConfig.WORKSPACE,"{}"));JSONArray pages=workspace.optJSONArray("pages");if(pages!=null)for(int i=0;i<pages.length();i++)if(pages.getJSONObject(i).optString("id").equals("overview"))pages.getJSONObject(i).put("board",backup.getJSONObject("dashboard"));edit.putString(AutarPieConfig.WORKSPACE,workspace.toString());
+        }}
     }
     static String safeError(Exception e) {
         if (e instanceof IllegalArgumentException) return e.getMessage();

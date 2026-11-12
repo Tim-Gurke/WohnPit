@@ -1,3 +1,4 @@
+const autarpieControls=require('./autarpie-test-controls.cjs');
 /* Automatic battery time and the approved portrait layout; fictional data only. */
 const {chromium}=require('playwright'),assert=require('node:assert/strict'),path=require('node:path'),fs=require('node:fs');
 (async()=>{
@@ -20,16 +21,16 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),path
   await page.evaluate(()=>new Promise(resolve=>{const observer=new ResizeObserver(()=>{observer.disconnect();requestAnimationFrame(()=>requestAnimationFrame(resolve));});observer.observe(document.getElementById('dashboardBoard'));}));
  };
  const output=process.env.WATTPIT_SCREENSHOT_DIR;if(output)fs.mkdirSync(output,{recursive:true});
- await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));await advance(0);
+ await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));await autarpieControls.prepare(page);await advance(0);
  const standard=await page.evaluate(()=>({layouts:dashboard.config.tiles.map(t=>({metric:t.metric,layouts:t.layouts})),height:dashboard.config.historyHeight}));
  assert.equal(standard.layouts.length,11);assert.equal(standard.layouts.filter(t=>t.metric==='lan').length,1);assert.deepEqual(standard.height,{compact:465,wide:380});
  assert.deepEqual(standard.layouts.find(t=>t.metric==='chargeTime').layouts.compact,{x:0,y:5,w:4,h:2.5});
  // Existing charge tiles acquire the automatic behavior without being recreated.
  assert.equal(await page.locator('[data-tile="default-chargeTime"] .tile-label').textContent(),'Restladezeit');
  assert.equal(await page.locator('[data-tile="default-chargeTime"] .tile-number').textContent(),'≈ 3,0');
- await page.locator('[data-tile="default-chargeTime"]').click();await page.locator('#tileActionSettings').click();await page.locator('#removeTile').click();
+ await page.locator('[data-tile="default-chargeTime"]').click();await page.locator('#tileActionSettings').click();await page.locator('#removeTile').click();await page.locator('#confirmRemoveTile').click();
  const before=await page.evaluate(()=>structuredClone(dashboard.config.tiles));
- await page.locator('#addTile').click();await page.locator('#tileSearch').fill('Restladezeit');await page.locator('[data-metric="chargeTime"]').click();
+ await autarpieControls.addTile(page);await page.locator('#tileSearch').fill('Restladezeit');await page.locator('[data-metric="chargeTime"]').click();
  const id=await page.evaluate(()=>dashboard.config.tiles.find(t=>t.metric==='chargeTime').id),tile=page.locator('[data-tile="'+id+'"]');
  assert.deepEqual(await page.evaluate(()=>dashboard.config.tiles.filter(t=>t.metric!=='chargeTime')),before);
  assert.equal(await tile.locator('.tile-number').textContent(),'≈ 3,0');assert.match(await tile.locator('.tile-hint').textContent(),/Bis 100 %/);

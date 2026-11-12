@@ -9,7 +9,7 @@ final class RollerStore {
     private static RollerStore instance;
     static synchronized RollerStore get(Context c){if(instance==null)instance=new RollerStore(c.getApplicationContext());return instance;}
     private final SharedPreferences prefs,plantPrefs;
-    private final RollerLedger ledger;
+    private final RollerLedger ledger;private final boolean central;
     private JSONObject profile,live=new JSONObject();
     private RollerEnergy.Session session=new RollerEnergy.Session();
     private final RollerEnergy.AutoCharge detector=new RollerEnergy.AutoCharge();
@@ -21,7 +21,7 @@ final class RollerStore {
     private String lastCommand="";
     private String status="Nicht verbunden";
     private RollerStore(Context c){
-        ledger=RollerLedger.get(c);
+        ledger=RollerLedger.get(c);central=c.getSharedPreferences("wohnpit-role",Context.MODE_PRIVATE).getString("role","").equals("central");
         prefs=c.getSharedPreferences("wattpit-roller",Context.MODE_PRIVATE);plantPrefs=c.getSharedPreferences("wattpit",Context.MODE_PRIVATE);
         try{profile=checked(new JSONObject(prefs.getString("profile","{}")));JSONObject s=new JSONObject(prefs.getString("session","{}"));
             session.started=s.optLong("started");session.ended=s.optLong("ended");session.observedMillis=s.optLong("observedMillis");session.gapMillis=s.optLong("gapMillis");session.batteryWh=s.optDouble("batteryWh",0);session.inputWh=s.optDouble("inputWh",0);automatic=s.optBoolean("automatic");detector.suppressed=prefs.getBoolean("autoSuppressed",false);revision=prefs.getLong("sessionRevision",0);lastCommand=prefs.getString("lastCommand","");
@@ -39,7 +39,7 @@ final class RollerStore {
         for(int i=0;i<keys.length;i++){double v=in.has(keys[i])?in.getDouble(keys[i]):defaults[i];if(!Double.isFinite(v)||v<min[i]||v>max[i])throw new IllegalArgumentException("Ungültiger Wert: "+keys[i]);o.put(keys[i],v);}
         if(o.getDouble("targetPercent")<o.getDouble("reservePercent"))throw new IllegalArgumentException("Ladeziel muss mindestens der Mindestreserve entsprechen.");
         if(o.getDouble("returnAt")>0&&o.getDouble("returnAt")<=o.getDouble("departure"))throw new IllegalArgumentException("Rückkehr muss nach der Abfahrt liegen.");
-        return o;
+        String path=in.optString("chargePath",o.optDouble("idleWatts")>0?"inverter":"load-output");if(!java.util.Arrays.asList("inverter","load-output","other").contains(path))throw new IllegalArgumentException("Unbekannter Ladeweg.");o.put("chargePath",path);return o;
     }
     synchronized void configure(String json)throws JSONException{
         if(json.length()>8000)throw new IllegalArgumentException("Profil zu groß");
@@ -55,29 +55,31 @@ final class RollerStore {
         if(now<=lastAcceptedAt)return;double watts=p.voltage*p.current,idle=profile.optDouble("idleWatts"),efficiency=profile.optDouble("conversionEfficiency");
         JSONArray temperatures=new JSONArray();for(double temperature:p.temperatures)temperatures.put(Double.isFinite(temperature)?temperature:JSONObject.NULL);
         live=new JSONObject().put("source",source).put("at",now).put("voltage",p.voltage).put("current",p.current).put("power",watts).put("soc",p.soc<0?JSONObject.NULL:p.soc).put("remainingAh",p.remainingAh).put("fullAh",p.fullAh).put("chargeEnabled",p.chargeEnabled).put("dischargeEnabled",p.dischargeEnabled).put("temperatures",temperatures);
+        boolean assignedOutput=!profile.optString("chargePath").equals("load-output")||now>=plantPrefs.getLong("outputMeasuredAt",0)&&now-plantPrefs.getLong("outputMeasuredAt",0)<=45000&&plantPrefs.getInt("outputMeasuredState",-1)==1&&plantPrefs.getFloat("outputMeasuredCurrent",0)>.1f;
         int action=0;boolean started=false;
-        if(profile.optBoolean("autoSpecialUse")&&(!session.active||automatic))action=detector.sample(now,watts,session.active);
-        if(action==1){automatic=true;session.start(detector.startAt);revision++;session.sample(detector.startAt,detector.startPower,idle,efficiency);autoWindowFrom=detector.startAt;autoWindowTo=now;started=true;}
-        if(session.active&&automatic&&!started&&continuousObservation&&lastAcceptedAt>0&&now-lastAcceptedAt<=RollerEnergy.MAX_GAP_MS&&(lastAcceptedPower>RollerEnergy.AutoCharge.STOP_WATTS||watts>RollerEnergy.AutoCharge.STOP_WATTS)){
+        if(profile.optBoolean("autoSpecialUse")&&(!session.active||automatic))action=detector.sample(now,assignedOutput?watts:0,session.active);
+        if(action==1){automatic=true;session.start(detector.startAt);revision++;if(!central)session.sample(detector.startAt,detector.startPower,idle,efficiency);autoWindowFrom=detector.startAt;autoWindowTo=now;started=true;}
+        if(assignedOutput&&session.active&&automatic&&!started&&continuousObservation&&lastAcceptedAt>0&&now-lastAcceptedAt<=RollerEnergy.MAX_GAP_MS&&(lastAcceptedPower>RollerEnergy.AutoCharge.STOP_WATTS||watts>RollerEnergy.AutoCharge.STOP_WATTS)){
             // Finite observed intervals: a lost BMS never excludes hours of ordinary demand.
             if(autoWindowTo!=lastAcceptedAt)autoWindowFrom=lastAcceptedAt;
             autoWindowTo=now;
         }
         Double learnedInput=null;
-        if(session.active&&continuousObservation&&lastAcceptedAt>=session.started&&now-lastAcceptedAt<=RollerEnergy.MAX_GAP_MS){
+        if(session.active&&(!automatic||assignedOutput)&&continuousObservation&&lastAcceptedAt>=session.started&&now-lastAcceptedAt<=RollerEnergy.MAX_GAP_MS){
+            if(central){ledger.rawAdd(RollerLedger.source(plantPrefs),mac(),session.started,lastAcceptedAt,now,lastAcceptedPower,watts,idle,efficiency);}else{
             double input=(RollerEnergy.inputWatts(Math.max(0,lastAcceptedPower),idle,efficiency)+RollerEnergy.inputWatts(Math.max(0,watts),idle,efficiency))*.5*(now-lastAcceptedAt)/3600000.0;
             learnedInput=input;
-            try{ledger.add(RollerLedger.source(plantPrefs),mac(),session.started,lastAcceptedAt,now,input);}catch(RuntimeException failure){plantPrefs.edit().putBoolean("rollerInputStorageError",true).apply();}
+            try{ledger.add(RollerLedger.source(plantPrefs),mac(),session.started,lastAcceptedAt,now,input);}catch(RuntimeException failure){plantPrefs.edit().putBoolean("rollerInputStorageError",true).apply();}}
         }
-        status="BMS verbunden";session.sample(now,watts,idle,efficiency);
-        if(continuousObservation)SpecialUses.observeRoller(plantPrefs,mac(),lastAcceptedAt,now,learnedInput,learnedInput==null&&(watts>RollerEnergy.AutoCharge.STOP_WATTS||lastAcceptedPower>RollerEnergy.AutoCharge.STOP_WATTS));
+        status="BMS verbunden";if(!central){if(!automatic||assignedOutput)session.sample(now,watts,idle,efficiency);else session.interrupt(now);}else if(session.active)session.lastAt=now;
+        if(continuousObservation&&!central)SpecialUses.observeRoller(plantPrefs,mac(),lastAcceptedAt,now,learnedInput,learnedInput==null&&(watts>RollerEnergy.AutoCharge.STOP_WATTS||lastAcceptedPower>RollerEnergy.AutoCharge.STOP_WATTS));
         lastAcceptedAt=now;lastAcceptedPower=watts;continuousObservation=true;
         if(action==-1){session.stop(now);revision++;archiveSession();detector.interrupt();}
         saveSession();
     }catch(JSONException ignored){}}
     synchronized void toggle(boolean start){
         long now=System.currentTimeMillis();
-        if(start){if(session.active)return;if(!fresh(now))throw new IllegalArgumentException("Zuerst aktuelle BMS-Werte empfangen.");automatic=false;detector.interrupt();session.start(Math.max(now,session.started+1));revision++;session.sample(now,live.optDouble("power"),profile.optDouble("idleWatts"),profile.optDouble("conversionEfficiency"));}
+        if(start){if(session.active)return;if(!fresh(now))throw new IllegalArgumentException("Zuerst aktuelle BMS-Werte empfangen.");automatic=false;detector.interrupt();session.start(Math.max(now,session.started+1));revision++;if(!central)session.sample(now,live.optDouble("power"),profile.optDouble("idleWatts"),profile.optDouble("conversionEfficiency"));}
         else {if(!session.active)return;if(profile.optBoolean("autoSpecialUse"))detector.suppress();session.stop(now);revision++;archiveSession();}
         saveSession();
     }
@@ -89,7 +91,7 @@ final class RollerStore {
         toggle(start);lastCommand=id;saveSession();
     }
     private boolean fresh(long now){long at=live.optLong("at");return at>0&&now>=at&&now-at<=10000;}
-    private JSONObject sessionJson()throws JSONException{return new JSONObject().put("usageType","roller-charge").put("usageLabel","Sondernutzung · Rollerladung").put("automatic",automatic).put("started",session.started).put("ended",session.ended).put("active",session.active).put("batteryWh",session.batteryWh).put("inputWh",session.inputWh).put("observedMillis",session.observedMillis).put("gapMillis",session.gapMillis).put("savedAt",lastAcceptedAt>0?lastAcceptedAt:System.currentTimeMillis());}
+    private JSONObject sessionJson()throws JSONException{return new JSONObject().put("calculationSource",central?"display":"local").put("usageType","roller-charge").put("usageLabel","Sondernutzung · Rollerladung").put("automatic",automatic).put("started",session.started).put("ended",session.ended).put("active",session.active).put("batteryWh",central?JSONObject.NULL:session.batteryWh).put("inputWh",central?JSONObject.NULL:session.inputWh).put("observedMillis",session.observedMillis).put("gapMillis",session.gapMillis).put("savedAt",lastAcceptedAt>0?lastAcceptedAt:System.currentTimeMillis());}
     private void saveSession(){try{prefs.edit().putString("session",sessionJson().toString()).putBoolean("autoSuppressed",detector.suppressed).putLong("sessionRevision",revision).putString("lastCommand",lastCommand).apply();
         JSONArray windows=new JSONArray(plantPrefs.getString("rollerChargeWindows","[]")),out=new JSONArray();
         long from=automatic?autoWindowFrom:session.started,to=automatic?autoWindowTo:session.active?0:session.ended;
@@ -100,7 +102,7 @@ final class RollerStore {
     private void archiveSession(){try{if(session.started<=0)return;JSONArray rows=new JSONArray(prefs.getString("journal","[]")),out=new JSONArray();for(int i=Math.max(0,rows.length()-199);i<rows.length();i++)out.put(rows.getJSONObject(i));out.put(sessionJson().put("profile",new JSONObject(profile.toString())));prefs.edit().putString("journal",out.toString()).apply();}catch(JSONException ignored){}}
     synchronized JSONObject snapshot()throws JSONException{
         long now=System.currentTimeMillis();boolean fresh=fresh(now);double watts=fresh?Math.max(0,live.optDouble("power")):0;
-        JSONObject s=sessionJson();s.put("gapMillis",session.gapMillis+(session.active?session.pendingGap(now):0));
-        return new JSONObject().put("journal",new JSONArray(prefs.getString("journal","[]"))).put("profile",new JSONObject(profile.toString())).put("live",fresh?new JSONObject(live.toString()):new JSONObject()).put("fresh",fresh).put("autoSuppressed",detector.suppressed).put("sessionRevision",revision).put("status",status).put("session",s).put("estimatedInputWatts",fresh?RollerEnergy.inputWatts(watts,profile.optDouble("idleWatts"),profile.optDouble("conversionEfficiency")):JSONObject.NULL);
+        JSONObject s=sessionJson();if(central&&s.optLong("started")>0)s.put("batteryWh",JSONObject.NULL).put("inputWh",JSONObject.NULL);s.put("gapMillis",session.gapMillis+(session.active?session.pendingGap(now):0));
+        return new JSONObject().put("calculationsOnDisplay",central).put("journal",new JSONArray(prefs.getString("journal","[]"))).put("profile",new JSONObject(profile.toString())).put("live",fresh?new JSONObject(live.toString()):new JSONObject()).put("fresh",fresh).put("autoSuppressed",detector.suppressed).put("sessionRevision",revision).put("status",status).put("session",s).put("estimatedInputWatts",fresh&&!central?RollerEnergy.inputWatts(watts,profile.optDouble("idleWatts"),profile.optDouble("conversionEfficiency")):JSONObject.NULL);
     }
 }

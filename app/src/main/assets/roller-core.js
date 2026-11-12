@@ -1,6 +1,6 @@
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.WattRollerCore=api;})(typeof globalThis==='object'?globalThis:this,function(){
   'use strict';
-  const defaults={planCharge:false,autoSpecialUse:false,name:'Roller',mac:'',technology:'Li-Ion',capacityAh:26,nominalVoltage:48.1,reservePercent:20,targetPercent:90,idleWatts:21,conversionEfficiency:96/117,chargeWatts:96,rideKm:0,whPerKm:19,rideReservePercent:20,departure:0,returnAt:0};
+  const defaults={chargePath:'inverter',planCharge:false,autoSpecialUse:false,name:'Roller',mac:'',technology:'Li-Ion',capacityAh:26,nominalVoltage:48.1,reservePercent:20,targetPercent:90,idleWatts:21,conversionEfficiency:96/117,chargeWatts:96,rideKm:0,whPerKm:19,rideReservePercent:20,departure:0,returnAt:0};
   const input=(watts,p)=>watts>0?p.idleWatts+watts/p.conversionEfficiency:0;
   const displayDefaults=['stored','soc','power','charged','input','temperature'];
   const displayMetrics={

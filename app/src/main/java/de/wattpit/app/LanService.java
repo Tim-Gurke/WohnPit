@@ -22,7 +22,7 @@ public final class LanService extends Service {
         NotificationChannel channel=new NotificationChannel(CHANNEL,"Anlagenverbund",NotificationManager.IMPORTANCE_LOW);
         getSystemService(NotificationManager.class).createNotificationChannel(channel);
         PendingIntent open=PendingIntent.getActivity(this,0,new Intent(this,MainActivity.class),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
-        Notification notification=new Notification.Builder(this,CHANNEL).setSmallIcon(R.drawable.ic_bolt).setContentTitle("WohnPit · Anlagenverbund")
+        Notification notification=new Notification.Builder(this,CHANNEL).setSmallIcon(R.drawable.ic_bolt).setContentTitle("AutarPie · Anlagenverbund")
             .setContentText(lan.viewer()?"Abwesenheitshinweise auch bei geschlossener Anzeige":"Hauptgerät im lokalen WLAN verfügbar").setContentIntent(open).setOngoing(true).build();
         try{
             if(Build.VERSION.SDK_INT>=29)startForeground(12,notification,ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE);else startForeground(12,notification);

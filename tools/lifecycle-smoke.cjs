@@ -1,3 +1,4 @@
+const autarpieControls=require('./autarpie-test-controls.cjs');
 /* First-launch acknowledgement and responsive import wait state. Fictional devices only. */
 const {chromium}=require('playwright'),assert=require('node:assert/strict'),path=require('node:path');
 (async()=>{
@@ -16,7 +17,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),path
    return JSON.stringify({accountingVersion:2,solar:s('solar',100),consumption:s('consumption',160),balance:s('balance',-60)});
   },settings:json=>{Object.assign(window.fixture.settings,JSON.parse(json));return '';}};
  });
- await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));
+ await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));await autarpieControls.prepare(page);
  assert.equal(await page.locator('#cockpitNotice').isVisible(),true);assert.equal(await page.evaluate(()=>window.heavyCalls),0);
  await page.keyboard.press('Escape');assert.equal(await page.locator('#cockpitNotice').isVisible(),true);
  await page.reload();assert.equal(await page.locator('#cockpitNotice').isVisible(),true,'unconfirmed notice was persisted');
@@ -39,7 +40,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),path
  await page.locator('#syncCancel').click();assert.equal(await page.evaluate(()=>window.cancelCalls),0);await page.locator('#syncCancelConfirm').click();assert.equal(await page.evaluate(()=>window.cancelCalls),1);assert.equal(await page.locator('#syncCancel').isDisabled(),true);
  await page.evaluate(()=>{window.busy=false;window.archive={active:false,text:'Import abgebrochen. Werte bleiben gespeichert.'};window.fixture.historyRevision++;poll();});
  assert.equal(await page.locator('#activityOverlay').isVisible(),false);assert.equal(await page.locator('#pendingEdit').inputValue(),'Unfertige Änderung');assert.equal(await page.locator('#modal').isVisible(),true);assert.equal(await page.evaluate(()=>document.body.style.overflow),'hidden');
- await page.locator('#closeModal').click();await page.locator('[data-page="settings"]').click();await page.locator('#capacitySetting').fill('125');
+ await page.locator('#closeModal').click();await autarpieControls.openSettings(page);await page.locator('#capacitySetting').fill('125');
  await page.evaluate(()=>{window.busy=true;poll();});await page.evaluate(()=>{window.busy=false;window.archive={active:false,text:'Verbindungsfehler. Beim nächsten Import wird ergänzt.'};poll();});
  assert.equal(await page.locator('#capacitySetting').inputValue(),'125','sync lost an unsaved edit');
  for(const theme of ['light','dark']){

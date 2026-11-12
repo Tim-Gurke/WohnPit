@@ -1,3 +1,4 @@
+const autarpieControls=require('./autarpie-test-controls.cjs');
 const {chromium}=require('playwright');
 const assert=require('node:assert/strict');
 const path=require('node:path');
@@ -18,7 +19,7 @@ const fs=require('node:fs');
    const b=JSON.parse(json);window.applyCount++;window.testConfig=b.dashboard;localStorage.setItem('sunrise-board',JSON.stringify(b.dashboard));Object.assign(window.mock.settings,b.settings,{weatherPlace:b.weatherPlace});window.mock.equipment=b.equipment;return '';
   }};
  });
- await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));
+ await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));await autarpieControls.prepare(page);
  const tile=metric=>page.locator(`[data-tile="default-${metric}"]`),value=metric=>tile(metric).locator('.tile-number').textContent();
  const initial=await page.evaluate(()=>window.WattDashboardCore.defaults());
  assert.equal(await value('solar'),'10');assert.equal(await value('solarEnergy'),'8,00');assert.equal(await value('dischargeEnergy'),'-14,00');
@@ -41,7 +42,7 @@ const fs=require('node:fs');
  await page.reload();for(const metric of ['solar','solarEnergy','dischargeEnergy'])assert.match(await tile(metric).locator('.tile-hint').textContent(),/seit Sonnenaufgang/);
  assert.equal(await value('dischargeEnergy'),'-5,00');const board=await page.evaluate(()=>structuredClone(window.testConfig));
  // Export the real UI state, not a manually composed backup. Secrets and samples stay out.
- await page.locator('[data-page="settings"]').click();await page.locator('#exportConfiguration').click();
+ await autarpieControls.openSettings(page);await page.locator('#exportConfiguration').click();
  const backup=await page.evaluate(()=>structuredClone(window.exported));assert.deepEqual(backup.dashboard,board);assert.equal(backup.settings.capacity,100);assert.equal(backup.weatherPlace.name,'Testort');assert.ok(!JSON.stringify(backup).includes('CONNECTION_SENTINEL'));assert.equal(backup.devices,undefined);assert.equal(backup.readings,undefined);
  // A cancelled preview and failed storage leave the current settings untouched.
  await page.evaluate(()=>{window.exported.settings.capacity=150;window.exported.settings.theme='light';window.exported.settings.palette='green';});

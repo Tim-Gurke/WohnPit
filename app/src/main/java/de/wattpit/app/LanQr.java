@@ -27,11 +27,11 @@ final class LanQr {
     static JSONObject result(int requestCode,int resultCode,Intent data)throws Exception{
         IntentResult result=IntentIntegrator.parseActivityResult(requestCode,resultCode,data);if(result==null)return null;
         String code=result.getContents();if(code==null){
-            if(data!=null&&data.getBooleanExtra(Intents.Scan.MISSING_CAMERA_PERMISSION,false))return new JSONObject().put("error","Kamerazugriff fehlt. Bitte in den Android-App-Einstellungen die Kamera für WohnPit erlauben oder den Textcode einfügen.");
+            if(data!=null&&data.getBooleanExtra(Intents.Scan.MISSING_CAMERA_PERMISSION,false))return new JSONObject().put("error","Kamerazugriff fehlt. Bitte in den Android-App-Einstellungen die Kamera für AutarPie erlauben oder den Textcode einfügen.");
             if(data!=null&&data.getBooleanExtra(Intents.Scan.TIMEOUT,false))return new JSONObject().put("error","Kein QR-Code erkannt. Bitte den ganzen Code im Rahmen halten und etwas mehr Abstand versuchen. Du kannst auch den Textcode einfügen.");
             return new JSONObject().put("cancelled",true);
         }
-        if(code.length()>4096)return new JSONObject().put("error","Dieser QR-Code enthält keinen gültigen WohnPit-Verbindungscode.");
+        if(code.length()>4096)return new JSONObject().put("error","Dieser QR-Code enthält keinen gültigen AutarPie-Verbindungscode.");
         return new JSONObject().put("code",code);
     }
 }

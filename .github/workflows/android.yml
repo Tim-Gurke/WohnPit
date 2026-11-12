@@ -1,4 +1,4 @@
-name: WohnPit gemeinsam prüfen
+name: AutarPie gemeinsam prüfen
 
 on:
   push:
@@ -11,6 +11,24 @@ permissions:
   contents: read
 
 jobs:
+  autarpie-ui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Eigene Dashboards und bewusste Änderungen prüfen
+        env:
+          WATTPIT_CHROMIUM: /usr/bin/google-chrome
+          WATTPIT_SCREENSHOT_DIR: app/build/reports/autarpie-ui
+        run: |
+          npm install --no-save --prefix "$RUNNER_TEMP/autarpie-ui" playwright@1.51.1
+          NODE_PATH="$RUNNER_TEMP/autarpie-ui/node_modules" node tools/autarpie-smoke.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AutarPie-Oberflaeche
+          path: app/build/reports/autarpie-ui/
+
   supplies-ui:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -40,7 +58,7 @@ jobs:
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
       - name: Dashboard-Berechnungen und Konfiguration prüfen
-        run: node --test tools/value-colors.test.cjs tools/weather-history.test.cjs tools/supplies-core.test.cjs tools/dashboard-core.test.cjs tools/equipment-core.test.cjs tools/settings-backup.test.cjs tools/tile-detail.test.cjs tools/read-bridge.test.cjs tools/energy-window-cache.test.cjs tools/control-bridge.test.cjs tools/solar-core.test.cjs tools/presence-core.test.cjs tools/roller-core.test.cjs tools/special-use-core.test.cjs
+        run: node --test tools/autarpie-core.test.cjs tools/value-colors.test.cjs tools/weather-history.test.cjs tools/supplies-core.test.cjs tools/dashboard-core.test.cjs tools/equipment-core.test.cjs tools/settings-backup.test.cjs tools/tile-detail.test.cjs tools/read-bridge.test.cjs tools/energy-window-cache.test.cjs tools/control-bridge.test.cjs tools/solar-core.test.cjs tools/presence-core.test.cjs tools/roller-core.test.cjs tools/special-use-core.test.cjs
       - name: Private Dateien vor Veröffentlichung ausschließen
         run: python3 tools/check-public-files.py
       - name: Veröffentlichung und Übernahme-Hilfsprogramm prüfen
@@ -51,12 +69,7 @@ jobs:
         run: |
           deps="$RUNNER_TEMP/wattpit-proof-deps"
           mkdir -p "$deps"
-          curl --fail --location --retry 2 --max-time 120 https://repo.maven.apache.org/maven2/org/xerial/sqlite-jdbc/3.46.1.0/sqlite-jdbc-3.46.1.0.jar -o "$deps/sqlite-jdbc-3.46.1.0.jar"
-          curl --fail --location --retry 2 --max-time 120 https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/1.7.36/slf4j-api-1.7.36.jar -o "$deps/slf4j-api-1.7.36.jar"
-          curl --fail --location --retry 2 --max-time 120 https://repo.maven.apache.org/maven2/org/robolectric/android-all/15-robolectric-12468137/android-all-15-robolectric-12468137.jar -o "$deps/android-api35.jar"
-          curl --fail --location --retry 2 --max-time 120 https://repo.maven.apache.org/maven2/com/google/zxing/core/3.5.3/core-3.5.3.jar -o "$deps/zxing-core.jar"
-          curl --fail --location --retry 2 --max-time 120 https://repo.maven.apache.org/maven2/com/journeyapps/zxing-android-embedded/4.3.0/zxing-android-embedded-4.3.0.aar -o "$deps/zxing-embedded.aar"
-          unzip -p "$deps/zxing-embedded.aar" classes.jar > "$deps/zxing-embedded.jar"
+          python3 tools/fetch-proof-deps.py "$deps"
           python3 tools/prove-archive-delta.py --output app/build/reports/archive-delta-proof --sqlite-jar "$deps/sqlite-jdbc-3.46.1.0.jar" --slf4j-jar "$deps/slf4j-api-1.7.36.jar"
           python3 tools/prove-archive-storage.py --output app/build/reports/archive-storage-proof --android-jar "$deps/android-api35.jar" --sqlite-jar "$deps/sqlite-jdbc-3.46.1.0.jar" --slf4j-jar "$deps/slf4j-api-1.7.36.jar"
           mkdir -p "$RUNNER_TEMP/roller-proof"
@@ -82,33 +95,7 @@ jobs:
           javac -cp "$qr_cp" -d "$RUNNER_TEMP/wattpit-java" tools/PairingQrFixture.java
           java -cp "$RUNNER_TEMP/wattpit-java:$qr_cp" de.wattpit.app.core.PairingQrFixture > "$WATTPIT_QR_FIXTURE"
           export NODE_PATH="$RUNNER_TEMP/wattpit-ui/node_modules"
-          node tools/sync-coverage-smoke.cjs
-          node tools/energy-balance-smoke.cjs
-          node tools/energy-tile-smoke.cjs
-          node tools/tile-period-isolation-smoke.cjs
-          node tools/energy-refresh-smoke.cjs
-          node tools/viewer-statistics-smoke.cjs
-          node tools/gps-place-smoke.cjs
-          node tools/tile-detail-smoke.cjs
-          node tools/mini-history-smoke.cjs
-          node tools/reload-daily-smoke.cjs
-          node tools/charge-time-smoke.cjs
-          node tools/lifecycle-smoke.cjs
-          node tools/background-sync-smoke.cjs
-          node tools/solar-planning-smoke.cjs
-          node tools/special-use-smoke.cjs
-          node tools/supplies-smoke.cjs
-          node tools/value-colors-smoke.cjs
-          node tools/mobile-solar-smoke.cjs
-          node tools/display-layout-smoke.cjs
-          node tools/presence-smoke.cjs
-          node tools/roller-smoke.cjs
-          node tools/lan-smoke.cjs
-          node tools/plant-control-smoke.cjs
-          node tools/history-retention-smoke.cjs
-          node tools/display-pause-smoke.cjs
-          node tools/dashboard-usability-smoke.cjs
-          node tools/dashboard-contrast-smoke.cjs
+          python3 tools/run-ui-checks.py
       - uses: actions/upload-artifact@v4
         with:
           name: Watt-n-Pit-CI-release
@@ -141,7 +128,6 @@ jobs:
             docs/images/supplies-*2.0.2*.png
 
   emulator:
-    needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -172,12 +158,12 @@ jobs:
             adb shell am instrument -w -e class de.wattpit.app.UnifiedSmokeTest de.wattpit.app.test/androidx.test.runner.AndroidJUnitRunner | tee unified-emulator.log
             python3 -c "from pathlib import Path; s=Path('unified-emulator.log').read_text(); assert 'OK (3 tests)' in s and 'FAILURES' not in s"
             mkdir -p docs/images
-            adb pull /sdcard/Android/data/de.wattpit.app/files/wohnpit-2.0.0-central.png docs/images/
-            adb pull /sdcard/Android/data/de.wattpit.app/files/wohnpit-2.0.0-direct.png docs/images/
+            adb pull /sdcard/Android/data/de.wattpit.app/files/autarpie-3.0.0-central.png docs/images/
+            adb pull /sdcard/Android/data/de.wattpit.app/files/autarpie-3.0.0-direct.png docs/images/
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: WohnPit-2.0.0-Emulator
+          name: AutarPie-3.0.0-Emulator
           path: |
             unified-emulator.log
-            docs/images/wohnpit-2.0.0-*.png
+            docs/images/autarpie-3.0.0-*.png

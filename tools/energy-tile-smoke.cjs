@@ -1,3 +1,4 @@
+const autarpieControls=require('./autarpie-test-controls.cjs');
 const {chromium}=require('playwright');
 const assert=require('node:assert/strict');
 const path=require('node:path');
@@ -22,7 +23,7 @@ const C=require('../app/src/main/assets/dashboard-core.js');
    return JSON.stringify({accountingVersion:2,solar:series('solar',solar),consumption:series('consumption',consumption),balance:series('balance',solar-consumption)});
   },chooseSettingsExport:json=>{window.savedBackup=JSON.parse(json);return '';},chooseSettingsImport:()=>window.onSettingsImportPreview({backup:window.savedBackup,name:'test-settings.json'}),importSettings:json=>{const b=JSON.parse(json);save(b.dashboard);Object.assign(window.mock.settings,b.settings,{weatherPlace:b.weatherPlace});window.mock.equipment=b.equipment;return '';}};
  },old);
- await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));
+ await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));await autarpieControls.prepare(page);
  const tile=metric=>page.locator(`[data-tile="${metric==='consumptionEnergy'?previous.id:'default-'+metric}"]`),number=metric=>tile(metric).locator('.tile-number').textContent();
  const edit=async metric=>{await tile(metric).click();await page.locator('#tileActionSettings').click();};
  assert.equal(await number('solarEnergy'),'40,00');assert.equal(await number('consumptionEnergy'),'70,00');assert.equal(await number('energyBalance'),'-30,00');
@@ -48,11 +49,11 @@ const C=require('../app/src/main/assets/dashboard-core.js');
  await page.evaluate(()=>{window.extraInput=false;window.positive=true;window.mock.historyRevision++;poll();});assert.equal(await number('energyBalance'),'0,03');
  await page.evaluate(()=>{window.missing=true;window.mock.historyRevision++;poll();});for(const metric of ['solarEnergy','consumptionEnergy','energyBalance'])assert.equal(await number(metric),'—');
  await page.evaluate(()=>{window.missing=false;window.zero=true;window.mock.historyRevision++;poll();});for(const metric of ['solarEnergy','consumptionEnergy','energyBalance'])assert.equal(await number(metric),'0,00');
- await page.locator('[data-page="settings"]').click();await page.locator('#exportConfiguration').click();const backup=await page.evaluate(()=>window.savedBackup.dashboard);
+ await autarpieControls.openSettings(page);await page.locator('#exportConfiguration').click();const backup=await page.evaluate(()=>window.savedBackup.dashboard);
  assert.equal(backup.energyFlowVersion,1);assert.equal(backup.energyPeriod,undefined);assert.equal(backup.tiles.find(t=>t.metric==='energyBalance').period.mode,'last');
- await page.locator('[data-page="overview"]').click();await edit('energyBalance');await page.locator('#removeTile').click();
- await page.locator('[data-page="settings"]').click();await page.locator('#importConfiguration').click();await page.locator('#applyConfigurationImport').click();assert.deepEqual(await page.evaluate(()=>dashboard.config),backup);
+ await page.locator('[data-page="overview"]').click();await edit('energyBalance');await page.locator('#removeTile').click();await page.locator('#confirmRemoveTile').click();
+ await autarpieControls.openSettings(page);await page.locator('#importConfiguration').click();await page.locator('#applyConfigurationImport').click();assert.deepEqual(await page.evaluate(()=>dashboard.config),backup);
  await page.locator('[data-page="overview"]').click();
- for(const width of [390,1000]){await page.setViewportSize({width,height:1100});for(const theme of ['light','dark']){if(await page.locator('html').getAttribute('data-theme')!==theme)await page.locator('#themeToggle').click();assert.equal(await number('consumptionEnergy'),'0,00');assert.equal(await page.evaluate(()=>document.body.scrollWidth>innerWidth),false);}}
+ for(const width of [390,1000]){await page.setViewportSize({width,height:1100});for(const theme of ['light','dark']){if(await page.locator('html').getAttribute('data-theme')!==theme)await autarpieControls.toggleTheme(page);assert.equal(await number('consumptionEnergy'),'0,00');assert.equal(await page.evaluate(()=>document.body.scrollWidth>innerWidth),false);}}
  assert.deepEqual(errors,[]);await browser.close();console.log('Energy trio: upgrade preserves layouts; sunrise yield/full-day consumption; matching queries shared; independent periods; temporary detail; signed residuals; missing/zero; export/import; both themes/layouts passed.');
 })().catch(e=>{console.error(e);process.exit(1);});

@@ -35,7 +35,7 @@ public final class MigrationCipher {
     }
     public static InputStream decrypt(InputStream input,char[] password)throws IOException,GeneralSecurityException{
         DataInputStream in=new DataInputStream(input);byte[] magic=new byte[MAGIC.length],salt=new byte[16],prefix=new byte[8];in.readFully(magic);
-        if(!Arrays.equals(magic,MAGIC))throw new IOException("Keine unterstützte WohnPit-Übernahmesicherung.");in.readFully(salt);in.readFully(prefix);byte[] key=key(password,salt);
+        if(!Arrays.equals(magic,MAGIC))throw new IOException("Keine unterstützte AutarPie-Übernahmesicherung.");in.readFully(salt);in.readFully(prefix);byte[] key=key(password,salt);
         return new InputStream(){byte[] buffer=new byte[0];int offset,sequence;boolean ended,closed;
             private boolean next()throws IOException{
                 if(ended)return false;int size;

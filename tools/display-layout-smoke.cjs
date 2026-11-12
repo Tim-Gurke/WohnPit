@@ -1,3 +1,4 @@
+const autarpieControls=require('./autarpie-test-controls.cjs');
 /* Reported regression: late multi-line status text must not displace chart content. */
 const waitForPage=require('./browser-wait.cjs');
 const {chromium}=require('playwright'),assert=require('node:assert/strict'),path=require('node:path'),fs=require('node:fs');
@@ -20,7 +21,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),path
     requestHistory:s=>{const q=JSON.parse(s);if(window.hold)window.queue.push(q);else setTimeout(()=>window.onHistoryResult({id:q.id,data:data(q)}),15);}
    };
   });
-  await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));
+  await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));await autarpieControls.prepare(page);
   await page.evaluate(()=>{
    const metrics=['solar','solarEnergy','mobileSolarEnergy','consumptionEnergy','energyBalance','soc'];
    dashboard.config.tiles=metrics.map((metric,i)=>{const t=WattDashboardCore.tile(metric,'layout-'+metric);t.type=metric==='soc'?'gauge':'chart';t.period.mode='sunrise';t.scaleMode='auto';for(const profile of ['compact','wide'])t.layouts[profile]={x:i%3*4,y:Math.floor(i/3)*6,w:4,h:6};return t;});
@@ -80,8 +81,8 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),path
    const positions=()=>page.evaluate(()=>JSON.stringify([...document.querySelectorAll('.cockpit-tile')].map(e=>[e.dataset.tile,e.style.left,e.style.top,e.style.width,e.style.height])));
    const before=await positions();
    await page.evaluate(()=>{window.fixtureInnerWidth=Object.getOwnPropertyDescriptor(window,'innerWidth');Object.defineProperty(window,'innerWidth',{configurable:true,get:()=>720});});
-   await page.locator('#editDashboard').click();assert.equal(await page.evaluate(()=>dashboard.profile),'compact');assert.equal(await positions(),before);
-   await page.locator('#editDashboard').click();assert.equal(await page.evaluate(()=>dashboard.profile),'compact');assert.equal(await positions(),before);
+   await autarpieControls.toggleEdit(page);assert.equal(await page.evaluate(()=>dashboard.profile),'compact');assert.equal(await positions(),before);
+   await autarpieControls.toggleEdit(page);assert.equal(await page.evaluate(()=>dashboard.profile),'compact');assert.equal(await positions(),before);
    await page.evaluate(()=>Object.defineProperty(window,'innerWidth',window.fixtureInnerWidth));
   }
   assert.equal(await page.evaluate(()=>JSON.stringify(dashboard.config.tiles.map(t=>[t.id,t.layouts]))),layout);
@@ -90,8 +91,8 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),path
   await page.evaluate(()=>{window.fixtureViewer=false;window.hold=true;window.revision++;poll();});
   assert.doesNotMatch(await page.locator('[data-tile="layout-consumptionEnergy"] .tile-hint').textContent(),/Hauptgerät.*aktualisieren/);
   assert.equal(await page.locator('[data-tile="layout-consumptionEnergy"] .tile-chart-empty').textContent(),'Werte werden geladen …');
-  await page.locator('#editDashboard').click();assert.equal(await page.evaluate(()=>dashboard.editing),true);
-  await page.locator('#editDashboard').click();assert.equal(await page.evaluate(()=>dashboard.editing),false);
+  await autarpieControls.toggleEdit(page);assert.equal(await page.evaluate(()=>dashboard.editing),true);
+  await autarpieControls.toggleEdit(page);assert.equal(await page.evaluate(()=>dashboard.editing),false);
   await page.evaluate(()=>{window.hold=false;window.drain();});
   await waitForPage(page,()=>document.querySelector('[data-tile="layout-consumptionEnergy"] .tile-number')?.textContent==='332,16');
   // The day/sunset bounds stay fixed. A failed cold read must still retry after
@@ -102,9 +103,9 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),path
   await page.clock.setFixedTime(new Date('2026-10-30T17:27:06Z'));
   await page.evaluate(()=>poll());
   await waitForPage(page,()=>document.querySelector('[data-tile="layout-consumptionEnergy"] .tile-number')?.textContent==='332,16');
-  await page.locator('[data-page="settings"]').click();assert.equal(await page.locator('#displayScale').getAttribute('step'),'1');await page.locator('#displayScale').evaluate(e=>{e.value='73';e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));});
-  assert.equal(await page.locator('#displayScaleValue').textContent(),'73 %');await page.reload();assert.equal(await page.evaluate(()=>WattDisplay.value),73);
-  await page.locator('[data-page="settings"]').click();await page.locator('#resetDisplayScale').click();assert.equal(await page.evaluate(()=>WattDisplay.value),100);
+  await autarpieControls.openSettings(page);await page.locator('#apSizeOpen').click();assert.equal(await page.locator('#apSize').getAttribute('min'),'50');await page.locator('#apSize').fill('73');await page.locator('#apSize').dispatchEvent('input');
+  assert.equal(await page.locator('#apScaleValue').textContent(),'73 %');assert.equal(await page.evaluate(()=>localStorage.getItem('fixture-scale')),null);await page.locator('#apSizeSave').click();await page.reload();assert.equal(await page.evaluate(()=>WattDisplay.value),73);
+  await autarpieControls.openSettings(page);await page.locator('#apSizeOpen').click();await page.locator('#apSize').fill('100');await page.locator('#apSize').dispatchEvent('input');await page.locator('#apSizeSave').click();assert.equal(await page.evaluate(()=>WattDisplay.value),100);
   assert.deepEqual(errors,[]);await page.close();
   // Device-local settings must not be supplied by another handset or the LAN host.
   const other=await browser.newPage();await other.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));assert.equal(await other.evaluate(()=>WattDisplay.value),100);await other.close();

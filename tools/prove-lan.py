@@ -24,6 +24,7 @@ sources=list((root/'app/src/main/java').rglob('*.java'))+list((root/'tools/testi
 native_cp=os.pathsep.join(map(str,[a.android_jar.resolve(),*a.android_jar.resolve().parent.glob('zxing-*.jar')]))
 sources.append(root/'tools/LearningMigrationProof.java')
 sources.append(root/'tools/ViewerRefreshProof.java')
+sources.append(root/'tools/AutarPieConfigurationProof.java')
 subprocess.run(['java','com.sun.tools.javac.Main','-cp',native_cp,'-d',str(classes),*map(str,sources)],check=True)
 classpath=os.pathsep.join(map(str,[classes,a.android_jar.resolve(),a.sqlite_jar.resolve(),a.slf4j_jar.resolve(),*a.android_jar.resolve().parent.glob('zxing-*.jar')]))
 r=subprocess.run(['java','-cp',classpath,'de.wattpit.app.LanSyncProof',str(out/'devices')],capture_output=True,text=True,timeout=90)
@@ -51,3 +52,6 @@ r8=subprocess.run(['node',str(root/'tools/learning-state-check.cjs'),str(out/'le
 print(r8.stdout+r8.stderr,end='');(out/'learning-display-results.log').write_text(r8.stdout+r8.stderr);r8.check_returncode()
 r9=subprocess.run(['java','-Xmx512m','-cp',classpath,'de.wattpit.app.ViewerRefreshProof',str(out/'statistics')],capture_output=True,text=True,timeout=90)
 print(r9.stdout+r9.stderr,end='');(out/'statistics-results.log').write_text(r9.stdout+r9.stderr);r9.check_returncode()
+
+r10=subprocess.run(['java','-cp',classpath,'de.wattpit.app.AutarPieConfigurationProof',str(out/'autarpie-config')],capture_output=True,text=True,timeout=30)
+print(r10.stdout+r10.stderr,end='');(out/'autarpie-config-results.log').write_text(r10.stdout+r10.stderr);r10.check_returncode()

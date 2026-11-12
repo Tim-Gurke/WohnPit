@@ -78,7 +78,7 @@ final class SolarPlanning extends SQLiteOpenHelper {
         String key=SolarKeys.key(eq,plan,place,src,false,false);if(key.isEmpty())return;
         context(new JSONObject().put("key",key).put("solarKey",SolarKeys.key(eq,plan,place,src,true,false)).put("systemKey",SolarKeys.key(eq,plan,new JSONObject("{\"latitude\":0,\"longitude\":0}"),src,true,true)).toString());
         String weather=repository.prefs.getString("weatherCache","{}");String seen=key+weather;
-        if(!seen.equals(nativeForecastSeen)){JSONObject w=new JSONObject(weather);String signature=repository.prefs.getString("equipment-v1","{\"version\":1,\"groups\":[]}")+"|"+repository.prefs.getString("solar-setup-v1","{}");if(w.optInt("version")<4||signature.equals(w.optString("signature"))){JSONArray rows=NativeForecast.rows(eq,plan,w,src);if(rows.length()>0)remember(rows.toString());}nativeForecastSeen=seen;}
+        if(!AppRole.get(context).equals("central")&&!seen.equals(nativeForecastSeen)){JSONObject w=new JSONObject(weather);String signature=repository.prefs.getString("equipment-v1","{\"version\":1,\"groups\":[]}")+"|"+repository.prefs.getString("solar-setup-v1","{}");if(w.optInt("version")<4||signature.equals(w.optString("signature"))){JSONArray rows=NativeForecast.rows(eq,plan,w,src);if(rows.length()>0)remember(rows.toString());}nativeForecastSeen=seen;}
     }catch(Exception ignored){}}
     JSONObject knowledge(){return lastKnowledge;}
     JSONObject calculateKnowledge()throws Exception{request();JSONObject value=worker.submit(()->lastKnowledge).get(120,TimeUnit.SECONDS);if(value.length()==0||!lastFailure.isEmpty())throw new java.io.IOException(lastFailure.isEmpty()?"Lerndaten konnten nicht berechnet werden.":lastFailure);return value;}
@@ -329,7 +329,7 @@ final class SolarPlanning extends SQLiteOpenHelper {
             .put("usage",new JSONObject().put("wh",wh).put("duration",duration).put("excludedRollerMillis",excluded).put("estimatedDuration",estimated).put("estimatedWh",estimatedWh).put("measuredWh",wh-estimatedWh).put("rollerAdjustedDuration",rollerAdjustedMillis).put("rollerInputWh",rollerInputWh).put("reconstructedDuration",reconstructed).put("reconstructedWh",reconstructedWh).put("confirmedDuration",confirmedMillis).put("rejected",rejected).put("latest",latest));return true;
     }
     void request(){
-        if(closed||!analysis&&!displayActive)return;if(!busy.compareAndSet(false,true)){requestedAgain.set(true);return;}
+        if(closed||AppRole.get(context).equals("central")||!analysis&&!displayActive)return;if(!busy.compareAndSet(false,true)){requestedAgain.set(true);return;}
         worker.execute(()->{JSONObject result=new JSONObject();try{
             if(repository.archiveBusy)return;long now=analysis&&analysisUntil>0?analysisUntil:System.currentTimeMillis();String[] devices=devices();String source=source(devices());
             JSONObject weather=new JSONObject(repository.prefs.getString("weatherCache","{}"));SQLiteDatabase db=getWritableDatabase();long since=now-7L*86400000;

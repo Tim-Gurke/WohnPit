@@ -1,3 +1,4 @@
+const autarpieControls=require('./autarpie-test-controls.cjs');
 const {chromium}=require('playwright');
 const assert=require('node:assert/strict');
 const path=require('node:path');
@@ -10,17 +11,17 @@ const ratio=(a,b)=>(Math.max(luminance(a),luminance(b))+.05)/(Math.min(luminance
  await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html')+'?demo=1');
  const check=async(label)=>{
   const rows=await page.evaluate(()=>[...document.querySelectorAll('.cockpit-tile')].flatMap(tile=>[...tile.querySelectorAll('.tile-number,.tile-unit,.tile-label,.tile-chart-range,.tile-hint,.gauge-min,.gauge-max')].filter(el=>el.textContent.trim()).map(el=>{
-   const canvas=document.createElement('canvas');canvas.width=canvas.height=1;const ctx=canvas.getContext('2d');ctx.fillStyle=getComputedStyle(document.body).backgroundColor;ctx.fillRect(0,0,1,1);ctx.fillStyle=getComputedStyle(tile).backgroundColor;ctx.fillRect(0,0,1,1);const background=[...ctx.getImageData(0,0,1,1).data];ctx.clearRect(0,0,1,1);ctx.fillStyle=getComputedStyle(el).color;ctx.fillRect(0,0,1,1);return {text:el.textContent,className:el.className,foreground:[...ctx.getImageData(0,0,1,1).data],background};
+   const canvas=document.createElement('canvas');canvas.width=canvas.height=1;const ctx=canvas.getContext('2d');ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();ctx.fillRect(0,0,1,1);const surface=getComputedStyle(tile,'::before');ctx.globalAlpha=Number(surface.opacity);ctx.fillStyle=surface.backgroundColor;ctx.fillRect(0,0,1,1);ctx.globalAlpha=1;const background=[...ctx.getImageData(0,0,1,1).data];ctx.clearRect(0,0,1,1);ctx.fillStyle=getComputedStyle(el).color;ctx.fillRect(0,0,1,1);return {text:el.textContent,className:el.className,foreground:[...ctx.getImageData(0,0,1,1).data],background};
   })));
   for(const row of rows)assert.ok(ratio(row.foreground,row.background)>=4.5,`${label}: ${row.className} ${row.text} contrast ${ratio(row.foreground,row.background)}`);
  };
  for(const theme of ['light','dark']){
-  if(await page.locator('html').getAttribute('data-theme')!==theme)await page.locator('#themeToggle').click();
+  if(await page.locator('html').getAttribute('data-theme')!==theme)await autarpieControls.toggleTheme(page);
   for(const palette of ['classic','blue','green','turquoise','orange','neutral']){
-   await page.locator('[data-page="settings"]').click();await page.locator(`[data-palette="${palette}"]`).last().click();await page.locator('[data-page="overview"]').click();await check(`${theme}/${palette}`);
+   await autarpieControls.openSettings(page);await page.locator(`[data-palette="${palette}"]`).last().click();await page.locator('[data-page="overview"]').click();await check(`${theme}/${palette}`);
   }
  }
- await page.locator('#themeToggle').click();
+ await autarpieControls.toggleTheme(page);
  // Saved custom backgrounds and disabled decorative adaptation cannot hide the numbers.
  await page.locator('[data-tile="default-solar"]').click();await page.locator('#tileActionSettings').click();await page.locator('#tileType').selectOption('chart');
  await page.locator('summary').filter({hasText:/^Farben & Schrift$/}).click();await page.locator('#tileColorSource').selectOption('custom');await page.locator('#tileAdaptiveColor').uncheck();

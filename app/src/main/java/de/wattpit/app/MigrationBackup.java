@@ -69,7 +69,7 @@ final class MigrationBackup {
             // Consume and authenticate the AES-GCM tag before touching any current data.
             while(plain.read()!=-1){}
             JSONObject manifest=json(new File(temp,"manifest.json")),prefs=json(new File(temp,"preferences.json"));
-            if(!manifest.optString("format").equals("wohnpit-takeover")||manifest.optInt("version")!=1||!Arrays.asList("de.wohnpit.app","de.wattpit.app").contains(manifest.optString("sourcePackage"))||!prefs.has("wattpit"))throw new IOException("Keine unterstützte vollständige WohnPit-Sicherung.");
+            if(!manifest.optString("format").equals("wohnpit-takeover")||manifest.optInt("version")!=1||!Arrays.asList("de.wohnpit.app","de.wattpit.app").contains(manifest.optString("sourcePackage"))||!prefs.has("wattpit"))throw new IOException("Keine unterstützte vollständige AutarPie-Sicherung.");
             validatePreferences(prefs);
             File primary=new File(temp,"databases/wattpit-history.db");if(!primary.isFile())throw new IOException("Die Messwertdatenbank fehlt.");
             File[] databases=new File(temp,"databases").listFiles();if(databases!=null)for(File file:databases)if(file.getName().endsWith(".db")){
@@ -89,7 +89,7 @@ final class MigrationBackup {
         }
     }
     static synchronized void applyPending(Context c)throws Exception{
-        if(!pending(c))return;if(stagedHere)throw new IOException("Bitte WohnPit zuerst vollständig neu starten.");
+        if(!pending(c))return;if(stagedHere)throw new IOException("Bitte AutarPie zuerst vollständig neu starten.");
         String session=new String(Files.readAllBytes(marker(c).toPath()),StandardCharsets.UTF_8);
         if(!session.matches("[a-f0-9-]{36}"))throw new IOException("Ungültiger Übernahmestand.");
         File input=stage(c);JSONObject incoming=json(new File(input,"preferences.json"));validatePreferences(incoming);

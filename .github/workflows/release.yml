@@ -1,4 +1,4 @@
-name: WohnPit-Release veröffentlichen
+name: AutarPie-Release veröffentlichen
 
 on:
   push:

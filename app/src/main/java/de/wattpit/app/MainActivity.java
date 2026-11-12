@@ -12,7 +12,7 @@ public final class MainActivity extends Activity {
     @Override public void onCreate(Bundle state){
         super.onCreate(state);
         if(MigrationBackup.pending(this)){
-            LinearLayout progress=new LinearLayout(this);progress.setOrientation(LinearLayout.VERTICAL);progress.setPadding(32,40,32,40);progress.setBackgroundColor(0xff101822);progress.addView(new ProgressBar(this));text(progress,"Gesicherte Daten werden übernommen …",20);text(progress,"Bitte warten. Die bisherigen Daten bleiben zusätzlich gesichert. Danach startet WohnPit mit dem übernommenen Stand.",16);setContentView(progress);
+            LinearLayout progress=new LinearLayout(this);progress.setOrientation(LinearLayout.VERTICAL);progress.setPadding(32,40,32,40);progress.setBackgroundColor(0xff101822);progress.addView(new ProgressBar(this));text(progress,"Gesicherte Daten werden übernommen …",20);text(progress,"Bitte warten. Die bisherigen Daten bleiben zusätzlich gesichert. Danach startet AutarPie mit dem übernommenen Stand.",16);setContentView(progress);
             migration.execute(()->{try{MigrationBackup.applyPending(this);runOnUiThread(()->{if(!isFinishing()&&!isDestroyed())ready();});}catch(Exception e){runOnUiThread(()->{if(!isFinishing()&&!isDestroyed())failure("Die Übernahme konnte nicht abgeschlossen werden. Die bisherigen Daten wurden gesichert. Bitte Speicherplatz prüfen und erneut öffnen.");});}});
         }else ready();
     }
@@ -22,7 +22,7 @@ public final class MainActivity extends Activity {
             try{if(!AppRole.get(this).equals(role))AppRole.save(this,role);launch(role);return;}catch(Exception e){failure("Die bisherige Betriebsart konnte nicht übernommen werden.");return;}
         }
         ScrollView scroll=new ScrollView(this);LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setPadding(32,36,32,36);root.setBackgroundColor(0xff101822);scroll.addView(root);setContentView(scroll);
-        text(root,"WohnPit",30);text(root,"Energie, Gas und Wasser im Blick",20);text(root,"WohnPit vereint Watt’n’Pit und die bisherige WohnPit-Zentrale. Dein lokales Cockpit für Wohnwagen, Ferienhaus, Gartenhaus oder Balkonkraftwerk. Welche Aufgabe übernimmt dieses Handy?",16);
+        text(root,"AutarPie",30);text(root,"Energie, Gas und Wasser im Blick",20);text(root,"AutarPie vereint Watt’n’Pit und die bisherige WohnPit-Zentrale. Dein lokales Cockpit für Wohnwagen, Ferienhaus, Gartenhaus oder Balkonkraftwerk. Welche Aufgabe übernimmt dieses Handy?",16);
         button(root,"Zentrale","Geräte auslesen, Wetter sammeln und Daten für andere Handys speichern. Schlanke Ansicht für den Dauerbetrieb.","central");
         button(root,"Anzeigehandy","Eine Zentrale koppeln, Werte anzeigen, berechnen und die Anlage bedienen.","viewer");
         button(root,"Eigenständig · Victron direkt","Ohne Zentrale: Victron-Geräte direkt verbinden. Aufzeichnung, Wetter, Berechnung und Anzeige laufen auf diesem Handy.","direct");
@@ -38,6 +38,6 @@ public final class MainActivity extends Activity {
         if(AppRole.valid(AppRole.get(this))&&!AppRole.get(this).equals(role))new AlertDialog.Builder(this).setTitle("Betriebsart wechseln?").setMessage("Die aktuelle Verbindung wird beendet. Messdaten und Kacheln bleiben erhalten. Die Kopplung der bisherigen Rolle wird für die Rückkehr gespeichert. Eine neue Anzeige wird anschließend mit ihrer Zentrale gekoppelt.").setNegativeButton("Behalten",null).setPositiveButton("Wechseln",(d,w)->apply.run()).show();else apply.run();
     }
     private void launch(String role){startActivity(new Intent(this,role.equals("central")?CentralActivity.class:DisplayActivity.class).addFlags(getIntent().getBooleanExtra("chooseRole",false)?Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK:Intent.FLAG_ACTIVITY_CLEAR_TOP));finish();}
-    private void failure(String message){new AlertDialog.Builder(this).setTitle("WohnPit").setMessage(message).setCancelable(false).setPositiveButton("Schließen",(d,w)->finish()).show();}
+    private void failure(String message){new AlertDialog.Builder(this).setTitle("AutarPie").setMessage(message).setCancelable(false).setPositiveButton("Schließen",(d,w)->finish()).show();}
     @Override protected void onDestroy(){migration.shutdown();super.onDestroy();}
 }

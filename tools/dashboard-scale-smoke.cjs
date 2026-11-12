@@ -1,3 +1,4 @@
+const autarpieControls=require('./autarpie-test-controls.cjs');
 const {chromium}=require('playwright');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
@@ -18,7 +19,7 @@ const path=require('node:path');
   window.mock={running:false,status:'Pausiert',devices:[],found:[],readings:[],stats:{count:6},historyRevision:0,settings:{theme:'dark',capacity:100,sampleSeconds:10}};
   window.WattPit={snapshot:()=>JSON.stringify(window.mock),dashboard:()=>JSON.stringify(window.testConfig),saveDashboard:json=>{window.testConfig=JSON.parse(json);localStorage.setItem('mock-native-dashboard',json);return '';},history:()=>'{"points":[]}',dashboardHistory:(from,to,metric)=>{const points=window.series[metric]||[],summary=points.length?{avg:points.reduce((n,p)=>n+p.v,0)/points.length,min:Math.min(...points.map(p=>p.min)),max:Math.max(...points.map(p=>p.max)),last:points.at(-1).v,n:points.length}:{};return JSON.stringify({points,summary});}};
  });
- await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));
+ await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));await autarpieControls.prepare(page);
  const tile=id=>page.locator(`[data-tile="test-${id}"]`),svg=id=>tile(id).locator('.tile-sparkline');
  const layouts=await page.evaluate(()=>window.testConfig.tiles.map(t=>t.layouts));
  assert.equal(await svg('solar').getAttribute('data-scale-max'),'200');

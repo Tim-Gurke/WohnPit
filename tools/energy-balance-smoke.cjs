@@ -1,3 +1,4 @@
+const autarpieControls=require('./autarpie-test-controls.cjs');
 const {chromium}=require('playwright');
 const assert=require('node:assert/strict');
 const path=require('node:path');
@@ -14,7 +15,7 @@ const path=require('node:path');
    return JSON.stringify({accountingVersion:2,solar:window.missingBattery||window.missingSolar?{points:[],summary:{from,to,last:null,coverage:0}}:data('solar',window.zeroEnergy?0:40,.5),balance:window.missingBattery||window.missingBattery||window.missingSolar?{points:[],summary:{from,to,last:null,coverage:0}}:data('balance',window.zeroEnergy?0:-30,.4),consumption:window.missingBattery||window.missingBattery||window.missingSolar?{points:[],summary:{from,to,last:null,coverage:0}}:data('consumption',window.zeroEnergy?0:70,.3)});
   }};
  });
- await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));
+ await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));await autarpieControls.prepare(page);
  await page.locator('[data-page="history"]').click();await page.locator('[data-metric="energy"]').click();
  assert.equal(await page.locator('#energyOptions').isVisible(),true);assert.equal(await page.locator('#energyBalance').isChecked(),true);
  assert.equal(await page.locator('#chartLegend span').count(),3);assert.match(await page.locator('#energyNote').textContent(),/Akkubilanz: -30,00 Wh/);
@@ -31,6 +32,6 @@ const path=require('node:path');
  await page.locator('#historySource').selectOption('all');await page.evaluate(()=>{window.missingBattery=true;loadHistory();});assert.equal(await page.locator('#chartLegend span').count(),0);assert.match(await page.locator('#energyNote').textContent(),/Akkubilanz: — Wh/);
  await page.evaluate(()=>{window.missingBattery=false;window.missingSolar=true;loadHistory();});assert.equal(await page.locator('#chartLegend span').count(),0);assert.match(await page.locator('#energyNote').textContent(),/Akkubilanz: — Wh/);
  await page.evaluate(()=>{window.missingSolar=false;window.zeroEnergy=true;loadHistory();});assert.equal(await page.locator('#chartLegend span').count(),3);assert.match(await page.locator('#energyNote').textContent(),/Akkubilanz: 0,00 Wh/);assert.equal(await page.evaluate(()=>Object.is(energyData.balance.summary.last,-0)),false);
- for(const width of [390,1000]){await page.setViewportSize({width,height:1100});for(const theme of ['light','dark']){if(await page.locator('html').getAttribute('data-theme')!==theme)await page.locator('#themeToggle').click();assert.equal(await page.locator('#energyBalance').isVisible(),true);assert.equal(await page.evaluate(()=>document.body.scrollWidth>innerWidth),false);}}
+ for(const width of [390,1000]){await page.setViewportSize({width,height:1100});for(const theme of ['light','dark']){if(await page.locator('html').getAttribute('data-theme')!==theme)await autarpieControls.toggleTheme(page);assert.equal(await page.locator('#energyBalance').isVisible(),true);assert.equal(await page.evaluate(()=>document.body.scrollWidth>innerWidth),false);}}
  assert.deepEqual(errors,[]);await browser.close();console.log('Energy flow from common Solar/Shunt intervals, three-series tooltip, toggle without requery, source filters, missing inputs, measured zero, light/dark and narrow/wide views passed.');
 })().catch(e=>{console.error(e);process.exit(1);});

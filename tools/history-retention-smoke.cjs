@@ -1,3 +1,4 @@
+const autarpieControls=require('./autarpie-test-controls.cjs');
 /* Regression for the reported viewer flicker and monthly day-archive reads. Synthetic data. */
 const {chromium}=require('playwright'),assert=require('node:assert/strict'),path=require('node:path'),fs=require('node:fs');
 const preset=require('../app/src/main/assets/dashboard-preset.json');
@@ -27,7 +28,7 @@ const preset=require('../app/src/main/assets/dashboard-preset.json');
    window.drain=error=>{let limit=0;while(window.pendingReads.length){if(++limit>100)throw Error('Unbounded read loop');window.replyOne(error);}};
    window.WattPit={appVersion:()=> '2.0.1',isLanViewer:()=>true,lanState:()=>JSON.stringify({id:'plant',role:'viewer',name:'Testanlage',connected:true}),snapshot:()=>JSON.stringify({running:true,historyRevision:window.revision,lan:{id:'plant',connected:true},devices:[{mac:'shunt',kind:'shunt',name:'Test-Shunt'},{mac:'solar',kind:'solar',name:'Test-Solar'}],readings:[{device:'shunt',kind:'shunt',t:Date.now(),soc:62,voltage:13.15,current:-2,power:-26},{device:'solar',kind:'solar',t:Date.now(),solar:0,state:0}],found:[],stats:{count:100},settings:{theme,palette:'classic',capacity:100,sampleSeconds:10,miniRange:'last6h'},solarDaily:[{day:'2026-10-27','Yield(Wh)':410},{day:'2026-10-26','Yield(Wh)':0}]}),syncState:()=>JSON.stringify({busy:false,runId:0,cockpitNoticeAccepted:true,theme,palette:'classic'}),dashboardPreset:()=>JSON.stringify(preset),dashboard:()=>JSON.stringify(preset),saveDashboard:()=>'',settings:()=>'',solarSetup:()=> '{}',rollerSnapshot:()=> '{}',history:()=>{throw Error('Blocking viewer read');},dashboardHistory:()=>{throw Error('Blocking viewer read');},energyHistoryWindow:()=>{throw Error('Blocking viewer read');},dailyEnergy:()=>{throw Error('Blocking viewer read');},requestHistory:json=>{const q=JSON.parse(json);if(window.auto)setTimeout(()=>window.onHistoryResult({id:q.id,data:history(q)}),10);else window.pendingReads.push(q);}};
   },{preset,theme});
-  await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));
+  await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));await autarpieControls.prepare(page);
   const consumption=page.locator('.cockpit-tile').filter({has:page.locator('.tile-label',{hasText:'Geräteverbrauch'})});
   await until(()=>window.pendingReads.length>0);
   // Each delayed result is overtaken by another live revision. A cold viewer
@@ -41,11 +42,7 @@ const preset=require('../app/src/main/assets/dashboard-preset.json');
   assert.equal(await yieldTile.locator('.tile-number').textContent(),'410,00');
   await page.evaluate(()=>{window.auto=true;window.drain(false);});await until(()=>!reads.inflight&&!reads.queue.size);
   for(const tile of [consumption,yieldTile])assert.ok((await tile.locator('.tile-sparkline path').last().getAttribute('d')).split('L').length>100,'a complete energy curve must be drawn');
-  const colors=await page.locator('#miniChart').evaluate(canvas=>{
-   const pixels=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;let solar=0,battery=0;
-   for(let i=0;i<pixels.length;i+=4){const [r,g,b]=pixels.slice(i,i+3);if(r>150&&g>70&&g<200&&b<140)solar++;if(g>120&&g>r*1.2&&b>r*1.1)battery++;}
-   return {solar,battery};
-  });
+  const colors=await autarpieControls.curves(page,'#miniChart');
   assert.ok(colors.solar>30&&colors.battery>30,'solar and battery curves must be painted '+JSON.stringify(colors));
   if(process.env.WATTPIT_SCREENSHOT_DIR){fs.mkdirSync(process.env.WATTPIT_SCREENSHOT_DIR,{recursive:true});await page.screenshot({path:path.join(process.env.WATTPIT_SCREENSHOT_DIR,'viewer-first-statistics-'+theme+'.png'),fullPage:true});}
   await page.evaluate(()=>{const tile=dashboard.config.tiles.find(t=>t.metric==='consumptionEnergy');if(!dashboard.detail)dashboard.detail=new WattTileDetail(dashboard);dashboard.detail.open(tile.id);});

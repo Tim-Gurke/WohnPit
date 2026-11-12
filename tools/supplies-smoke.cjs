@@ -1,3 +1,4 @@
+const autarpieControls=require('./autarpie-test-controls.cjs');
 /* Actual shipped UI with a delayed, acknowledged data-host fixture; fictional data only. */
 const waitForPage=require('./browser-wait.cjs');
 const {chromium}=require('playwright'),assert=require('node:assert/strict'),path=require('node:path'),fs=require('node:fs');
@@ -19,9 +20,9 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),path
      },400);}
    };
   });
-  await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));await page.locator('[data-page="supplies"]').click();
+  await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));await autarpieControls.prepare(page);await page.locator('[data-page="supplies"]').click();
   assert.match(await page.locator('#supplies-gas .supply-range').textContent(),/1 Tag 17 Stunden/);assert.match(await page.locator('#supplies-water').textContent(),/12 L verbleibend/);
-  assert.equal(await page.locator('#navSupplies svg path').count(),2);assert.equal(await page.locator('.supply-symbol svg').count(),2);
+  assert.equal(await page.locator('.bottom-nav [data-page="supplies"] svg path').count(),2);assert.equal(await page.locator('.supply-symbol svg').count(),2);
   assert.match(await page.locator('#supplies-gas .supply-weather').textContent(),/Wetterkorrektur noch nicht aktiv/);
   assert.match(await page.locator('#supplies-gas .supply-weather').textContent(),/0 von mindestens 6/);
   assert.equal(await page.evaluate(()=>document.body.scrollWidth>innerWidth),false);
@@ -30,7 +31,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),path
   await page.locator('[data-supply-unit="gas"]').selectOption('Flaschen');await page.locator('[data-supply-unit="water"]').selectOption('Kanister');
   assert.match(await page.locator('[data-supply-needs="gas"]').textContent(),/3,5 Flaschen/);assert.match(await page.locator('[data-supply-needs="water"]').textContent(),/3,5 Kanister/);
   assert.match(await page.locator('#supplies-water .supply-unit-setting').textContent(),/1 Kanister = 20 L/);assert.match(await page.locator('#supplies-gas .supply-unit-setting').textContent(),/1 Flasche = 11 kg/);
-  assert.deepEqual(await page.evaluate(()=>window.testBoard.supplyUnits),{water:'Kanister',gas:'Flaschen'});assert.equal(await page.evaluate(()=>window.writes),0);assert.equal(await page.evaluate(()=>JSON.stringify(window.suppliesFixture.events)),originalJournal);
+  assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('autarpie-workspace-v1')).pages.find(p=>p.id==='supplies').board.supplyUnits),{water:'Kanister',gas:'Flaschen'});assert.equal(await page.evaluate(()=>window.writes),0);assert.equal(await page.evaluate(()=>JSON.stringify(window.suppliesFixture.events)),originalJournal);
   await page.evaluate(()=>document.querySelector('.bottom-nav').hidden=true);await page.locator('#supplies-water').screenshot({path:path.join(out,'supplies-water-2.0.2-dark.png'),animations:'disabled'});await page.evaluate(()=>{window.testTheme='light';poll();});await page.locator('#supplies-water').screenshot({path:path.join(out,'supplies-water-2.0.2-light.png'),animations:'disabled'});await page.evaluate(()=>{window.testTheme='dark';poll();document.querySelector('.bottom-nav').hidden=false;});
   await page.locator('[data-supply-unit="gas"]').selectOption('kg');await page.locator('[data-supply-unit="water"]').selectOption('L');
   await page.screenshot({path:path.join(out,'supplies-2.0.2-dark.png'),animations:'disabled'});
@@ -43,7 +44,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),path
   await page.locator('[data-supply-edit]').first().click();await page.locator('#supplyDelete').click();await page.locator('#supplyCancel').click();assert.equal(await page.evaluate(()=>window.writes),2,'cancel deletion preserves journal');await page.locator('#supplyDelete').click();await page.locator('#supplySave').click();await waitForPage(page,()=>window.writes===3);await waitForPage(page,()=>document.getElementById('modal').hidden);
   await page.locator('#suppliesSettings').click();await page.locator('#supplyWaterDefault').fill('25');await page.locator('#supplySave').click();await waitForPage(page,()=>window.writes===4);await waitForPage(page,()=>document.getElementById('modal').hidden);await page.locator('#suppliesWater').click();assert.equal(await page.locator('#supplyAmount').inputValue(),'25');await page.locator('#supplyCancel').click();
   await page.locator('[data-page="overview"]').click();const layouts=await page.evaluate(()=>dashboard.config.tiles.map(t=>({id:t.id,layouts:t.layouts})));
-  await page.locator('#addTile').click();await page.locator('[data-metric="gasRange"]').click();if(await page.locator('#saveTile').count())await page.locator('#saveTile').click();
+  await page.evaluate(()=>document.getElementById('dashboardToolbar').hidden=false);await autarpieControls.addTile(page);await page.locator('[data-metric="gasRange"]').click();if(await page.locator('#saveTile').count())await page.locator('#saveTile').click();
   assert.match(await page.locator('[data-tile] .tile-number').last().textContent(),/Tag|Stunde/);assert.deepEqual(await page.evaluate(()=>dashboard.config.tiles.filter(t=>t.metric!=='gasRange').map(t=>({id:t.id,layouts:t.layouts}))),layouts);
   const rangeFits=async()=>{const rects=await page.locator('[data-tile]').last().evaluate(el=>{const number=el.querySelector('.tile-number').getBoundingClientRect(),visual=el.querySelector('.tile-visual').getBoundingClientRect();return {top:number.top,bottom:number.bottom,from:visual.top,to:visual.bottom};});assert.ok(rects.top>=rects.from-1&&rects.bottom<=rects.to+1,'days/hours text must fit entirely inside its tile: '+JSON.stringify(rects));};await rangeFits();
   await page.evaluate(()=>{document.getElementById('toast').hidden=true;document.getElementById('plantActionStatus').hidden=true;});await page.locator('[data-tile]').last().screenshot({path:path.join(out,'supplies-range-2.0.2.png'),animations:'disabled'});await page.setViewportSize({width:832,height:620});await waitForPage(page,()=>dashboard.profile==='wide');await rangeFits();await page.setViewportSize({width:390,height:900});await waitForPage(page,()=>dashboard.profile==='compact');
@@ -58,7 +59,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),path
   await page.locator('#modal .sheet').screenshot({path:path.join(out,'supplies-settings-2.0.2.png'),animations:'disabled'});
   await page.locator('#supplyWaterContainer').fill('20');await page.locator('#supplyGasDefault').fill('11');await page.locator('#supplySave').click();await waitForPage(page,()=>document.getElementById('modal').hidden);
   for(const [metric,unit,sizeHint,value] of [['gasNeed14','Flaschen','1 Flasche = 11 kg','3,5'],['waterNeed14','Kanister','1 Kanister = 20 L','3,5']]){
-   await page.locator('[data-page="overview"]').click();await page.locator('#addTile').click();await page.locator('[data-metric="'+metric+'"]').click();
+   await page.locator('[data-page="overview"]').click();await page.evaluate(()=>document.getElementById('dashboardToolbar').hidden=false);await autarpieControls.addTile(page);await page.locator('[data-metric="'+metric+'"]').click();
    await page.locator('[data-tile]').last().click();await page.locator('#tileActionSettings').click();
    await page.locator('#tileUnit').selectOption(unit);assert.equal(await page.locator('#tileSupplyUnitHint').textContent(),sizeHint);
    await page.locator('#tileType').selectOption('gauge');await page.getByText('Skala',{exact:true}).click();await page.locator('#tileMax').fill('5');await page.locator('#saveTile').click();
@@ -96,11 +97,11 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),path
   await page.evaluate(()=>{window.suppliesFixture.weather.enabled=true;window.suppliesFixture.weather.forecast=[];poll();});
   assert.equal(await page.locator('.supply-weather').getAttribute('data-state'),'missing-forecast','changing only forecast rows must refresh the calculation');
   await page.evaluate(fixture=>{window.suppliesFixture=fixture;window.testTheme='dark';poll();},previousFixture);
-  await page.setViewportSize({width:390,height:900});assert.equal(await page.evaluate(()=>document.body.scrollWidth>innerWidth),false);
+  await page.setViewportSize({width:390,height:900});await waitForPage(page,()=>!dashboard.resizePending&&document.body.scrollWidth<=innerWidth).catch(async error=>{console.error(await page.evaluate(()=>({width:innerWidth,overflow:[...document.querySelectorAll('body *')].filter(e=>e.getClientRects().length&&e.getBoundingClientRect().right>innerWidth+1).slice(0,10).map(e=>({id:e.id,cls:e.className,right:e.getBoundingClientRect().right}))})));throw error;});assert.equal(await page.evaluate(()=>document.body.scrollWidth>innerWidth),false);
   await page.evaluate(()=>{delete window.suppliesFixture.containerSizeSettings;poll();});await page.locator('#suppliesSettings').click();assert.equal(await page.locator('#supplyWaterContainer').isDisabled(),true);assert.match(await page.locator('#modalBody').textContent(),/auch die Zentrale/);await page.locator('#supplyCancel').click();
   await page.evaluate(()=>{window.suppliesFixture.containerSizeSettings=true;poll();});
   await page.evaluate(()=>{window.online=false;poll();});assert.equal(await page.locator('#suppliesWater').isDisabled(),true);assert.match(await page.locator('#suppliesStatus').textContent(),/Letzter Stand/);
-  await page.evaluate(()=>{window.online=true;delete window.suppliesFixture.protocol;poll();});assert.equal(await page.locator('#suppliesGas').isDisabled(),true);assert.match(await page.locator('#suppliesStatus').textContent(),/0\.0\.4/);
+  await page.evaluate(()=>{window.online=true;delete window.suppliesFixture.protocol;poll();});assert.equal(await page.locator('#suppliesGas').isDisabled(),true);assert.match(await page.locator('#suppliesStatus').textContent(),/AutarPie 3\.0\.0/);
   assert.deepEqual(errors,[]);console.log('PASS supplies UI: days/hours, delayed host acknowledgement, additions, early gas changes, delete/cancel, shared defaults, optional tiles, retained layouts, offline/update states and screenshots.');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});

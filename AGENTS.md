@@ -38,3 +38,11 @@ Die Sicherung aus 0.0.5 kopiert die Geräte-Konfiguration einschließlich der `s
 Eine künftige automatische Schlüsselübernahme muss die Schlüssel in der Quell-App entschlüsseln, ausschließlich innerhalb der kennwortgeschützten vollständigen Sicherung übertragen und für den AndroidKeyStore der Ziel-App neu verschlüsseln. Keine ungeschützten öffentlichen Schlüsseldateien oder Protokolle erzeugen. Der Import muss auf nicht übertragbare Schlüssel hinweisen, statt allein aus dem vorhandenen verschlüsselten Feld einen funktionsfähigen Schlüssel abzuleiten.
 
 Dafür einen Android-Test mit tatsächlich getrennten App-UIDs beziehungsweise Installationen und echten AndroidKeyStore-Schlüsseln verwenden. Ein ContextWrapper mit verändertem Paketnamen und ein synthetischer Klartext-Einstellungswert prüfen die UID-Grenze nicht. Erst nach dieser Prüfung eine automatische Übernahme der Victron-Schlüssel zusagen.
+
+## AutarPie ab 3.0.0
+
+Am 12.11.2026 beauftragt: sichtbarer Name AutarPie und Ressourcen-Kreislauf-Symbol. Das Repository WohnPit, Paket `de.wattpit.app`, vorhandene Updatesignatur, Daten, Kopplungen und ScootPit-Schnittstelle bleiben erhalten. Die neuen Bereichsfarben ersetzen die alten Standardfarben; bewusste eigene Farben bleiben erhalten.
+
+Alle Prognosen, Energieauswertungen, Lernmodelle und Statistiken laufen auf Anzeigehandys oder im eigenständigen Betrieb. Die native Zentrale sammelt, speichert und synchronisiert Grundlagen und führt bestätigte Steueraufträge sowie zeitlich begrenzte Ladepläne mit direkten Abschaltbedingungen aus. Keine neue automatische Ladung ohne gültigen Anzeigeplan. Hardwarestatus und gesendeten Auftrag getrennt darstellen.
+
+Alle Standardbereiche und selbst erstellte Dashboards verwenden denselben Kacheleditor. Layouts sind gerätelokal, Bereichsfarben gemeinsam; Einzelkachel-Abweichungen erkennbar erhalten. Entfernen einer Kachel erfordert eine Bestätigung. Darstellungsgröße nur nach ausdrücklichem Speichern ändern.

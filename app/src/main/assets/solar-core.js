@@ -41,7 +41,7 @@
   function part(hour){return hour<11?0:hour<16?1:2;}
   function setupKey(equipment,plan,place={},source=''){
     if(!finite(place.latitude)||!finite(place.longitude))return '';
-    const text=JSON.stringify([source,place.latitude.toFixed(3),place.longitude.toFixed(3),(equipment.groups||[]).map(g=>{const m=Equipment.yieldModel(g);return [g.id,g.count,g.watts,g.tilt,g.measurement,g.placement,plan.groups[g.id]?.active,plan.groups[g.id]?.azimuth,plan.groups[g.id]?.shade,...(g.yieldFactor==null?[]:[g.yieldFactor,g.controller||'']),...(m.type==='pwm'&&m.mode==='auto'?['pwm-start-v1']:[])];}).sort((a,b)=>a[0].localeCompare(b[0]))]);
+    const text=JSON.stringify([source,place.latitude.toFixed(3),place.longitude.toFixed(3),(equipment.groups||[]).map(g=>{const m=Equipment.yieldModel(g);return [g.id,g.count,g.watts,g.tilt,g.measurement,g.placement,plan.groups[g.id]?.active,plan.groups[g.id]?.azimuth,plan.groups[g.id]?.shade,...(g.yieldFactor==null?[]:[g.yieldFactor,g.controller||'']),...(m.type==='pwm'&&m.mode==='auto'?['pwm-start-v1']:[]),...(g.electrical?['electrical-v1',g.electrical.regulator,g.electrical.series,g.electrical.voc,g.electrical.vmp,g.electrical.isc,g.electrical.imp,g.electrical.maxVoltage,g.electrical.maxChargeA,g.electrical.maxPower,g.electrical.systemVoltage]:[])];}).sort((a,b)=>a[0].localeCompare(b[0]))]);
     let a=2166136261,b=3339675911;for(let i=0;i<text.length;i++){a=Math.imul(a^text.charCodeAt(i),16777619);b=Math.imul(b^text.charCodeAt(i),2246822519);}return 'k-'+(a>>>0).toString(16).padStart(8,'0')+(b>>>0).toString(16).padStart(8,'0');
   }
   function calibrationKey(equipment,plan,place={},source=''){return setupKey({...equipment,groups:(equipment.groups||[]).filter(g=>g.measurement==='solar')},plan,place,source);}
@@ -154,7 +154,7 @@
     const dated=new Map(),counts=new Map();for(const d of weather.days||[]){counts.set(d.day,(counts.get(d.day)||0)+1);if(today&&d.day>=today&&!dated.has(d.day))dated.set(d.day,d);}
     const days=[...dated.values()].slice(0,14);
     for(let index=0;index<days.length;index++){
-      const d=days[index],bins=PARTS.map(()=>({fixed:0,mobile:0,raw:0,remaining:0})),timeline=new Map((byDay.get(d.day)||[]).map(h=>[h.t,{from:h.t-HOUR,to:h.t,wh:0,raw:0,slot:h.slot}])),issues=[],add=(kind,g)=>{if(!issues.some(x=>x.kind===kind&&x.group===(g?.label||g?.id||'')))issues.push({kind,group:g?.label||g?.id||''});};let complete=(equipment.groups||[]).length>0,unknownShade=false,seen=0;
+      const d=days[index],bins=PARTS.map(()=>({fixed:0,mobile:0,raw:0,remaining:0})),timeline=new Map((byDay.get(d.day)||[]).map(h=>[h.t,{from:h.t-HOUR,to:h.t,wh:0,raw:0,slot:h.slot}])),issues=[],add=(kind,g)=>{if(!issues.some(x=>x.kind===kind&&x.group===(g?.label||g?.id||'')))issues.push({kind,group:g?.label||g?.id||''});};const contributions=[];let complete=(equipment.groups||[]).length>0,unknownShade=false,seen=0;
       if(!complete)add('equipment');
       const windows=(weather.windows||[]).filter(w=>w.day===d.day).sort((a,b)=>a.slot-b.slot),validWindows=windows.length===3&&windows.every((w,i)=>w.slot===i&&finite(w.from)&&finite(w.to)&&w.to>w.from&&(i===0||w.from===windows[i-1].to));
       const expected=validWindows?windows.reduce((sum,w)=>sum+(w.to-w.from)/HOUR,0):null;
@@ -167,11 +167,12 @@
         if(!validWindows||counts.get(d.day)!==1){complete=false;add('time');}
         const yieldFactor=Equipment.yieldModel(g).factor;
         for(const {t,slot} of byDay.get(d.day)||[]){const value=series.get(t);if(!finite(value)||value<0){complete=false;if(measured)measuredComplete=false;continue;}groupHours++;const shade=setting.shade[slot];unknownShade=unknownShade||shade===null;const wh=g.count*g.watts*value/1000*yieldFactor*[1,.8,.55,.25][shade??0],isMobile=g.placement==='mobile',referenceAllowed=active.filter(x=>x.measurement==='solar').every(x=>plan.groups[x.id]?.shade?.[slot]===0),factor=measured?corrections[slot].factor:referenceAllowed?corrections[slot].mobileFactor:1;
-          bins[slot][isMobile?'mobile':'fixed']+=wh*factor;if(measured){bins[slot].raw+=wh;timeline.get(t).raw+=wh;}
-          bins[slot].remaining+=wh*factor*clamp((t-now)/HOUR,0,1);
-          timeline.get(t).wh+=wh*factor;
+          contributions.push({g,t,slot,wh,factor,isMobile,measured});
         }
         if(groupHours!==expected){complete=false;if(measured)measuredComplete=false;if(validWindows)add('weather');}seen=Math.max(seen,groupHours);
+      }
+      for(const {t,slot,wh,factor,isMobile,measured}of Equipment.limitContributions(contributions,knowledge.batteryVoltage)){
+        bins[slot][isMobile?'mobile':'fixed']+=wh*factor;if(measured){bins[slot].raw+=wh;timeline.get(t).raw+=wh;}bins[slot].remaining+=wh*factor*clamp((t-now)/HOUR,0,1);timeline.get(t).wh+=wh*factor;
       }
       if(active.length&&!seen)complete=false;
       const fixed=complete?bins.reduce((a,b)=>a+b.fixed,0):null,mobile=complete?bins.reduce((a,b)=>a+b.mobile,0):null,total=fixed===null?null:fixed+mobile,baseline=consumption(plan,knowledge.observations,d.day,now);

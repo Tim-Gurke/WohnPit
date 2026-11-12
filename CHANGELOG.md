@@ -4,6 +4,11 @@ Die Dokumentation bleibt vollständig erhalten, auch wenn ältere GitHub-Release
 
 ## Veröffentlichte Versionen
 
+### 3.0.0 · AutarPie
+
+Großes Cockpit-Update mit Ressourcen-Kreislauf-Symbol, frei wählbaren Bereichen, eigenen Dashboards, gemeinsamen Farben/Verläufen und bestätigter Kachel-/Größenbearbeitung. Native Zentralenoberfläche, Berechnung auf Anzeigen/eigenständigen Geräten, zeitlich begrenzte Überschusspläne, Lastausgang und 608PD-Grundintegration, gemeinsame Solareinrichtung mit stabilen Kreiskennungen und gemeinsamen Reglergrenzen, PV-Spannung, Phasenzeitleiste und Autostart. Paket und Updatesignatur bleiben erhalten. [Umfang, Update und Prüfgrenzen](docs/changes-3.0.0.md).
+
+
 | Version | Änderungen |
 |---|---|
 | [2.0.3](docs/changes-2.0.3.md) | Vollständige Statistikstände bei wechselnden Grundlagen erhalten und aktualisieren; sichtbare Kacheln vor dem Lernabgleich laden. Fehler mit echter TCP-/SQLite-Strecke und tatsächlicher Oberfläche nachgestellt. |

@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import re
+import subprocess
 import urllib.request
 
 PUBLISH_FILES = {
@@ -14,16 +15,35 @@ PUBLISH_FILES = {
 }
 
 
+def publish_file(path):
+    return path in PUBLISH_FILES or bool(re.fullmatch(r"releases/artifacts/v[0-9]+\.[0-9]+\.[0-9]+/part-[0-9]{2}\.b64",path)) or bool(re.fullmatch(r"docs/images/autarpie-[0-9]+\.[0-9]+\.[0-9]+-(?:dark|light|settings|central)\.svg",path))
+
+
+def verify_apk(path,pin):
+    sdk=Path(os.environ.get("ANDROID_HOME",os.environ.get("ANDROID_SDK_ROOT","/usr/local/lib/android/sdk")))
+    signers=sorted(sdk.glob("build-tools/*/apksigner"),reverse=True)
+    if not signers:raise ValueError("Android apksigner is required before publishing")
+    result=subprocess.run([str(signers[0]),"verify","--print-certs",str(path)],check=True,text=True,capture_output=True)
+    actual=re.findall(r"certificate SHA-256 digest: ([a-f0-9]+)",result.stdout)
+    if actual!=[pin]:raise ValueError("The APK does not carry the original installed update signature")
+
+
 def validate_manifest(manifest):
     if not re.fullmatch(r"v\d+\.\d+\.\d+", manifest["tag"]):
         raise ValueError("Invalid release tag")
-    if manifest["asset_name"] != "WohnPit-" + manifest["tag"] + ".apk":
+    if manifest["asset_name"] not in ["WohnPit-"+manifest["tag"]+".apk","AutarPie-"+manifest["tag"]+".apk"]:
         raise ValueError("Unexpected APK filename")
     for key, length in [("tested_commit", 40), ("asset_blob_sha", 40), ("asset_sha256", 64)]:
         if not re.fullmatch(r"[a-f0-9]{" + str(length) + "}", manifest[key]):
             raise ValueError("Invalid " + key)
     if not isinstance(manifest["asset_size"], int) or not 10000 <= manifest["asset_size"] <= 50 * 1024 * 1024:
         raise ValueError("Unexpected APK size")
+    if manifest["asset_name"].startswith("AutarPie-") and not re.fullmatch(r"[a-f0-9]{64}",manifest.get("signer_sha256","")):
+        raise ValueError("Original update signer fingerprint is required")
+    if manifest.get("asset_encoding") is not None:
+        parts=manifest.get("asset_blob_shas",[])
+        if manifest["asset_encoding"]!="base64-parts" or not isinstance(parts,list) or not 1<=len(parts)<=64 or any(not re.fullmatch(r"[a-f0-9]{40}",part) for part in parts) or parts[0]!=manifest["asset_blob_sha"]:
+            raise ValueError("Invalid signed APK parts")
     helpers = manifest.get("helpers", [])
     if not isinstance(helpers, list) or len(helpers) > 4:
         raise ValueError("Invalid release helpers")
@@ -51,14 +71,16 @@ def prepare(manifest, repository, target, api, output):
         comparison = api("compare/" + source + "..." + target)
         if comparison.get("status") not in ("ahead", "identical") or "files" not in comparison:
             raise ValueError("The release target must descend from the tested source")
-        if any(row["filename"] not in PUBLISH_FILES or row.get("previous_filename", row["filename"]) not in PUBLISH_FILES for row in comparison["files"]):
+        if any(not publish_file(row["filename"]) or not publish_file(row.get("previous_filename",row["filename"])) for row in comparison["files"]):
             raise ValueError("Untested app changes must not be included in this release")
     assets = []
     for entry in [manifest, *manifest.get("helpers", [])]:
-        blob = api("git/blobs/" + entry["asset_blob_sha"])
-        if blob.get("encoding") != "base64" or blob.get("sha") != entry["asset_blob_sha"]:
-            raise ValueError("Unexpected APK object")
-        apk = base64.b64decode("".join(blob["content"].split()), validate=True)
+        parts=[]
+        for sha in entry.get("asset_blob_shas",[entry["asset_blob_sha"]]):
+            blob=api("git/blobs/"+sha)
+            if blob.get("encoding")!="base64" or blob.get("sha")!=sha:raise ValueError("Unexpected APK object")
+            parts.append(base64.b64decode("".join(blob["content"].split()),validate=True))
+        apk=base64.b64decode(b"".join(parts),validate=True) if entry.get("asset_encoding")=="base64-parts" else parts[0]
         if len(apk) != entry["asset_size"] or hashlib.sha256(apk).hexdigest() != entry["asset_sha256"]:
             raise ValueError("A release APK differs from the signed and tested download")
         assets.append((entry, apk))
@@ -69,6 +91,7 @@ def prepare(manifest, repository, target, api, output):
     body = base64.b64decode(notes["content"]).decode("utf-8")
     body = body.replace("](GAS-WASSER.md)", "](https://github.com/" + repository + "/blob/main/docs/GAS-WASSER.md)")
     body = body.replace("](../CHANGELOG.md)", "](https://github.com/" + repository + "/blob/main/CHANGELOG.md)")
+    body = body.replace("](AUTARPIE-3.md)", "](https://github.com/" + repository + "/blob/main/docs/AUTARPIE-3.md)")
     body += ("\n\nGeprüfter APK-Quellstand: `" + source + "`.\n\n"
              "Validierung: " + str(manifest["unit_tests"]) + " Tests, "
              + str(manifest["integration_checks"]) + " Integrationsprüfungen und "
@@ -86,7 +109,7 @@ def prepare(manifest, repository, target, api, output):
     paths.append(str(output / "SHA256SUMS"))
     (output / "assets.json").write_text(json.dumps(paths))
     (output / "notes.md").write_text(body)
-    return {"tag": manifest["tag"], "title": "WohnPit " + manifest["tag"][1:], "apk": paths[0]}
+    return {"tag": manifest["tag"], "title": ("AutarPie " if manifest["asset_name"].startswith("AutarPie-") else "WohnPit ")+manifest["tag"][1:], "apk": paths[0]}
 
 
 def main():
@@ -104,6 +127,7 @@ def main():
 
     manifest = json.loads(Path("releases/current.json").read_text())
     outputs = prepare(manifest, repository, os.environ["GITHUB_SHA"], api, Path("release-out"))
+    if manifest.get("signer_sha256"):verify_apk(Path(outputs["apk"]),manifest["signer_sha256"])
     with open(os.environ["GITHUB_OUTPUT"], "a") as stream:
         for key, value in outputs.items():
             stream.write(key + "=" + value + "\n")

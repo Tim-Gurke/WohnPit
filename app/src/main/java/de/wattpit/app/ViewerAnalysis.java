@@ -76,10 +76,10 @@ final class ViewerAnalysis {
         for(int retry=0;retry<3;retry++){
             JSONObject m=get("analysisMetadata",new JSONArray().put(from).put(to));
             if(m.optBoolean("changed"))continue;
-            if(m.getInt("algorithm")!=SolarPlanning.ALGORITHM)throw new IOException("Bitte Hauptgerät und Anzeige auf dieselbe WohnPit-Version aktualisieren.");
+            if(m.getInt("algorithm")!=SolarPlanning.ALGORITHM)throw new IOException("Bitte Hauptgerät und Anzeige auf dieselbe AutarPie-Version aktualisieren.");
             JSONObject versions=m.getJSONObject("tables");boolean changed=false;
             for(String table:AnalysisExchange.ALL){
-                String version=versions.getString(table),scope=(table.equals("model_weather")||table.equals("device_settings")||table.equals("input_intervals"))?":"+from+":"+to:"";
+                String version=versions.getString(table),scope=(table.equals("model_weather")||table.equals("device_settings")||table.equals("input_intervals")||table.equals("roller_raw"))?":"+from+":"+to:"";
                 String key="analysis.table."+table+scope;boolean incremental=AnalysisExchange.incremental(table);
                 if(version.equals(repo.prefs.getString(key,"")))continue;
                 long cursor=incremental?repo.prefs.getLong("analysis.cursor."+table,0):0;JSONArray rows=new JSONArray();
@@ -102,12 +102,12 @@ final class ViewerAnalysis {
                 JSONObject markers=m.getJSONObject("markers");for(Iterator<String> it=markers.keys();it.hasNext();){String key=it.next();Object value=markers.get(key);if(value instanceof Number){if(key.startsWith("planningEnergyVersion."))edit.putInt(key,((Number)value).intValue());else edit.putLong(key,((Number)value).longValue());}else edit.putString(key,value.toString());}
                 edit.putBoolean("analysis.seeded",true);
             }
-            edit.putString("analysisTimezone",m.getString("timezone")).commit();metadata=m;return;
+            edit.putString("analysisTimezone",m.getString("timezone")).commit();ledger.derive(from,to);metadata=m;return;
         }
         throw new IOException("Die Berechnungsgrundlagen ändern sich gerade. Bitte erneut versuchen.");
     }
     private void requireProtocol()throws Exception{
-        if(lan.analysisProtocol()!=1)throw new IOException("Bitte zuerst das Hauptgerät auf WohnPit 1.7.0 oder neuer aktualisieren.");
+        if(lan.analysisProtocol()!=1)throw new IOException("Bitte zuerst das Hauptgerät auf AutarPie 1.7.0 oder neuer aktualisieren.");
     }
     private static long support(long from){return Math.max(0,from/86400000L*86400000L-4L*86400000-EnergyIntegral.LOOKAROUND);}
     private void prepare(long from,long to)throws Exception{
@@ -135,6 +135,7 @@ final class ViewerAnalysis {
             if(from<0||to<=from||to-from>(method.equals("dailyEnergy")?32L:366L)*86400000||(!method.equals("dailyEnergy")&&to>now+86400000))throw new IOException("Ungültiger Zeitraum.");
             prepare(from,Math.max(from+1,Math.min(to,now)));note("Auswertung auf diesem Handy …");JSONObject result;
             switch(method){
+                case "rollerEnergy":result=ledger.summary(RollerLedger.source(repo.prefs),from,to);break;
                 case "history":result=new JSONObject().put("points",planning.history(from,to,args.getString(2),args.getString(3)));break;
                 case "dashboardHistory":result=planning.dashboardData(from,to,args.getString(2));break;
                 case "energyHistoryWindow":result=planning.energyFlow(from,to,args.getLong(3),args.getLong(4),args.getString(2));break;

@@ -1,3 +1,4 @@
+const autarpieControls=require('./autarpie-test-controls.cjs');
 const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),http=require('node:http');
 (async()=>{
  const root=path.resolve(__dirname,'../app/src/main/assets'),server=http.createServer((q,r)=>{const file=path.join(root,new URL(q.url,'http://localhost').pathname==='/'?'index.html':new URL(q.url,'http://localhost').pathname);if(!file.startsWith(root+path.sep)||!fs.existsSync(file)){r.writeHead(404);r.end();return;}r.setHeader('Content-Type',file.endsWith('.js')?'text/javascript':file.endsWith('.css')?'text/css':'text/html');r.end(fs.readFileSync(file));});await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));

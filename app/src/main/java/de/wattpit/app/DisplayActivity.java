@@ -41,7 +41,7 @@ public final class DisplayActivity extends Activity {
     private String pendingArchive;
     private long stoppedAt;
     private boolean entered,foreground,checkingArchive;
-    private static final int PERMISSIONS = 11, BLUETOOTH = 12, IMPORT = 20, EXPORT = 21, IMPORT_SETTINGS = 22, EXPORT_SETTINGS = 23, EXPORT_DIAGNOSTICS = 25;
+    private static final int PERMISSIONS = 11, BLUETOOTH = 12, IMPORT = 20, EXPORT = 21, IMPORT_SETTINGS = 22, EXPORT_SETTINGS = 23, EXPORT_DIAGNOSTICS = 25, IMPORT_CHARGER = 26;
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override public void onCreate(Bundle savedInstanceState) {
@@ -209,6 +209,12 @@ public final class DisplayActivity extends Activity {
         if(requestCode==EXPORT_SETTINGS&&resultCode!=RESULT_OK)pendingSettingsExport=null;
         if (resultCode != RESULT_OK || data == null || data.getData() == null) return;
         Uri uri = data.getData();
+        if(requestCode==IMPORT_CHARGER)files.execute(()->{try(InputStream input=getContentResolver().openInputStream(uri)){
+            if(input==null)throw new IOException();byte[] auth=de.wattpit.app.core.ChargerCapture.read(input);StringBuilder hex=new StringBuilder();for(byte b:auth)hex.append(String.format(java.util.Locale.ROOT,"%02x",b&255));java.util.Arrays.fill(auth,(byte)0);
+            JSONObject cfg=lan.viewer()?new JSONObject(lan.snapshot()).getJSONObject("energy").getJSONObject("chargerConfig"):ChargerBle.publicConfig(repository);cfg.put("auth",hex.toString());cfg.put("enabled",false);
+            if(lan.viewer())lan.control("saveCharger",new JSONArray().put(cfg.toString()),lan.controlRevision());else lan.localControl("saveCharger",new JSONArray().put(cfg.toString()),solarPlanning);
+            repository.message("Private 608PD-Verbindung übernommen. Jetzt in den Lader-Einstellungen verbinden.");
+        }catch(Exception e){error(e instanceof IOException?new IllegalArgumentException(e.getMessage()):e);}});
         if (requestCode == IMPORT) files.execute(() -> {
             try (InputStream input = getContentResolver().openInputStream(uri)) {
                 if (input == null) throw new IOException();
@@ -252,13 +258,13 @@ public final class DisplayActivity extends Activity {
         if(requestCode==IMPORT_SETTINGS)files.execute(()->{
             try(InputStream input=getContentResolver().openInputStream(uri);ByteArrayOutputStream buffer=new ByteArrayOutputStream()){
                 if(input==null)throw new IOException();byte[] block=new byte[8192];int n;
-                while((n=input.read(block))!=-1){buffer.write(block,0,n);if(buffer.size()>ConfigurationBackup.MAX_BYTES)throw new IllegalArgumentException("Die Einstellungsdatei darf höchstens 256 KB groß sein.");}
+                while((n=input.read(block))!=-1){buffer.write(block,0,n);if(buffer.size()>ConfigurationBackup.MAX_BYTES)throw new IllegalArgumentException("Die Einstellungsdatei darf höchstens 1,8 MB groß sein.");}
                 String json=StandardCharsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.REPORT).decode(ByteBuffer.wrap(buffer.toByteArray())).toString();
                 if(json.startsWith("\uFEFF"))json=json.substring(1);
                 JSONObject backup=ConfigurationBackup.normalize(json);
                 JSONObject result=new JSONObject().put("backup",backup).put("name",displayName(uri));
                 runOnUiThread(()->{if(pageReady)call("onSettingsImportPreview",result);else pendingSettingsPreview=result;});
-            }catch(Exception e){error(e instanceof JSONException?new IllegalArgumentException("Keine gültige WohnPit-Einstellungsdatei."):e);}
+            }catch(Exception e){error(e instanceof JSONException?new IllegalArgumentException("Keine gültige AutarPie-Einstellungsdatei."):e);}
         });
         if(requestCode==EXPORT_SETTINGS){
             final String json=pendingSettingsExport;pendingSettingsExport=null;
@@ -290,7 +296,7 @@ public final class DisplayActivity extends Activity {
         @JavascriptInterface public long controlRevision(){return lan.controlRevision();}
         @JavascriptInterface public void requestPlantCommand(String json){Object plant=lan.identity();files.execute(()->{
             JSONObject result=new JSONObject();try{
-                if(json.length()>600000)throw new IllegalArgumentException("Die Bedienanfrage ist zu groß.");
+                if(json.length()>2500000)throw new IllegalArgumentException("Die Bedienanfrage ist zu groß.");
                 JSONObject command=new JSONObject(json);result.put("id",command.getLong("id"));
                 if(plant!=lan.identity()||!lan.viewer())throw new IllegalArgumentException("Die Anlage wurde gewechselt. Bitte erneut öffnen.");
                 String action=command.getString("action");JSONArray args=command.getJSONArray("args");
@@ -321,7 +327,7 @@ public final class DisplayActivity extends Activity {
         }
         @JavascriptInterface public String leaveLan(){try{boolean resume=lan.leave();runOnUiThread(()->{stopService(new Intent(DisplayActivity.this,LanService.class));if(resume)requestStart();});return "";}catch(Exception e){return Repository.safeError(e);}}
         @JavascriptInterface public String lanPairingCode(){try{return new JSONObject().put("code",lan.pairingCode()).toString();}catch(Exception e){try{return new JSONObject().put("error",Repository.safeError(e)).toString();}catch(Exception ignored){return "{}";}}}
-        @JavascriptInterface public String copyLanCode(){try{String code=lan.pairingCode();runOnUiThread(()->getSystemService(android.content.ClipboardManager.class).setPrimaryClip(ClipData.newPlainText("WohnPit-Verbindungscode",code)));return "";}catch(Exception e){return Repository.safeError(e);}}
+        @JavascriptInterface public String copyLanCode(){try{String code=lan.pairingCode();runOnUiThread(()->getSystemService(android.content.ClipboardManager.class).setPrimaryClip(ClipData.newPlainText("AutarPie-Verbindungscode",code)));return "";}catch(Exception e){return Repository.safeError(e);}}
         @JavascriptInterface public String lanQrCode(){try{return new JSONObject().put("image",LanQr.image(lan.pairingCode())).toString();}catch(Exception e){try{return new JSONObject().put("error",e instanceof IllegalArgumentException?e.getMessage():"QR-Code konnte gerade nicht erstellt werden. Bitte erneut versuchen.").toString();}catch(Exception ignored){return "{}";}}}
         @JavascriptInterface public void scanLanCode(){runOnUiThread(()->{try{LanQr.scan(DisplayActivity.this);}catch(Exception e){try{call("onLanScanned",new JSONObject().put("error","Kamera konnte nicht geöffnet werden. Du kannst den Textcode einfügen."));}catch(JSONException ignored){}}});}
         @JavascriptInterface public void refreshLan(){lan.refreshNow();}
@@ -355,7 +361,7 @@ public final class DisplayActivity extends Activity {
                         .putExtra(Settings.EXTRA_APP_PACKAGE,getPackageName()).putExtra(Settings.EXTRA_CHANNEL_ID,MonitorService.CHANNEL));
             }catch(ActivityNotFoundException e){
                 try{startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,Uri.parse("package:"+getPackageName())));}
-                catch(Exception unavailable){repository.message("Bitte die Benachrichtigung „WohnPit-Aufzeichnung“ in den Android-App-Einstellungen öffnen.");}
+                catch(Exception unavailable){repository.message("Bitte die Benachrichtigung „AutarPie-Aufzeichnung“ in den Android-App-Einstellungen öffnen.");}
             }
         });}
         @JavascriptInterface public void requestSunsetSoc(long at,long id){
@@ -386,6 +392,7 @@ public final class DisplayActivity extends Activity {
                         if(remote!=lan.viewer()||owner!=lan.identity())return;
                         if(!foreground)throw new java.io.IOException("Anzeige pausiert. Beim Öffnen wird neu geladen.");
                         if(remote)data=lan.query(method,args,message->{try{call("onHistoryProgress",new JSONObject().put("id",id).put("message",message));}catch(JSONException ignored){}});else switch(method){
+                            case "rollerEnergy":data=RollerLedger.get(DisplayActivity.this).summary(RollerLedger.source(repository.prefs),from,to);break;
                             case "history":data=new JSONObject().put("points",solarPlanning.history(from,to,args.getString(2),args.getString(3)));break;
                             case "dashboardHistory":data=solarPlanning.dashboardData(from,to,args.getString(2));break;
                             case "energyHistoryWindow":data=solarPlanning.energyFlow(from,to,args.getLong(3),args.getLong(4),args.getString(2));break;
@@ -423,6 +430,20 @@ public final class DisplayActivity extends Activity {
         @JavascriptInterface public String appRole(){return AppRole.get(DisplayActivity.this);}
         @JavascriptInterface public String dashboardPreset(){try{return DashboardPreset.read(DisplayActivity.this);}catch(Exception e){return "null";}}
         @JavascriptInterface public String dashboard() { return repository.prefs.getString("dashboard-v1","{}"); }
+        @JavascriptInterface public String workspace(){return repository.prefs.getString(AutarPieConfig.WORKSPACE,"{}");}
+        @JavascriptInterface public String appearance(){return repository.prefs.getString(AutarPieConfig.APPEARANCE,"{}");}
+        @JavascriptInterface public String saveWorkspace(String json){try{JSONObject workspace=AutarPieConfig.workspace(json);SharedPreferences.Editor editor=repository.prefs.edit().putString(AutarPieConfig.WORKSPACE,workspace.toString());JSONArray pages=workspace.getJSONArray("pages");for(int i=0;i<pages.length();i++){JSONObject p=pages.getJSONObject(i);if(p.optString("id").equals("overview")&&p.optJSONObject("board")!=null)editor.putString("dashboard-v1",p.getJSONObject("board").toString());}return editor.commit()?"":"Dashboards konnten nicht gespeichert werden.";}catch(Exception e){return Repository.safeError(e);}}
+        @JavascriptInterface public String saveAppearance(String json){return localControl("saveAppearance",new JSONArray().put(json));}
+        @JavascriptInterface public void chooseChargerCapture(){runOnUiThread(()->{try{startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*"),IMPORT_CHARGER);}catch(Exception e){error(e);}});}
+        @JavascriptInterface public String energySnapshot(){if(lan.viewer())try{return new JSONObject(lan.snapshot()).optJSONObject("energy").toString();}catch(Exception e){return "{}";}try{return EnergyStore.snapshot(repository).toString();}catch(Exception e){return "{}";}}
+        @JavascriptInterface public String saveSolarInstallation(String json){return localControl("saveSolarInstallation",new JSONArray().put(json));}
+        @JavascriptInterface public String saveLoadConfiguration(String json){return localControl("saveLoadConfiguration",new JSONArray().put(json));}
+        @JavascriptInterface public String setLoadOutput(boolean on){return localControl("setLoadOutput",new JSONArray().put(on));}
+        @JavascriptInterface public void issueChargePlan(String json){files.execute(()->{JSONObject result=new JSONObject();try{if(lan.viewer())lan.control("submitChargePlan",new JSONArray().put(json),lan.controlRevision());else lan.localControl("submitChargePlan",new JSONArray().put(json),solarPlanning);result.put("ok",true);}catch(Exception e){try{result.put("error",Repository.safeError(e));}catch(JSONException ignored){}}call("onChargePlanResult",result);});}
+        @JavascriptInterface public String submitChargePlan(String json){return localControl("submitChargePlan",new JSONArray().put(json));}
+        @JavascriptInterface public String saveCharger(String json){return localControl("saveCharger",new JSONArray().put(json));}
+        @JavascriptInterface public String chargerCommand(String action){return localControl("chargerCommand",new JSONArray().put(action));}
+        @JavascriptInterface public String saveCentralSettings(String json){return localControl("saveCentralSettings",new JSONArray().put(json));}
         @JavascriptInterface public int displayScale(){return repository.prefs.getInt("display-scale-v1",100);}
         @JavascriptInterface public String rollerDisplay(){return repository.prefs.getString("roller-values-v1","[]");}
         @JavascriptInterface public String saveRollerDisplay(String json){
@@ -445,6 +466,7 @@ public final class DisplayActivity extends Activity {
                 return "";
             } catch(Exception e) { return Repository.safeError(e); }
         }
+        @JavascriptInterface public String rollerEnergy(long from,long to){return "{}";}
         @JavascriptInterface public String dashboardHistory(long from,long to,String metric) {
             if(lan.viewer())return "{\"pending\":true}";
             if(repository.archiveBusy)return "{\"syncing\":true}";
@@ -487,7 +509,7 @@ public final class DisplayActivity extends Activity {
             else {pendingSiteLocation=true;requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION},SITE_PERMISSION);}
         });}
         @JavascriptInterface public String saveEquipment(String json){return localControl("saveEquipment",new JSONArray().put(json));}
-        @JavascriptInterface public String copyArchiveDiagnostics(){try{String text=repository.diagnosticText();runOnUiThread(()->getSystemService(android.content.ClipboardManager.class).setPrimaryClip(ClipData.newPlainText("WohnPit-Archivdiagnose",text)));return "";}catch(Exception e){return Repository.safeError(e);}}
+        @JavascriptInterface public String copyArchiveDiagnostics(){try{String text=repository.diagnosticText();runOnUiThread(()->getSystemService(android.content.ClipboardManager.class).setPrimaryClip(ClipData.newPlainText("AutarPie-Archivdiagnose",text)));return "";}catch(Exception e){return Repository.safeError(e);}}
         @JavascriptInterface public void importArchive(String mac) {requestArchive(mac);}
         @JavascriptInterface public void importMissingArchive(){requestArchive("MANUAL");}
         @JavascriptInterface public void cancelArchive(){if(!lan.viewer())runOnUiThread(()->startService(new Intent(DisplayActivity.this,ArchiveService.class).setAction("CANCEL")));}
@@ -505,7 +527,7 @@ public final class DisplayActivity extends Activity {
         }
         @JavascriptInterface public String chooseSettingsExport(String json){
             try{JSONObject clean=ConfigurationBackup.normalize(json);pendingSettingsExport=clean.toString(2);if(pendingSettingsExport.getBytes(StandardCharsets.UTF_8).length>ConfigurationBackup.MAX_BYTES)pendingSettingsExport=clean.toString();
-                runOnUiThread(()->{try{startActivityForResult(new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("application/json").putExtra(Intent.EXTRA_TITLE,"WohnPit-Einstellungen.json"),EXPORT_SETTINGS);}catch(Exception e){pendingSettingsExport=null;error(e);}});return "";
+                runOnUiThread(()->{try{startActivityForResult(new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("application/json").putExtra(Intent.EXTRA_TITLE,"AutarPie-Einstellungen.json"),EXPORT_SETTINGS);}catch(Exception e){pendingSettingsExport=null;error(e);}});return "";
             }catch(Exception e){pendingSettingsExport=null;return Repository.safeError(e);}
         }
         @JavascriptInterface public void chooseSettingsImport(){runOnUiThread(()->{try{startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*"),IMPORT_SETTINGS);}catch(Exception e){error(e);}});}
@@ -521,12 +543,12 @@ public final class DisplayActivity extends Activity {
         @JavascriptInterface public void chooseExport() {
             if(lan.viewer())return;
             runOnUiThread(() -> startActivityForResult(new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
-                    .setType("text/csv").putExtra(Intent.EXTRA_TITLE,"WohnPit-Verlauf.csv"),EXPORT));
+                    .setType("text/csv").putExtra(Intent.EXTRA_TITLE,"AutarPie-Verlauf.csv"),EXPORT));
         }
         @JavascriptInterface public void choosePlanningDiagnostics(){
             if(lan.viewer())return;
             runOnUiThread(()->startActivityForResult(new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
-                    .setType("application/zip").putExtra(Intent.EXTRA_TITLE,"WohnPit-Diagnose-"+BuildConfig.VERSION_NAME+".zip"),EXPORT_DIAGNOSTICS));
+                    .setType("application/zip").putExtra(Intent.EXTRA_TITLE,"AutarPie-Diagnose-"+BuildConfig.VERSION_NAME+".zip"),EXPORT_DIAGNOSTICS));
         }
         @JavascriptInterface public void importCsv(String mapping, String kind) {
             if(lan.viewer())return;

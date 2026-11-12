@@ -1,3 +1,4 @@
+const autarpieControls=require('./autarpie-test-controls.cjs');
 const waitForPage=require('./browser-wait.cjs');
 const {chromium}=require('playwright');
 const assert=require('node:assert/strict');
@@ -39,14 +40,14 @@ const path=require('node:path');
  await waitForPage(page,()=>document.getElementById('miniRange').value==='month');assert.equal(await page.locator('#miniRange').inputValue(),'month');
  const card=page.locator('#miniHistory'),handle=page.locator('#miniHistoryResize');assert.equal(await handle.isVisible(),false);
  const verifyCurves=async()=>{
-  const colors=await page.locator('#miniChart').evaluate(el=>{const ctx=el.getContext('2d'),data=ctx.getImageData(0,0,el.width,el.height).data;let solar=0,battery=0;for(let y=25;y<el.height-40;y++)for(let x=60;x<el.width-15;x++){const i=(y*el.width+x)*4,r=data[i],g=data[i+1],b=data[i+2];if(r>150&&g>70&&g<200&&b<140)solar++;if(g>120&&g>r*1.2&&b>r*1.1)battery++;}return {solar,battery};});
+  const colors=await autarpieControls.curves(page,'#miniChart');
   assert.ok(colors.solar>30&&colors.battery>30,'both measured curves must remain painted '+JSON.stringify(colors));
  };await verifyCurves();
  const drag=async(delta)=>{
   await card.evaluate(el=>el.scrollIntoView({block:'center'}));const box=await handle.boundingBox();
   await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();await page.mouse.move(box.x+box.width/2,box.y+box.height/2+delta,{steps:8});await page.mouse.up();
  };
- await page.locator('#editDashboard').click();assert.equal(await handle.isVisible(),true);
+ await autarpieControls.toggleEdit(page);assert.equal(await handle.isVisible(),true);
  const before=await page.evaluate(()=>({tiles:dashboard.config.tiles,calls:window.miniCalls.length,height:dashboard.config.historyHeight.compact}));
  await drag(110);assert.equal(await card.evaluate(el=>el.offsetHeight),before.height+110);assert.equal(await page.evaluate(()=>dashboard.config.historyHeight.compact),before.height+110);
  assert.equal(await page.evaluate(()=>window.miniCalls.length),before.calls,'height adjustment must redraw without requesting history');
@@ -60,12 +61,12 @@ const path=require('node:path');
  await drag(90);assert.equal(await card.evaluate(el=>el.offsetHeight),470);await handle.focus();await page.keyboard.press('ArrowDown');assert.equal(await card.evaluate(el=>el.offsetHeight),490);
  await page.keyboard.press('Home');assert.equal(await card.evaluate(el=>el.offsetHeight),300);await page.keyboard.press('End');assert.equal(await card.evaluate(el=>el.offsetHeight),1000);
  await page.evaluate(()=>window.failSave=true);await page.keyboard.press('ArrowUp');assert.equal(await card.evaluate(el=>el.offsetHeight),1000,'failed storage must restore the saved height');await page.evaluate(()=>window.failSave=false);
- await page.locator('#editDashboard').click();assert.equal(await handle.isVisible(),false);
+ await autarpieControls.toggleEdit(page);assert.equal(await handle.isVisible(),false);
  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('detail-board')).historyHeight.wide),1000,'the bridge must have persisted the wide height before navigation');
  await page.reload();
  // Reload can finish before the ResizeObserver has applied the restored profile.
  await waitForPage(page,()=>dashboard.profile==='wide'&&document.getElementById('miniHistory').offsetHeight===1000);
- assert.equal(await card.evaluate(el=>el.offsetHeight),1000);await page.setViewportSize({width:390,height:844});await page.locator('#layoutProfile').filter({hasText:'Schmale Ansicht'}).waitFor();assert.equal(await card.evaluate(el=>el.offsetHeight),before.height+110);
+ assert.equal(await card.evaluate(el=>el.offsetHeight),1000);await page.setViewportSize({width:390,height:844});await waitForPage(page,()=>dashboard.profile==='compact'&&!dashboard.resizePending);assert.equal(await card.evaluate(el=>el.offsetHeight),before.height+110);
  const layoutBounds=()=>page.evaluate(()=>{
   const bounds=document.getElementById('miniChart').getBoundingClientRect(),outer=document.getElementById('miniHistory').getBoundingClientRect();
   return {width:innerWidth,scrollWidth:document.body.scrollWidth,profile:dashboard.profile,boardWidth:dashboard.board.clientWidth,chart:{top:bounds.top,bottom:bounds.bottom,height:bounds.height},card:{top:outer.top,bottom:outer.bottom,height:outer.height}};
@@ -87,6 +88,6 @@ const path=require('node:path');
   assert.equal(afterLayout.scrollWidth>width,false,'overview overflow '+JSON.stringify(afterLayout));
   assert.ok(afterLayout.chart.height>=80&&afterLayout.chart.bottom<=afterLayout.card.bottom,'chart escaped its card '+JSON.stringify(afterLayout));
  }
- if(process.env.WATTPIT_SCREENSHOT_DIR){fs.mkdirSync(process.env.WATTPIT_SCREENSHOT_DIR,{recursive:true});await page.setViewportSize({width:390,height:844});await page.locator('#editDashboard').click();await card.evaluate(el=>el.scrollIntoView({block:'center'}));await verifyCurves();await card.screenshot({path:path.join(process.env.WATTPIT_SCREENSHOT_DIR,'mini-history-resized.png')});}
+ if(process.env.WATTPIT_SCREENSHOT_DIR){fs.mkdirSync(process.env.WATTPIT_SCREENSHOT_DIR,{recursive:true});await page.setViewportSize({width:390,height:844});await autarpieControls.toggleEdit(page);await card.evaluate(el=>el.scrollIntoView({block:'center'}));await verifyCurves();await card.screenshot({path:path.join(process.env.WATTPIT_SCREENSHOT_DIR,'mini-history-resized.png')});}
  assert.deepEqual(errors,[]);await browser.close();console.log('Overview calendar ranges, local database queries, touch cancel, height drag, keyboard bounds, storage failure, separate profiles and reload persistence passed.');
 })().catch(e=>{console.error(e);process.exit(1);});

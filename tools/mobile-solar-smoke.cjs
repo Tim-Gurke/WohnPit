@@ -1,3 +1,4 @@
+const autarpieControls=require('./autarpie-test-controls.cjs');
 const {chromium}=require('playwright');
 const assert=require('node:assert/strict');
 const path=require('node:path');
@@ -19,9 +20,9 @@ const waitForPage=require('./browser-wait.cjs');
     return JSON.stringify({accountingVersion:window.oldHost?1:2,solar,consumption:devices,balance:battery,mobile:m});}
   };
  });
- await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));
+ await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));await autarpieControls.prepare(page);
  const before=await page.evaluate(()=>JSON.stringify(dashboard.config.tiles.map(t=>[t.id,t.layouts,t.title])));
- for(const metric of ['mobileSolarPower','mobileSolarEnergy']){await page.locator('#addTile').click();await page.locator(`.metric-option[data-metric="${metric}"]`).click();}
+ for(const metric of ['mobileSolarPower','mobileSolarEnergy']){await page.evaluate(()=>document.getElementById('dashboardToolbar').hidden=false);await autarpieControls.addTile(page);await page.locator(`.metric-option[data-metric="${metric}"]`).click();}
  assert.equal(await page.evaluate(()=>JSON.stringify(dashboard.config.tiles.slice(0,-2).map(t=>[t.id,t.layouts,t.title]))),before,'adding both tiles must leave all existing layouts and captions unchanged');
  const ids=await page.evaluate(()=>Object.fromEntries(['mobileSolarPower','mobileSolarEnergy','consumptionEnergy','energyBalance'].map(metric=>[metric,dashboard.config.tiles.find(t=>t.metric===metric).id])));
  const tile=metric=>page.locator(`[data-tile="${ids[metric]}"]`);

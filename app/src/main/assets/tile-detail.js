@@ -116,7 +116,7 @@
     renderComparisons(){
       const options=$('detailCompareOptions');
       options.innerHTML=numericMetrics().filter(([metric])=>metric!==this.tile.metric).map(([metric,m])=>{
-        const t=this.tiles.get(metric)||C.tile(metric);this.tiles.set(metric,t);
+        const t=this.tiles.get(metric)||copy(this.d.config.tiles.find(t=>t.metric===metric)||C.tile(metric));if(t.colorSource==='value')t.color=C.metricColor(this.d.config,metric);this.tiles.set(metric,t);
         return `<div><label class="detail-check"><input type="checkbox" data-compare="${metric}" ${this.selected.has(metric)?'checked':''}>${esc(m.label)}</label><select data-compare-unit="${metric}" aria-label="Einheit für ${esc(m.label)}">${m.units.map(u=>`<option ${t.unit===u?'selected':''}>${esc(u)}</option>`).join('')}</select></div>`;
       }).join('');
       options.querySelectorAll('[data-compare]').forEach(input=>input.onchange=()=>{if(input.checked)this.selected.add(input.dataset.compare);else this.selected.delete(input.dataset.compare);this.refresh(false);});
@@ -183,8 +183,7 @@
       $('detailLast').hidden=true;$('detailCustom').hidden=true;$('detailSettings').hidden=true;$('detailComparisons').hidden=true;
     }
     color(s,i){
-      const palette=['#65cbb0','#efb468','#81baf4','#bc92e8','#ed86b0','#6ccfd9','#d5c46d'];
-      return i===0?this.d.paint(s.tile.color,s.tile):this.d.paint(palette[i%palette.length],s.tile);
+      return this.d.paint(s.tile.color,s.tile);
     }
     themeChanged(){if(!this.active)return;const key=document.documentElement.dataset.theme+':'+document.documentElement.dataset.palette;if(this.themeKey!==key){this.themeKey=key;this.refresh(false);}}
     draw(){

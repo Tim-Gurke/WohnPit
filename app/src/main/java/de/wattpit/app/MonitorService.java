@@ -24,6 +24,7 @@ public final class MonitorService extends Service {
     private final ScheduledExecutorService worker = Executors.newSingleThreadScheduledExecutor();
     private final Handler main = new Handler(Looper.getMainLooper());
     private ScheduledFuture<?> archiveCheck;
+    private long lastLiveRead;
     private final SharedPreferences.OnSharedPreferenceChangeListener archivePreference=(prefs,key)->{
         if("archiveIntervalMinutes".equals(key)&&repository.running)scheduleArchive(1000);
     };
@@ -49,7 +50,7 @@ public final class MonitorService extends Service {
     };
 
     static void ensureChannel(Context context){
-        NotificationChannel channel = new NotificationChannel(CHANNEL,"WohnPit-Aufzeichnung",NotificationManager.IMPORTANCE_LOW);
+        NotificationChannel channel = new NotificationChannel(CHANNEL,"AutarPie-Aufzeichnung",NotificationManager.IMPORTANCE_LOW);
         channel.setDescription("Lokale Bluetooth-Aufzeichnung deiner Energieanlage");
         context.getSystemService(NotificationManager.class).createNotificationChannel(channel);
     }
@@ -76,12 +77,13 @@ public final class MonitorService extends Service {
         SuppliesWeather.refresh(repository,false);
         boolean first = !repository.running;
         repository.running = true;
-        roller.start();
+        roller.start();ChargerBle.get(this).start();
         repository.prefs.edit().putBoolean("recording",true).apply();
         restartScan();
         if (first) {
             CentralLog.add(this,"Aufzeichnung","Aufzeichnung gestartet");
             scheduleArchive(15000);
+            worker.scheduleWithFixedDelay(()->{if(!repository.running)return;try{EnergyStore.tick(this);long now=System.currentTimeMillis();if(!repository.archiveBusy&&!repository.liveBusy&&EnergyStore.config(repository).optBoolean("monitor",true)&&now-lastLiveRead>=15000){lastLiveRead=now;startForegroundService(new Intent(this,ArchiveService.class).setAction("LIVE"));}}catch(Exception e){EnergyStore.error(false,Repository.safeError(e));}},5,5,TimeUnit.SECONDS);
             worker.scheduleWithFixedDelay(() -> main.post(() -> {
             if (!repository.running) return;
             PresenceStore.get(this).tick();
@@ -102,7 +104,7 @@ public final class MonitorService extends Service {
         if(!repository.running||repository.archiveIntervalMinutes()==0)return;
         long delay=ArchiveSchedule.intervalMillis(repository.archiveIntervalMinutes());
         try{
-            if(repository.archiveBusy){delay=60000;return;}
+            if(repository.archiveBusy||repository.liveBusy||EnergyStore.holdsRegulator()){delay=60000;return;}
             if(!repository.prefs.getBoolean("cockpitNotice-v1",false))return;
             if(repository.automaticArchiveDevices(false).length()>0)startForegroundService(new Intent(this,ArchiveService.class).putExtra("mac","AUTO"));
             else delay=repository.automaticArchiveCheckDelay(System.currentTimeMillis());
@@ -151,14 +153,14 @@ public final class MonitorService extends Service {
         Intent open = new Intent(this,MainActivity.class);
         PendingIntent content = PendingIntent.getActivity(this,0,open,PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         PendingIntent stop = PendingIntent.getService(this,1,new Intent(this,MonitorService.class).setAction("STOP"),PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-        return new Notification.Builder(this,CHANNEL).setSmallIcon(R.drawable.ic_bolt).setContentTitle("WohnPit zeichnet lokal auf")
+        return new Notification.Builder(this,CHANNEL).setSmallIcon(R.drawable.ic_bolt).setContentTitle("AutarPie zeichnet lokal auf")
                 .setContentText(repository.status).setContentIntent(content).setOngoing(true)
                 .addAction(new Notification.Action.Builder(null,"Pausieren",stop).build()).build();
     }
     @Override public void onDestroy() {
-        repository.running = false;
+        EnergyStore.shutdown(this);repository.running = false;
         CentralLog.add(this,"Aufzeichnung","Aufzeichnung pausiert");
-        if(roller!=null)roller.stop();
+        if(roller!=null)roller.stop();ChargerBle.get(this).stop();
         repository.status = "Aufzeichnung pausiert";
         if (scanner != null && scanning && hasPermissions()) {
             try { scanner.stopScan(callback); } catch (SecurityException | IllegalStateException ignored) { }

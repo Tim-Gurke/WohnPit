@@ -13,7 +13,7 @@ let readRepaint,readsDirty=false;
 function repaintReads(){
   if(!window.wattDisplayActive||!readsDirty||lifecycle?.blocked)return;
   readsDirty=false;dashboard?.cache.clear();lastMiniLoad=0;
-  if(page==='overview'){renderOverview();loadMini(true);}
+  if(page==='overview'||window.AutarPieUI?.active===page){renderOverview();loadMini(true);}
   if(page==='history')loadHistory();
   dashboard?.detail?.refresh(false);
 }
@@ -71,10 +71,10 @@ function syncOverviewHeader() {
   // Move the same controls so handlers, state and focus survive rotation.
   if (compact) {
     header.insertBefore(head,$('themeToggle'));
-    header.insertBefore(toolbar,$('themeToggle'));
+    if(!window.AutarPieUI)header.insertBefore(toolbar,$('themeToggle'));
   } else {
     $('overview').prepend(head);
-    $('welcome').after(toolbar);
+    if(!window.AutarPieUI)$('welcome').after(toolbar);
   }
 }
 overviewLandscape.addListener(syncOverviewHeader);
@@ -87,6 +87,7 @@ function toast(message) {
   clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').hidden = true,5500);
 }
 function showPage(next) {
+  const resolved=window.AutarPieUI?.beforePage(next);if(resolved)next=resolved;
   dashboard?.detail?.close();
   page = next;
   syncOverviewHeader();
@@ -99,6 +100,7 @@ function showPage(next) {
   if (page === 'overview') loadMini(true);
   if (page === 'devices') renderDevices(true);
   if (page === 'settings') renderSettings();
+  window.AutarPieUI?.afterPage(next);
 }
 function theme(next,save=true) {
   document.documentElement.dataset.theme = next;
@@ -108,7 +110,7 @@ function theme(next,save=true) {
   if (save && native) { const error = native.settings(JSON.stringify({theme:next})); if(error) toast(error); }
   if (save && !native) localStorage.setItem('wattpit-preview-theme',next);
   if (page === 'history') drawHistory();
-  if (page === 'overview') {drawMini();dashboard?.update();}
+  if (page === 'overview'||window.AutarPieUI?.active===page) {drawMini();dashboard?.update();}
 }
 function setDemo(enabled) {
   demo = enabled; $('demoBar').hidden = !enabled; lastMiniLoad = 0;
@@ -119,9 +121,11 @@ function reading(kind) {
   if (demo) return kind === 'shunt' ? {kind, t:Date.now(),soc:76.4,voltage:12.94,current:-2.2,power:-28.468,ttg:480,consumed:-23.6,temperature:null,aux:null,alarm:0}
     : {kind,t:Date.now(),voltage:13.04,current:10.5,solar:138,yieldWh:760,state:3,error:0,load:0};
   const config = snapshot.devices.find(d => d.kind === kind);
-  if (!config || config.error || !snapshot.running) return null;
-  const data = snapshot.readings.find(r => r.device === config.mac);
-  return data && Date.now()-data.t < 45000 ? data : null;
+  if (!config || !snapshot.running) return null;
+  const data = config.error?null:snapshot.readings.find(r => r.device === config.mac),fresh=data&&Date.now()-data.t<45000;
+  const output=snapshot.energy?.output,activeFresh=kind==='solar'&&output&&Date.now()>=output.at&&Date.now()-output.at<45000;
+  if(activeFresh){const value=fresh?{...data}:{kind,t:output.at};if(typeof output.pvVoltage==='number')value.pvVoltage=output.pvVoltage;if(typeof output.current==='number')value.load=output.current;return value;}
+  return fresh?data:null;
 }
 function renderOverview() {
   const shunt = reading('shunt'), solar = reading('solar');
@@ -181,7 +185,8 @@ function poll() {
     } catch (error) { console.error('Snapshot unavailable',error); }
   }
   supplies?.render();presence?.render();extras?.render();equipment?.render();roller?.render();
-  if (page === 'overview') { renderOverview(); loadMini(); }
+  window.AutarPieUI?.poll();
+  if (page === 'overview'||window.AutarPieUI?.active===page) { renderOverview();if(dashboard.config.showMiniHistory!==false)loadMini(); }
   if (page === 'devices') renderDevices();
   if (page === 'settings') renderSettings();
   if (page === 'history') {
@@ -216,6 +221,7 @@ function openModal(title,content) {
   if(keep)requestAnimationFrame(()=>{if(!$('modal').hidden&&$('modalTitle').textContent===title)sheet.scrollTop=position;});
 }
 function closeModal() {
+  const closeHook=window.onAutarPieModalClose;window.onAutarPieModalClose=null;closeHook?.();
   if(controls?.pending)return;
   if (currentImport?.busy) return;
   if (currentImport && native) native.cancelImport();
@@ -232,7 +238,7 @@ window.handleBack = () => {
 function deviceForm(device={},found=false) {
   const original = found ? '' : device.mac || '';
   openModal(original?'Gerät bearbeiten':'Gerät einrichten',`
-    <p class="muted">Übernimm die Details der Sofortanzeige aus VictronConnect. WohnPit speichert den Schlüssel verschlüsselt auf diesem Telefon.</p>
+    <p class="muted">Übernimm die Details der Sofortanzeige aus VictronConnect. AutarPie speichert den Schlüssel verschlüsselt auf diesem Telefon.</p>
     <label class="form-field">Gerätetyp<select id="deviceKind"><option value="shunt">SmartShunt · Batterie</option><option value="solar">SmartSolar · Solar</option></select></label>
     <label class="form-field">Name<input id="deviceName" maxlength="80" value="${escapeHtml(device.name||'')}" placeholder="z. B. SmartShunt 300 A"></label>
     <label class="form-field">Bluetooth-MAC-Adresse<input id="deviceMac" class="monospace" autocapitalize="characters" autocomplete="off" spellcheck="false" maxlength="32" value="${escapeHtml(device.mac||'')}" placeholder="AA:BB:CC:DD:EE:FF"></label>
@@ -347,6 +353,11 @@ function seriesLabel(s) {
   const name=snapshot.devices.find(d=>d.mac===s.device)?.name || (s.kind==='solar'?'SmartSolar':'SmartShunt');
   return name + (s.origin==='csv'?' · CSV':s.origin==='archive'?' · Archiv':'');
 }
+function seriesColor(series){
+  const style=getComputedStyle(document.documentElement),colors=window.AutarPieAppearance?.colors;
+  if(colors)return ['balance','consumption','mobile'].includes(series.kind)?colors.calculated:series.kind==='solar'?colors.solar:colors.storage;
+  return style.getPropertyValue(series.kind==='balance'?'--blue':series.kind==='solar'?'--orange':'--mint').trim();
+}
 function canvasChart(canvas,data,from,to,chosen,mini=false) {
   const bounds=canvas.getBoundingClientRect(),zoom=(window.WattDisplay?.value||100)/100,width=Math.max(1,bounds.width/zoom),height=bounds.height/zoom;
   const ratio=(window.devicePixelRatio||1)*zoom;
@@ -375,7 +386,7 @@ function canvasChart(canvas,data,from,to,chosen,mini=false) {
   ctx.save();ctx.beginPath();ctx.rect(left,top,plotW,plotH);ctx.clip();
   const series=seriesOf(visible);
   for(const s of series){
-    const color=s.kind==='balance'?blue:s.kind==='solar'?orange:mint;
+    const color=seriesColor(s);
     const bucket=(to-from)/600;
     const gapLimit=Math.max(bucket*3,s.origin==='csv'?45*60000:45000,...s.points.map(p=>(p.period||0)*1500));
     const segments=[];let segment=[];
@@ -392,9 +403,9 @@ function canvasChart(canvas,data,from,to,chosen,mini=false) {
 function drawHistory(){
   if(page!=='history')return;
   scale=canvasChart($('historyChart'),points,viewFrom,viewTo,metric);
-  $('chartLegend').innerHTML=scale.series.map(s=>`<span><i class="dot ${s.kind==='balance'?'blue':s.kind==='solar'?'orange':'mint'}"></i>${escapeHtml(seriesLabel(s))}${s.origin==='csv'||s.kind==='balance'?' · gestrichelt':''}</span>`).join('');
+  $('chartLegend').innerHTML=scale.series.map(s=>`<span><i class="dot ${s.kind==='balance'?'blue':s.kind==='solar'?'orange':'mint'}" style="background:${seriesColor(s)}"></i>${escapeHtml(seriesLabel(s))}${s.origin==='csv'||s.kind==='balance'?' · gestrichelt':''}</span>`).join('');
 }
-function drawMini(){if(page==='overview'&&miniWindow)canvasChart($('miniChart'),miniPoints,miniWindow.from,Math.max(miniWindow.from+1,miniWindow.to),'power',true);}
+function drawMini(){if($('miniChart').closest('.page')?.classList.contains('active')&&miniWindow)canvasChart($('miniChart'),miniPoints,miniWindow.from,Math.max(miniWindow.from+1,miniWindow.to),'power',true);}
 function clampView(from,to){const span=Math.min(baseTo-baseFrom,Math.max(60000,to-from));let start=Math.max(baseFrom,Math.min(from,baseTo-span));viewFrom=start;viewTo=start+span;selectedPoint=null;$('chartTooltip').hidden=true;drawHistory();delayedHistory();}
 function zoom(factor,anchor=.5){const span=(viewTo-viewFrom)*factor,center=viewFrom+(viewTo-viewFrom)*anchor;clampView(center-span*anchor,center+span*(1-anchor));}
 function scaleForm(){
@@ -423,6 +434,7 @@ $('historyChart').addEventListener('pointerup',releasePointer);
 $('historyChart').addEventListener('pointercancel',event=>{pointers.delete(event.pointerId);gesture=null;});
 
 function renderDaily() {
+ const previousScroll=$('solarDailyArchive')?.querySelector('.daily-scroll')?.scrollLeft||0,openQuality=new Set([...($('solarDailyArchive')?.querySelectorAll('details[open]')||[])].map(d=>d.closest('tr')?.dataset.day));
  let el=$('solarDailyArchive'); if(!el){el=document.createElement('article');el.id='solarDailyArchive';el.className='card';$('historyStats').after(el);}
  const rows=snapshot.solarDaily||[];el.hidden=!rows.length;
  const months=new Map(),consumption=new Map(),waiting=new Set(),failed=new Set(),outdated=new Set(),oldHosts=new Set();
@@ -435,13 +447,14 @@ function renderDaily() {
    months.set(month,data);if(data.pending)waiting.add(month);if(data.error||data.refreshError)failed.add(month);if(data.stale)outdated.add(month);for(const day of data.days||[])consumption.set(day.day,day);
   }catch(_){months.set(month,{});failed.add(month);}
  }
- el.innerHTML='<h2>Solar-Tagesarchiv</h2><p class="muted">Ertrag: Tageswerte des Solarladereglers. Geräteverbrauch: festes Solar + geschätztes mobiles Solar − Akkubilanz, einschließlich der Nacht. Messlücken bleiben unberechnet; heute ist vorläufig.</p><div style="overflow-x:auto" tabindex="0" aria-label="Tagesarchiv, weitere Spalten seitlich erreichbar"><table><thead><tr><th>Tag</th><th>Ertrag Wh</th><th>Geräteverbrauch Wh</th><th>Maximum W</th><th>Batterie min/max V</th></tr></thead><tbody>'+rows.map(r=>{
+ el.innerHTML='<h2>Solar-Tagesarchiv</h2><p class="muted">Ertrag: Tageswerte des Solarladereglers. Geräteverbrauch: festes Solar + geschätztes mobiles Solar − Akkubilanz, einschließlich der Nacht. Messlücken bleiben unberechnet; heute ist vorläufig.</p><div class="daily-scroll" tabindex="0" aria-label="Tagesarchiv, weitere Spalten seitlich erreichbar"><table><thead><tr><th>Tag</th><th>Ertrag Wh</th><th>Geräteverbrauch Wh</th><th>Maximum W</th><th>Batterie min/max V</th></tr></thead><tbody>'+rows.map(r=>{
   const day=consumption.get(r.day),known=day?.last!=null&&Number.isFinite(Number(day.last));
   const amount=known?num(day.last,2):waiting.has(r.day.slice(0,7))?'…':'—';
   const coverage=oldHosts.has(r.day.slice(0,7))?'Hauptgerät aktualisieren':known?`${Math.floor(Math.max(0,Math.min(1,day.coverage||0))*100)} % erfasst${day.interpolatedMillis>0?' · kurz interpoliert':''}${day.modelledMillis>0?' · teilweise geschätzt':''}${day.inconsistentMillis>0?' · unplausible Schätzabschnitte fehlen':''}`:waiting.has(r.day.slice(0,7))?'wird berechnet':failed.has(r.day.slice(0,7))?'Abfrage fehlgeschlagen':'keine Messdaten';
   const note=outdated.has(r.day.slice(0,7))?' · letzter Stand'+(waiting.has(r.day.slice(0,7))?' · wird aktualisiert':failed.has(r.day.slice(0,7))?' · Aktualisierung fehlgeschlagen':''):'';
-  return `<tr><td>${escapeHtml(r.day)}</td><td>${num(r['Yield(Wh)'])}</td><td>${amount}<span class="daily-coverage">${coverage}${note}</span></td><td>${num(r['Max. PV power(W)'])}</td><td>${num(r['Min. battery voltage(V)'],2)} / ${num(r['Max. battery voltage(V)'],2)}</td></tr>`;
+  return `<tr data-day="${escapeHtml(r.day)}"><td>${escapeHtml(r.day)}</td><td>${num(r['Yield(Wh)'])}</td><td>${amount}<details class="daily-quality"><summary>${known?Math.floor(Math.max(0,Math.min(1,day.coverage||0))*100)+'% erfasst':coverage}</summary><span class="daily-coverage">${coverage}${note}</span></details></td><td>${num(r['Max. PV power(W)'])}</td><td>${num(r['Min. battery voltage(V)'],2)} / ${num(r['Max. battery voltage(V)'],2)}</td></tr>`;
  }).join('')+'</tbody></table></div>';
+ el.querySelector('.daily-scroll').scrollLeft=previousScroll;for(const row of el.querySelectorAll('tr[data-day]'))if(openQuality.has(row.dataset.day))row.querySelector('details').open=true;
 }
 function chooseImport(){if(native)native.chooseImport();else toast('CSV-Dateien werden in der Android-App importiert.');}
 function chooseExport(){if(native)native.chooseExport();else toast('Der Export ist in der Android-App verfügbar.');}
@@ -507,7 +520,7 @@ dashboard = new window.WattDashboard({native,read:historyRead,resizeMini:drawMin
 equipment = new window.WattEquipment({native,getSnapshot:()=>snapshot,getValueColor:metric=>window.WattDashboardCore.metricColor(dashboard.config,metric),getValueTextColor:metric=>dashboard.paint(window.WattDashboardCore.metricColor(dashboard.config,metric),window.WattDashboardCore.tile(metric),true),openModal,closeModal,toast,poll,repaint:()=>dashboard?.update()});
 extras = new window.WattExtras({native,renderSolar:()=>solar?.render(),getSnapshot:()=>snapshot,isDemo:()=>demo,toast,poll,cancelArchive:()=>lifecycle.confirmCancellation(),repaint:()=>{dashboard?.update();drawHistory();drawMini();},imported:()=>{dashboard?.clearCache();if(page==='history')loadHistory();lastMiniLoad=0;}});
 solar = new window.WattSolarPlan({native:deviceNative,canRequestData:()=>!deviceNative?.isLanViewer?.()||!reads?.initialPending(),equipment,getSnapshot:()=>snapshot,getReading:reading,getPresence:()=>presence?.state,openModal,closeModal,toast,poll,symbol:code=>extras.symbol(code)});
-roller = new window.WattRoller({native:deviceNative,isDemo:()=>demo,getSolar:()=>solar,openModal,closeModal,toast,poll});
+roller = new window.WattRoller({native,read:historyRead,isDemo:()=>demo,getSolar:()=>solar,openModal,closeModal,toast,poll});
 configuration = new window.WattSettingsBackup({native,getSnapshot:()=>snapshot,dashboard,equipment,openModal,closeModal,toast,applied:backup=>{
   settingsDirty=false;poll();
   dashboard.config=window.WattDashboardCore.normalize(backup.dashboard);dashboard.saved=JSON.parse(JSON.stringify(dashboard.config));dashboard.cache.clear();
@@ -524,5 +537,6 @@ window.pullReload=new window.WattPullReload({element:$('overview'),canStart:()=>
 setInterval(poll,2000);setInterval(()=>{if(window.wattDisplayActive&&!lifecycle.blocked&&page==='history'&&snapshot.running&&!demo)loadHistory();},20000);
 window.addEventListener('resize',()=>{drawHistory();drawMini();});
 
-for(const [id,method] of [['chooseAppRole','chooseAppRole'],['migrationBackup','migrationBackup'],['migrationImport','migrationImport']])$(id).onclick=()=>{if(typeof deviceNative?.[method]==='function')deviceNative[method]();else toast('Diese Funktion steht in der installierten WohnPit-App bereit.');};
+for(const [id,method] of [['chooseAppRole','chooseAppRole'],['migrationBackup','migrationBackup'],['migrationImport','migrationImport']])$(id).onclick=()=>{if(typeof deviceNative?.[method]==='function')deviceNative[method]();else toast('Diese Funktion steht in der installierten AutarPie-App bereit.');};
 if(typeof deviceNative?.appRole==='function')$('appRoleLabel').textContent=({central:'Zentrale · Daten sammeln und im WLAN bereitstellen',viewer:'Anzeigehandy · mit einer Zentrale koppeln',direct:'Eigenständig · Victron direkt, ohne Zentrale'})[deviceNative.appRole()]||'Betriebsart wählen';
+window.AutarPieApp={get dashboard(){return dashboard;},get snapshot(){return snapshot;},get solar(){return solar;},get roller(){return roller;},native:deviceNative,read:historyRead,loadMini,repaint:()=>{drawHistory();drawMini();},showPage,openModal,closeModal,toast,poll,theme,reading,icon,escapeHtml};
