@@ -93,7 +93,7 @@ const path=require('node:path');
  await autarpieControls.openSettings(page);assert.equal(await page.locator('header #addTile').count(),0);
  await page.setViewportSize({width:390,height:844});await page.setViewportSize({width:832,height:390});
  assert.equal(await page.locator('#addTile').isVisible(),false);
- await page.locator('[data-page="overview"]').click();assert.equal(await page.locator('header #addTile').count(),1);
+ await page.locator('[data-page="overview"]').click();assert.equal(await page.locator('#overview .autarpie-dashboard-host #addTile').count(),1);
  await page.setViewportSize({width:390,height:844});
  await page.locator('#overview>#overviewHeader').waitFor();
  await verifyUnchanged();
