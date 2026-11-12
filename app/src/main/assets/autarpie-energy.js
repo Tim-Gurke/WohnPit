@@ -27,9 +27,9 @@
   plan(){if(!window.wattDisplayActive||document.hidden||this.sending||Date.now()-this.lastPlanAt<20000||!app.native?.issueChargePlan)return;const s=this.state,c=s.config||{},r=A.chargeSettings(c.rules);if(!r.enabled)return;
    const now=Date.now(),sh=app.reading('shunt'),pv=app.reading('solar'),bms=app.roller?.state,o=s.output||{},charging=o.state===1&&o.current>.1;
    const house=typeof sh?.power==='number'?sh.power:typeof sh?.voltage==='number'&&typeof sh?.current==='number'?sh.voltage*sh.current:null,solar=pv?.solar;
-   // Net battery power plus the assigned load reconstructs generation left after other consumers.
+   // Net battery power plus the assigned load reconstructs spare power; measured solar caps it so an external supply cannot masquerade as sunlight.
    const external=this.state.chargerConfig?.role==='house-source'&&this.state.charger?.mode===1&&now-this.state.charger.at<10000?this.state.charger.voltage*this.state.charger.current:0;
-   const surplus=typeof house==='number'&&typeof solar==='number'?house-external+(charging&&typeof o.voltage==='number'&&typeof o.current==='number'?o.voltage*o.current:0):null;
+   const surplus=A.availableSurplus(house,solar,charging&&typeof o.voltage==='number'&&typeof o.current==='number'?o.voltage*o.current:0,external);
    const day=app.solar?.days?.find(d=>d.day===new Date().toLocaleDateString('sv-SE')),hours=day?.timeline||[],futureSolar=day?.complete?hours.reduce((sum,h)=>sum+h.wh*Math.max(0,Math.min(1,(h.to-now)/(h.to-h.from))),0):null;
    const remainingHours=Math.max(0,(new Date((day?.day||'')+'T23:59:59').getTime()-now)/3600000),usage=typeof day?.usage?.wh==='number'?day.usage.wh*remainingHours/24:null;
    const storedNeed=typeof sh?.soc==='number'&&typeof sh?.voltage==='number'?Math.max(0,r.houseTarget-sh.soc)/100*(app.snapshot.settings?.capacity||100)*sh.voltage:null;
