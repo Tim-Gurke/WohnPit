@@ -16,7 +16,7 @@
       if(plan&&!s.stale&&s.state==='home'&&key!==this.prompted&&!document.hidden&&$('modal').hidden&&!document.body.classList.contains('plant-command-busy')){this.prompted=key;this.ask(plan);}
     }
     async command(method,...args){
-      if(!this.a.native?.[method])throw Error('Bitte WohnPit auf allen Geräten aktualisieren.');
+      if(!this.a.native?.[method])throw Error('Bitte AutarPie auf allen Geräten aktualisieren.');
       const error=await this.a.native[method](...args);if(error)throw Error(error);
       this.a.poll();this.a.refresh();this.render();
     }
