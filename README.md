@@ -1,115 +1,74 @@
-# WohnPit 2.0.3
+# AutarPie 3.0.0
 
-**WohnPit ist die Zusammenführung von Watt’n’Pit und der bisherigen WohnPit-Zentrale in einer gemeinsamen App.**
+![AutarPie Ressourcen-Kreislauf](app/src/main/assets/brand.svg)
 
-**Dein lokales Cockpit für Energie, Gas und Wasser.** Solar, Akku, Verbrauch und Versorgung im Blick – im Wohnwagen, Ferienhaus, Gartenhaus und an passenden Balkonanlagen.
+**Das lokale Cockpit für autarkes Leben.** Solar und Stromverteilung, Wohnwagenakku, E-Scooter, Modellbau, Gas und Wasser in einer gemeinsamen App. AutarPie führt **Watt’n’Pit und WohnPit** weiter.
 
-**[WohnPit 2.0.3 herunterladen](https://github.com/Tim-Gurke/WohnPit/releases/download/v2.0.3/WohnPit-v2.0.3.apk)** · [Projektseite](https://wohnpit.extraordinarygrove.chatgpt.site) · [Installieren, einrichten und umziehen](docs/ZUSAMMENFUEHRUNG.md) · [Versionshistorie](CHANGELOG.md)
+**[AutarPie 3.0.0 als APK herunterladen](https://github.com/Tim-Gurke/WohnPit/releases/download/v3.0.0/AutarPie-v3.0.0.apk)** · [Einrichtung und Bedienung](docs/AUTARPIE-3.md) · [Update und Prüfgrenzen](docs/changes-3.0.0.md) · [Vollständige Versionshistorie](CHANGELOG.md)
 
-**Neu in 2.0.3:** Der Statistikabruf auf dem Anzeigehandy bleibt bei zwischenzeitlich aktualisierten Wetter- und Berechnungsgrundlagen nutzbar. Fertige Werte bleiben sichtbar und werden anschließend aktualisiert. Die sichtbaren Kacheln laden vor dem großen Lernabgleich. [Fehlerbild und Korrektur](docs/changes-2.0.3.md).
+Android 8 oder neuer; das Cockpit benötigt einen aktuellen Android-System-WebView. Kein Konto, keine Werbung. Mess- und Lerndaten bleiben auf den eigenen Geräten. Der optionale Wetterabruf verwendet Open-Meteo. Der Anlagenverbund überträgt Daten verschlüsselt im lokalen WLAN.
 
-**Weiterhin enthalten seit 2.0.2:** Bedarf für 3 / 7 / 14 Tage wahlweise in **kg oder Flaschen** sowie **Litern oder Kanistern** anzeigen. Kanister- und Gasflaschengröße unter **Gas / Wasser → Einstellen** anpassen; zunächst 20 L und 11 kg. Die Gasansicht zeigt, ob Wetterkorrektur tatsächlich aktiv ist, welche Flaschenabschnitte geeignet sind und welche Grundlage noch fehlt. Ein Symbol aus Flamme und Tropfen ersetzt den bisherigen Punkt. [Bedienen und berechnen](docs/GAS-WASSER.md) · [Änderungen und Prüfgrenzen](docs/changes-2.0.2.md).
+## Das Cockpit
 
-**Update:** zuerst die Zentrale, danach die Anzeigehandys auf 2.0.3 aktualisieren. Über die bestehende gemeinsame WohnPit-App installieren, **nicht deinstallieren**. Die eigene Kachelanordnung, Messwerte und Kopplungen bleiben erhalten. Ein abgeschlossener Umzug muss nicht wiederholt werden.
+| Dunkel | Hell |
+| --- | --- |
+| ![AutarPie Cockpit mit neutralen Beispieldaten](docs/images/autarpie-3.0.0-dark.svg) | ![AutarPie Cockpit in heller Darstellung mit denselben Beispieldaten](docs/images/autarpie-3.0.0-light.svg) |
 
-## Statistikabruf unter wechselnden Grundlagen · 2.0.3
+Die Aufnahmen zeigen die tatsächliche geprüfte Oberfläche mit erfundenen Messwerten. Kacheln und Bereichsfarben sind einstellbar; vorhandene eigene Anordnungen werden nicht pauschal ersetzt.
 
-| Dunkle Ansicht | Helle Ansicht |
-|---|---|
-| ![Vollständige native Statistikreihen nach einem Wetterwechsel; erfundene Messungen](docs/images/viewer-statistics-2.0.3-dark.png) | ![Dieselben erfolgreich geladenen Reihen im hellen Design; erfundene Messungen](docs/images/viewer-statistics-2.0.3-light.png) |
+| Einstellungsbereiche | Native Zentrale |
+| --- | --- |
+| ![AutarPie Einstellungsbereiche](docs/images/autarpie-3.0.0-settings.svg) | ![Schlanke native AutarPie-Zentrale](docs/images/autarpie-3.0.0-central.svg) |
 
-Aufnahmen aus der tatsächlichen Oberfläche mit Berechnungsergebnissen der nativen TCP-/SQLite-Prüfung und erfundenen Messungen. Eigene Kachelanordnungen bleiben erhalten. [Statistiken und Ladeanzeigen](docs/ANZEIGE-STATISTIK.md).
+## Ein Cockpit, mehrere Anwendungen
 
-## Gas und Wasser · aktuelle Ansichten in 2.0.2
+- **Übersicht:** frei zusammenstellen, was gerade gebraucht wird – auch Werte aus E-Scooter, Modellbau, Gas und Wasser.
+- **Solar & Speicher:** Anlage, Batteriebilanz, PV-Spannung, Lastausgang, Wetter und Prognose.
+- **E-Scooter:** BMS-Werte, Speicherinhalt, Ladeweg, Ladeplanung und Sondernutzung.
+- **Gas / Wasser:** Beschaffungen, Flaschenwechsel, korrigierter Vorrat und gelernter Bedarf.
+- **Modellbau:** 608PD-Livewerte, begrenzte bestätigte Bedienfunktionen und Einordnung externer Batterieladung.
+- **Verlauf, Geräte, Einstellungen:** Messungen, Phasenzeitleiste, Verbindungen und gemeinsame Konfiguration.
 
-| Gasbedarf in Flaschen und aktives Wettermodell | Wasserbedarf in Kanistern |
-|---|---|
-| ![Gasbedarf in Flaschen, Bezugsgröße und aktiver Temperaturkorrektur; erfundene Beispieldaten](docs/images/supplies-weather-active-2.0.2-dark.png) | ![Wasserbedarf in Kanistern mit eingestellter Bezugsgröße; erfundene Beispieldaten](docs/images/supplies-water-2.0.2-light.png) |
+Alle Bereiche sind oben über **Bereiche** erreichbar. Untere Kurzwahlen lassen sich ein-/ausblenden und ordnen. Eigene benannte Dashboards können leer beginnen oder eine vorhandene Ansicht kopieren. Raster, Kachelgrößen und Hoch-/Queranordnungen bleiben gerätelokal. Kachelentfernen fragt nach; die Darstellungsgröße verlangt ausdrückliches Speichern.
 
-| Behältergrößen gemeinsam einstellen | Gasansicht im hellen Design |
-|---|---|
-| ![Kanistergröße und Gasflaschengröße von der Beschaffungsmenge unterscheiden](docs/images/supplies-settings-2.0.2.png) | ![Gasbedarf und Wetter-Lernstand im hellen Design](docs/images/supplies-weather-active-2.0.2-light.png) |
+Gemeinsame Bereichsfarben und weiche zwei-/dreifarbige Skalen sind zentral einstellbar. App- und Kachelhintergründe unterstützen eine oder zwei Farben mit Verlaufwinkel 0–360°. Einzelne Kacheln dürfen davon abweichen.
 
-Die Aufnahmen stammen aus der geprüften Oberfläche mit neutralen Testdaten. Standardgrößen sind 20 L je Kanister und 11 kg je Gasflasche; beide lassen sich ändern.
+## Zentrale, Anzeige oder eigenständig
 
-WohnPit vereint die bisherigen Apps Watt’n’Pit und WohnPit. **Android 8+**, für das Cockpit mit aktuellem Android-System-WebView. Kein Konto, keine Werbung. Messdaten bleiben auf deinen Geräten; optionaler Wetterabruf nutzt Internet. Im Anlagenverbund werden Daten verschlüsselt im lokalen WLAN übertragen.
+| Rolle | Aufgabe |
+| --- | --- |
+| Zentrale | Mess- und Wettergrundlagen erfassen, speichern und verteilen; native Bedienoberfläche und bestätigte Steuerung |
+| Anzeigehandy | Cockpit, Diagramme, Prognosen, Verbrauchslernen und eigene Dashboards aus den Zentraldaten berechnen |
+| Eigenständig | Erfassung, Berechnung, Planung und Cockpit auf einem Gerät ohne Zentrale |
 
-## Ein Handy oder mehrere: du entscheidest
+Autostart stellt nach Neustart oder App-Update den gespeicherten Zustand wieder her. Eine pausierte Aufzeichnung bleibt pausiert. Das konkrete Android-Gerät kann erstes Entsperren und zusätzliche Hintergrund-/Bluetooth-Freigaben verlangen. Gemeinsame Zentralfunktionen sind auch von den Anzeigehandys bedienbar, einschließlich Archivabruf und Aufzeichnung.
 
-| Betriebsart | Aufgabe |
-|---|---|
-| **Zentrale** | Geräte auslesen, Aufzeichnungen und Journal speichern, Wetter sammeln, weitere Handys versorgen. Schlanke native Oberfläche für das G5; kein Dashboard-WebView. |
-| **Anzeigehandy** | Eine Zentrale koppeln, Kacheln und Verläufe anzeigen, rechnen und lernen, Anlage und Versorgung bedienen. |
-| **Eigenständig · Victron direkt** | Ohne Zentrale direkt mit den Victron-Geräten verbinden. Aufzeichnung, Wetter, Berechnung und Anzeige auf einem Handy. |
+## Solar, Lastausgang und 608PD
 
-Beim ersten Start auswählen; bestehende Watt’n’Pit-Installationen übernehmen ihre bisherige Rolle. Die Betriebsart lässt sich später ändern. Der Verbund braucht dasselbe lokale WLAN. Ein automatischer Fernzugriff über das Internet ist nicht enthalten.
+Standort, Aufstellung, Verschattung, Module, Verkabelung und Regler werden gemeinsam eingerichtet. Solarkreise behalten beim Umordnen ihre Kennung und historischen Daten. Mehrere Kreise an demselben Regler teilen sich in der Prognose die eingetragene Strom-/Leistungsgrenze. Jeder mobile Kreis erhält einen eigenen anklickbaren Namen in der Wetterkarte.
 
-## Anzeigehandy mit geladenen Statistiken · 2.0.1
+Der SmartSolar-Lastausgang ist E-Scooter, Modellbau oder einem anderen Verbraucher zuordenbar. Zustand und Strom werden vom Gerät gelesen; Leistung und Energie daraus auf der Anzeige ausgewertet. Werte werden nicht nochmals zum bereits am Shunt erfassten Verbrauch addiert.
 
-| Dunkle Ansicht | Helle Ansicht |
-|---|---|
-| ![WohnPit 2.0.1: Solarertrag, Verbrauch und gezeichnete Kurven; neutrale Testwerte](docs/images/wohnpit-2.0.1-viewer-dark.png) | ![WohnPit 2.0.1: dieselben geladenen Statistiken im hellen Design](docs/images/wohnpit-2.0.1-viewer-light.png) |
+Die **optionale Rollerautomatik ist zunächst aus**. Ladeziel, Wohnwagenreserve, Tagesziel, Überschussschwellen und Prognosereserve sind variabel. Ein aktives Anzeigehandy erstellt den zeitlich begrenzten Plan; die Zentrale kontrolliert direkte Abschaltbedingungen. Ein Schaltauftrag ist erst mit der tatsächlichen Geräteantwort bestätigt. Ohne gültigen Plan wird zum Ausschalten angefordert. BMS-Empfang allein beweist noch keinen eingesteckten Ladestecker.
 
-Aufnahmen aus der automatisierten Browserprüfung mit erfundenen Messwerten. Der Test lädt zuerst unter fortlaufend neuen Live-Revisionen und prüft anschließend die sichtbaren Solar-, Verbrauchs- und Batteriekurven. [Update und Statusanzeigen](docs/ANZEIGE-STATISTIK.md).
+Der 608PD erhält eine private Verbindung aus der eigenen Bluetooth-Aufzeichnung. Unterstützt sind nachgewiesene Livefelder und Beenden von Laden/Powerbank-Betrieb. App-Start ist zunächst auf das beobachtete **3S-LiPo-Profil 4,21 V/Zelle / 0,50 A** mit ausdrücklicher Profilbestätigung begrenzt. Powerbank und andere Profile am Gerät starten. Nicht belegte Temperatur-/USB-/CC-CV-Felder werden nicht erfunden.
 
-## Was du im Cockpit siehst
+## Update von WohnPit
 
-Solarleistung und -ertrag, Akkustand, Batterie- und Energiebilanz, Verbrauch, Gerätearchive, Wetter und Planung. Freie Kacheln mit Zahlen, Rundinstrumenten oder Kurven, getrennten Anordnungen für Hoch-/Querformat und zentralen Farben mit kopierbaren Hexcodes. Wasserbeschaffungen und Gaswechsel manuell eintragen; daraus Bedarf, Restvorrat und Reichweite in **Tagen und Stunden** schätzen. Fehlende Werte bleiben unbekannt.
+1. Vollständige private Sicherung anlegen.
+2. **Zuerst die Zentrale, danach die Anzeigehandys auf 3.0.0** aktualisieren.
+3. Die APK über die vorhandene gemeinsame App installieren, **nicht deinstallieren**.
 
-| Cockpit mit Beispieldaten | Nachvollziehbarer Wetterrückblick |
-|---|---|
-| ![WohnPit 2.0.0 – Democockpit](docs/images/wohnpit-2.0.0-cockpit.png) | ![Gespeicherte Wettertage mit Zeitraum, Ort und Quelle; erfundene Werte](docs/images/weather-history-2.0.0-light.png) |
+Name und Symbol ändern sich; Paket `de.wattpit.app`, Original-Updatesignatur, gespeicherte Daten, Kopplungen und ScootPit-Schnittstelle bleiben erhalten. Das Repository bleibt `Tim-Gurke/WohnPit`. Ein bereits abgeschlossener Umzug aus der alten separaten WohnPit-Zentrale muss nicht wiederholt werden.
 
-| Wasserbeschaffung in WohnPit 2.0.2 | Zentrale Messwertfarben |
-|---|---|
-| ![Wasserbeschaffung mit Menge und Zeitpunkt; erfundene Beispieldaten](docs/images/supplies-water-entry-2.0.2.png) | ![WohnPit-Messwertfarben mit Hexcodes](docs/images/value-colors-2.0.0-dark.png) |
+Nur beim bisherigen separaten Paket `de.wohnpit.app` ist die alte [Umzugsanleitung](docs/ZUSAMMENFUEHRUNG.md) relevant. Das notwendige signierte Hilfsprogramm bleibt als `WohnPit-Uebernahme-v0.0.5.apk` im aktuellen Release verfügbar. Private Umzugs- und Signierdateien werden niemals veröffentlicht.
 
-Alle Aufnahmen zeigen Demo-, Beispiel- oder Emulatoransichten. Keine persönlichen Messwerte oder Verknüpfungen werden veröffentlicht.
+## Gas, Wasser, Datenschutz und Prüfungen
 
-## Von den bisherigen Apps wechseln
+Beschaffungen und Flaschenwechsel bilden den Lernverbrauch. Eine reine Inhaltskorrektur korrigiert Vorrat/Reichweite und gilt nicht als neuer Verbrauch. Kanister- und Flaschengrößen sind einstellbar. [Gas und Wasser im Detail](docs/GAS-WASSER.md).
 
-**Watt’n’Pit auf dem Anzeigehandy:** Die neue WohnPit-APK über Watt’n’Pit installieren, ohne vorher zu deinstallieren. Die Updatesignatur und technische App-Kennung bleiben erhalten. Der sichtbare Name wird WohnPit; die vorhandenen Daten und Kopplungen bleiben erhalten.
+Geprüft werden Berechnungen, Daten-/Konfigurationsübernahme, echte TCP-/SQLite-Verbundabläufe, Browserbedienung und Android-Oberfläche. Reale Funkverbindungen, Autostart am vorhandenen G5 sowie Schalt- und Ladevorgänge mit den konkreten Geräten müssen vor Ort bestätigt werden; Softwareprüfungen ersetzen diese nicht. [Prüfumfang und Grenzen](docs/changes-3.0.0.md).
 
-**Bisherige WohnPit-Zentrale:** zuerst **[WohnPit 0.0.5 · Übernahme](https://github.com/Tim-Gurke/WohnPit/releases/download/v2.0.3/WohnPit-Uebernahme-v0.0.5.apk)** installieren, Aufzeichnung/Archivabruf pausieren und eine vollständige verschlüsselte Sicherung erstellen. Danach in der aktuellen gemeinsamen WohnPit-App einlesen, prüfen lassen, schließen und neu öffnen. Die alte Übernahme-App bis zur Kontrolle behalten. Geräte und Anzeigehandys nötigenfalls neu verknüpfen. [Schritt-für-Schritt-Anleitung](docs/ZUSAMMENFUEHRUNG.md).
+Die App übernimmt keine Geräte-Firmwareupdates. Solche Updates und übrige Geräteparameter bleiben in der jeweiligen Hersteller-App. Geräteschlüssel bleiben auf dem erfassenden Gerät; der lokale Verbund verwendet einen privaten Verbindungscode.
 
-**Private Umzugsdateien niemals veröffentlichen.** Sie enthalten Geräte- und Verbindungsschlüssel und werden mit deinem eigenen Kennwort verschlüsselt. Die App speichert das Kennwort nicht und lädt die Datei nicht auf einen Server. Die öffentliche APK ist keine Umzugsdatei. Normale CSV- oder Einstellungsexporte ersetzen die vollständige Übernahmesicherung nicht.
-
-**Layout-Hinweis:** Auf Wunsch wird beim Update einmal die gespeicherte Anordnung mit 20 Kacheln für beide Ausrichtungen übernommen und ersetzt die bisherige lokale Anordnung. Bei Bedarf vorher das alte Layout exportieren. Spätere Änderungen werden nicht erneut überschrieben. Wasser verwendet **#4C65E0**, Gas **#C2C200**. [Farben und Wetterrückblick ausführlich erklärt](docs/MESSWERTFARBEN-WETTER.md).
-
-## Geeignete Geräte und Anlagen
-
-Die Bluetooth-Energieanzeige nutzt unterstützte Victron SmartSolar-/SmartShunt-Geräte mit Sofortanzeige und passenden Geräteschlüsseln. Der Aufstellort kann Wohnwagen, Ferienhaus, Gartenhaus oder Balkon sein; beliebige Wechselrichter und Netzstromzähler werden dadurch nicht automatisch unterstützt. Weitere vorhandene Speicherfunktionen und die signaturgeprüfte ScootPit-BMS-Übergabe bleiben erhalten. ScootPit braucht für die Zusammenführung kein Update.
-
-**WohnPit ersetzt VictronConnect nicht.** Geräteeinstellungen und Firmware-Updates von Regler und Shunt weiterhin in VictronConnect vornehmen. WohnPit ist ein unabhängiges Projekt, kein offizielles Victron-Produkt.
-
-## Anleitung und vollständige Historie
-
-- [Ausführliche Cockpit-Bedienung](docs/COCKPIT-ANLEITUNG.md)
-- [Installation, Betriebsarten, Geräte und vollständiger Umzug](docs/ZUSAMMENFUEHRUNG.md)
-- [Messwertfarben, Layout und belegter Wetterrückblick](docs/MESSWERTFARBEN-WETTER.md)
-- [Gas und Wasser: Einträge, Wetter und Schätzungen](docs/GAS-WASSER.md)
-- [Statistiken und Diagramme auf Anzeigehandys](docs/ANZEIGE-STATISTIK.md)
-- [Änderungen und Prüfgrenzen 2.0.2](docs/changes-2.0.2.md)
-- [Änderungen und Prüfgrenzen 2.0.1](docs/changes-2.0.1.md)
-- [Änderungen und Prüfgrenzen 2.0.0](docs/changes-2.0.0.md)
-- [Übernahmeversion 0.0.5](docs/changes-0.0.5.md)
-- [WohnPit-Versionshistorie](CHANGELOG.md) und [bisherige Watt’n’Pit-Versionshistorie](docs/wattnpit-archiv/CHANGELOG.md)
-
-Die vollständige dokumentierte Watt’n’Pit-Vorgeschichte liegt im [öffentlichen Dokumentationsarchiv](docs/wattnpit-archiv/HERKUNFT.md) dieses gemeinsamen Projekts.
-
-Je Repository bleiben die drei neuesten Releases veröffentlicht. Tags, Quellhistorie und Änderungsdokumentation bleiben erhalten.
-
-## Entwicklung
-
-JDK 17, Android SDK 35 und Gradle 8.11.1. Vor jedem Hochladen **nach dem Vormerken der Änderungen** die öffentliche Dateiliste prüfen:
-
-```bash
-python3 tools/check-public-files.py
-python3 tools/check-upstream.py
-node --test tools/*test.cjs
-./gradlew testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest assembleRelease
-```
-
-Die bestehende Watt’n’Pit-Updatesignatur wird technisch weiterverwendet: `WATTPIT_KEYSTORE`, `WATTPIT_SIGNING_PASSWORD`, Alias `wattpit`. Schlüssel gehören ausschließlich in die private Bauumgebung. Der GitHub-Veröffentlichungslauf übernimmt eine bereits signierte APK und prüft Quelle, erfolgreichen Prüflauf, Dateigröße und Prüfsumme; er erhält keine privaten Signierschlüssel.
-
-Herkunft und überprüfte Änderungen stehen in [UPSTREAM.json](UPSTREAM.json). Lizenz: [MIT](LICENSE). © Tim Weißbach.
+© 2026 Tim Weißbach und Mitwirkende.
