@@ -93,7 +93,7 @@ final class LanSync {
         if(!wanted.isEmpty()){
             JSONObject saved=new JSONObject(prefs.getString("role-"+wanted,"{}"));
             if(saved.optString("role").equals(wanted))save(saved);
-            else if(wanted.equals("host"))create("WohnPit");
+            else if(wanted.equals("host"))create("AutarPie");
         }
         updateRefreshLoop();
     }
@@ -169,7 +169,7 @@ final class LanSync {
     }catch(Exception e){return "{}";}}
     private String fingerprint()throws Exception{
         JSONArray values=new JSONArray();Map<String,?> all=repository.prefs.getAll();
-        for(String key:new String[]{"devices","equipment-v1","solar-setup-v1","weatherPlace","capacity","sampleSeconds","recording",SpecialUses.KEY,SuppliesStore.KEY})values.put(all.get(key));
+        for(String key:new String[]{AutarPieConfig.APPEARANCE,EnergyStore.KEY,EnergyStore.CHARGER,"archiveIntervalMinutes","autostart","devices","equipment-v1","solar-setup-v1","weatherPlace","capacity","sampleSeconds","recording",SpecialUses.KEY,SuppliesStore.KEY})values.put(all.get(key));
         ArchiveRun.State run=repository.archiveRun.state();values.put(run.id).put(run.startedAt).put(run.busy);
         values.put(RollerStore.get(context).snapshot().optJSONObject("profile"));values.put(context.getSharedPreferences("wattpit-presence",Context.MODE_PRIVATE).getLong("revision",0));return digest(values.toString());
     }
@@ -236,7 +236,7 @@ final class LanSync {
         return query(method,args,null);
     }
     JSONObject query(String method,JSONArray args,Consumer<String> progress)throws Exception{
-        if(Arrays.asList("history","dashboardHistory","energyHistoryWindow","energyHistory","dailyEnergy").contains(method)){analysisPending=true;try{JSONObject result=analysis().query(method,args,progress);analysisAt=result.getJSONObject("analysis").optLong("at");return result;}finally{analysisPending=false;}}
+        if(Arrays.asList("rollerEnergy","history","dashboardHistory","energyHistoryWindow","energyHistory","dailyEnergy").contains(method)){analysisPending=true;try{JSONObject result=analysis().query(method,args,progress);analysisAt=result.getJSONObject("analysis").optLong("at");return result;}finally{analysisPending=false;}}
         return queryInput(method,args);
     }
     int analysisProtocol(){return remote.optInt("analysisProtocol");}
@@ -336,6 +336,7 @@ final class LanSync {
             JSONObject point=shunt.isEmpty()?null:repository.db.sunsetSoc(from,System.currentTimeMillis(),shunt);return new JSONObject().put("point",point==null?JSONObject.NULL:point);
         }
         long to=args.getLong(1);
+        if(AppRole.get(context).equals("central"))throw new IllegalArgumentException("Auswertungen werden auf dem Anzeigehandy berechnet. Bitte das Anzeigehandy aktualisieren.");
         // Calendar-month requests include their future month end. HistoryDb validates
         // their bounded 32-day span and only calculates consumption up to the present.
         if(method.equals("dailyEnergy"))return planning.dailyEnergy(from,to,new JSONObject(repository.prefs.getString("weatherCache","{}")));
