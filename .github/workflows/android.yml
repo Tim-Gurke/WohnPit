@@ -111,6 +111,10 @@ jobs:
           java -cp "$RUNNER_TEMP/wattpit-java:$qr_cp" de.wattpit.app.core.PairingQrFixture > "$WATTPIT_QR_FIXTURE"
           export NODE_PATH="$RUNNER_TEMP/wattpit-ui/node_modules"
           python3 tools/run-ui-checks.py
+          # Repeat the cold statistics fixture in fresh browser contexts.
+          for attempt in 1 2; do
+            node tools/viewer-statistics-smoke.cjs
+          done
       - uses: actions/upload-artifact@v4
         with:
           name: Watt-n-Pit-CI-release
