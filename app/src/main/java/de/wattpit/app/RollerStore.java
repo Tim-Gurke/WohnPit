@@ -21,7 +21,7 @@ final class RollerStore {
     private String lastCommand="";
     private String status="Nicht verbunden";
     private RollerStore(Context c){
-        ledger=RollerLedger.get(c);central=AppRole.get(c).equals("central");
+        ledger=RollerLedger.get(c);central=c.getSharedPreferences("wohnpit-role",Context.MODE_PRIVATE).getString("role","").equals("central");
         prefs=c.getSharedPreferences("wattpit-roller",Context.MODE_PRIVATE);plantPrefs=c.getSharedPreferences("wattpit",Context.MODE_PRIVATE);
         try{profile=checked(new JSONObject(prefs.getString("profile","{}")));JSONObject s=new JSONObject(prefs.getString("session","{}"));
             session.started=s.optLong("started");session.ended=s.optLong("ended");session.observedMillis=s.optLong("observedMillis");session.gapMillis=s.optLong("gapMillis");session.batteryWh=s.optDouble("batteryWh",0);session.inputWh=s.optDouble("inputWh",0);automatic=s.optBoolean("automatic");detector.suppressed=prefs.getBoolean("autoSuppressed",false);revision=prefs.getLong("sessionRevision",0);lastCommand=prefs.getString("lastCommand","");
