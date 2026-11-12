@@ -21,7 +21,7 @@ const waitForPage=require('./browser-wait.cjs');
  });
  await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));
  const before=await page.evaluate(()=>JSON.stringify(dashboard.config.tiles.map(t=>[t.id,t.layouts,t.title])));
- for(const metric of ['mobileSolarPower','mobileSolarEnergy']){await page.locator('#addTile').click();await page.locator(`.metric-option[data-metric="${metric}"]`).click();}
+ for(const metric of ['mobileSolarPower','mobileSolarEnergy']){await page.evaluate(()=>document.getElementById('dashboardToolbar').hidden=false);await page.locator('#addTile').click();await page.locator(`.metric-option[data-metric="${metric}"]`).click();}
  assert.equal(await page.evaluate(()=>JSON.stringify(dashboard.config.tiles.slice(0,-2).map(t=>[t.id,t.layouts,t.title]))),before,'adding both tiles must leave all existing layouts and captions unchanged');
  const ids=await page.evaluate(()=>Object.fromEntries(['mobileSolarPower','mobileSolarEnergy','consumptionEnergy','energyBalance'].map(metric=>[metric,dashboard.config.tiles.find(t=>t.metric===metric).id])));
  const tile=metric=>page.locator(`[data-tile="${ids[metric]}"]`);
