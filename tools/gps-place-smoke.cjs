@@ -1,3 +1,4 @@
+const autarpieControls=require('./autarpie-test-controls.cjs');
 // Synthetic places and callbacks; no GPS or geocoder service is contacted.
 const {chromium}=require('playwright'),assert=require('node:assert/strict'),path=require('node:path');
 const D=require('../app/src/main/assets/dashboard-core.js');
@@ -12,7 +13,7 @@ const waitForPage=require('./browser-wait.cjs');
    window.fixture={running:false,devices:[],readings:[],found:[],stats:{count:0},historyRevision:1,equipment:{version:1,groups:[]},settings:{theme:'dark',palette:'classic',capacity:100,sampleSeconds:10,miniRange:'today',weatherPlace:place,solarSetup:{}},weather:{timezone:'Europe/Berlin',days:[]}};
    window.WattPit={appVersion:()=> '1.8.2',snapshot:()=>JSON.stringify(fixture),dashboard:()=>JSON.stringify(window.board),saveDashboard:json=>{window.board=JSON.parse(json);localStorage.setItem('gps-board',json);return '';},settings:json=>{Object.assign(fixture.settings,JSON.parse(json));return '';},history:()=>'{"points":[]}',dashboardHistory:()=>'{"points":[],"summary":{}}',energyHistoryWindow:()=>'{"error":true}',solarSetup:()=>JSON.stringify(fixture.settings.solarSetup),saveSolarSite:(setup,place)=>{fixture.settings.solarSetup=JSON.parse(setup);fixture.settings.weatherPlace=JSON.parse(place);localStorage.setItem('gps-place',place);return '';},locateSolarSite:()=>gpsStarts++,cancelSolarLocation:()=>{},searchSolarPlaces:query=>setTimeout(()=>onSolarPlaces({query,places:[{name:'Manueller Testort',latitude:50,longitude:9}]}),0)};
   },D.defaults());
-  await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));
+  await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));await autarpieControls.prepare(page);
   const heading=page.locator('#weatherPlaceName'),detail=heading.locator('.weather-place-detail');
   assert.equal(await heading.textContent(),'GPS · 52.520°, 13.410°');assert.equal(await page.evaluate(()=>gpsStarts),0,'opening the app must not request a GPS fix');
   const layouts=await page.evaluate(()=>JSON.stringify(dashboard.config.tiles.map(t=>t.layouts)));
