@@ -128,7 +128,6 @@ jobs:
             docs/images/supplies-*2.0.2*.png
 
   emulator:
-    needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
