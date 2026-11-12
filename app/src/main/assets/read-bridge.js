@@ -2,7 +2,7 @@
   const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.WattReadBridge=api;
 })(typeof globalThis==='object'?globalThis:this,function(){
   'use strict';
-  const methods=new Set(['history','dashboardHistory','energyHistory','energyHistoryWindow','dailyEnergy']);
+  const methods=new Set(['rollerEnergy','history','dashboardHistory','energyHistory','energyHistoryWindow','dailyEnergy']);
   const missing=()=>({points:[],summary:{},pending:true});
   const pending=method=>method==='dailyEnergy'?{days:[],pending:true}:method.startsWith('energy')?{solar:missing(),consumption:missing(),balance:missing(),mobile:missing(),pending:true}:missing();
   return class {
