@@ -6,23 +6,38 @@ import java.nio.charset.StandardCharsets;
 
 /** Portable preferences only. Never reads or writes device identities, keys or measurements. */
 final class ConfigurationBackup {
-    static final int MAX_BYTES=256000;
+    static final int MAX_BYTES=1800000;
     static JSONObject normalize(String json) throws Exception {
-        if(json.getBytes(StandardCharsets.UTF_8).length>MAX_BYTES)throw new IllegalArgumentException("Die Einstellungsdatei darf höchstens 256 KB groß sein.");
+        if(json.getBytes(StandardCharsets.UTF_8).length>MAX_BYTES)throw new IllegalArgumentException("Die Einstellungsdatei darf höchstens 1,8 MB groß sein.");
         JSONObject input=new JSONObject(json);
-        if(!input.optString("format").equals("wattnpit-settings")||input.optInt("version")!=1)throw new IllegalArgumentException("Keine unterstützte WohnPit-Einstellungssicherung.");
+        if(!input.optString("format").equals("wattnpit-settings")||input.optInt("version")!=1)throw new IllegalArgumentException("Keine unterstützte AutarPie-Einstellungssicherung.");
         JSONObject s=input.getJSONObject("settings");
         String theme=s.getString("theme"),palette=s.getString("palette"),miniRange=s.getString("miniRange");
         double capacity=s.getDouble("capacity"),seconds=s.getDouble("sampleSeconds");
         if(!Arrays.asList("light","dark").contains(theme)||!Arrays.asList("classic","blue","green","turquoise","orange","neutral").contains(palette)||!Arrays.asList("sunrise","today","last6h","last24h","yesterday","week","month").contains(miniRange)||!Double.isFinite(capacity)||capacity<1||capacity>10000||!Arrays.asList(5.0,10.0,30.0,60.0).contains(seconds))throw new IllegalArgumentException("Die allgemeinen Einstellungen sind ungültig.");
         JSONObject settings=new JSONObject().put("theme",theme).put("palette",palette).put("miniRange",miniRange).put("capacity",capacity).put("sampleSeconds",(int)seconds);
-        JSONObject board=input.getJSONObject("dashboard");JSONArray rows=board.getJSONArray("tiles"),tiles=new JSONArray();
+        JSONObject dashboard=dashboard(input.getJSONObject("dashboard"));
+        JSONObject place=input.optJSONObject("weatherPlace");if(place==null)place=new JSONObject();
+        if(place.length()>0)place=WeatherClient.checkedPlace(place);
+        JSONObject result=new JSONObject().put("format","wattnpit-settings").put("version",1).put("settings",settings).put("dashboard",dashboard).put("equipment",Repository.checkedEquipment(input.getJSONObject("equipment"))).put("weatherPlace",place);
+        JSONObject solar=SolarPlanning.checked(input.optJSONObject("solarSetup")==null?new JSONObject():input.getJSONObject("solarSetup"),result.getJSONObject("equipment"));
+        JSONArray circles=result.getJSONObject("equipment").getJSONArray("groups");for(int i=0;i<circles.length();i++){JSONObject g=circles.getJSONObject(i);if(g.optString("placement").equals("mobile"))solar.getJSONObject("groups").getJSONObject(g.getString("id")).put("active",false);}
+        result.put("solarSetup",solar);
+        if(input.has("workspace"))result.put("workspace",AutarPieConfig.workspace(input.getJSONObject("workspace").toString()));
+        if(input.has("appearance"))result.put("appearance",AutarPieConfig.appearance(input.getJSONObject("appearance").toString()));
+        if(input.has("specialUses"))result.put("specialUses",SpecialUses.checked(input.getJSONObject("specialUses")));
+        if(input.has("createdAt"))result.put("createdAt",input.optString("createdAt").substring(0,Math.min(40,input.optString("createdAt").length())));
+        return result;
+    }
+    static JSONObject dashboard(JSONObject board)throws Exception{
+        JSONArray rows=board.getJSONArray("tiles"),tiles=new JSONArray();
         if(board.optInt("version")!=1||rows.length()>64||board.toString().length()>128000)throw new IllegalArgumentException("Die gesicherte Übersicht ist ungültig.");
         Set<String> ids=new HashSet<>();
         for(int i=0;i<rows.length();i++){
             JSONObject row=rows.getJSONObject(i);String id=row.getString("id"),metric=row.getString("metric");
             if(!id.matches("[a-zA-Z0-9_-]{1,90}")||!ids.add(id)||!metric.matches("[a-zA-Z][a-zA-Z0-9]{0,40}"))throw new IllegalArgumentException("Ungültige Kachel in der Sicherung.");
-            JSONObject tile=pick(row,"id","metric","title","unit","type","digits","fontSize","color","colorSource","colorMid","colorEnd","adaptiveColor","multicolor","invert","min","max","scaleMode","valueMode","reverseSign","background","opacity");
+            JSONObject tile=pick(row,"id","metric","title","unit","type","digits","fontSize","color","colorSource","colorMid","colorEnd","adaptiveColor","multicolor","invert","min","max","scaleMode","valueMode","reverseSign","background","opacity","scaleSource");
+            if(row.has("backgroundSurface"))tile.put("backgroundSurface",AutarPieConfig.surface(row.getJSONObject("backgroundSurface")));
             tile.put("fontSize",Math.max(18,Math.min(20,row.optDouble("fontSize",20))));
             if(row.has("period"))tile.put("period",pick(row.getJSONObject("period"),"mode","amount","unit","aggregate","resetAt","from","to"));
             if(row.has("layouts")){
@@ -64,15 +79,7 @@ final class ConfigurationBackup {
             }
             dashboard.put("historyHeight",clean);
         }
-        JSONObject place=input.optJSONObject("weatherPlace");if(place==null)place=new JSONObject();
-        if(place.length()>0)place=WeatherClient.checkedPlace(place);
-        JSONObject result=new JSONObject().put("format","wattnpit-settings").put("version",1).put("settings",settings).put("dashboard",dashboard).put("equipment",Repository.checkedEquipment(input.getJSONObject("equipment"))).put("weatherPlace",place);
-        JSONObject solar=SolarPlanning.checked(input.optJSONObject("solarSetup")==null?new JSONObject():input.getJSONObject("solarSetup"),result.getJSONObject("equipment"));
-        JSONArray circles=result.getJSONObject("equipment").getJSONArray("groups");for(int i=0;i<circles.length();i++){JSONObject g=circles.getJSONObject(i);if(g.optString("placement").equals("mobile"))solar.getJSONObject("groups").getJSONObject(g.getString("id")).put("active",false);}
-        result.put("solarSetup",solar);
-        if(input.has("specialUses"))result.put("specialUses",SpecialUses.checked(input.getJSONObject("specialUses")));
-        if(input.has("createdAt"))result.put("createdAt",input.optString("createdAt").substring(0,Math.min(40,input.optString("createdAt").length())));
-        return result;
+        return dashboard;
     }
     private static JSONObject pick(JSONObject source,String...keys)throws JSONException{
         JSONObject result=new JSONObject();for(String key:keys)if(source.has(key))result.put(key,source.get(key));return result;
