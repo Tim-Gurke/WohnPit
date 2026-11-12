@@ -353,6 +353,11 @@ function seriesLabel(s) {
   const name=snapshot.devices.find(d=>d.mac===s.device)?.name || (s.kind==='solar'?'SmartSolar':'SmartShunt');
   return name + (s.origin==='csv'?' · CSV':s.origin==='archive'?' · Archiv':'');
 }
+function seriesColor(series){
+  const style=getComputedStyle(document.documentElement),colors=window.AutarPieAppearance?.colors;
+  if(colors)return ['balance','consumption','mobile'].includes(series.kind)?colors.calculated:series.kind==='solar'?colors.solar:colors.storage;
+  return style.getPropertyValue(series.kind==='balance'?'--blue':series.kind==='solar'?'--orange':'--mint').trim();
+}
 function canvasChart(canvas,data,from,to,chosen,mini=false) {
   const bounds=canvas.getBoundingClientRect(),zoom=(window.WattDisplay?.value||100)/100,width=Math.max(1,bounds.width/zoom),height=bounds.height/zoom;
   const ratio=(window.devicePixelRatio||1)*zoom;
@@ -381,7 +386,7 @@ function canvasChart(canvas,data,from,to,chosen,mini=false) {
   ctx.save();ctx.beginPath();ctx.rect(left,top,plotW,plotH);ctx.clip();
   const series=seriesOf(visible);
   for(const s of series){
-    const color=s.kind==='balance'?blue:s.kind==='solar'?orange:mint;
+    const color=seriesColor(s);
     const bucket=(to-from)/600;
     const gapLimit=Math.max(bucket*3,s.origin==='csv'?45*60000:45000,...s.points.map(p=>(p.period||0)*1500));
     const segments=[];let segment=[];
@@ -398,7 +403,7 @@ function canvasChart(canvas,data,from,to,chosen,mini=false) {
 function drawHistory(){
   if(page!=='history')return;
   scale=canvasChart($('historyChart'),points,viewFrom,viewTo,metric);
-  $('chartLegend').innerHTML=scale.series.map(s=>`<span><i class="dot ${s.kind==='balance'?'blue':s.kind==='solar'?'orange':'mint'}"></i>${escapeHtml(seriesLabel(s))}${s.origin==='csv'||s.kind==='balance'?' · gestrichelt':''}</span>`).join('');
+  $('chartLegend').innerHTML=scale.series.map(s=>`<span><i class="dot ${s.kind==='balance'?'blue':s.kind==='solar'?'orange':'mint'}" style="background:${seriesColor(s)}"></i>${escapeHtml(seriesLabel(s))}${s.origin==='csv'||s.kind==='balance'?' · gestrichelt':''}</span>`).join('');
 }
 function drawMini(){if($('miniChart').closest('.page')?.classList.contains('active')&&miniWindow)canvasChart($('miniChart'),miniPoints,miniWindow.from,Math.max(miniWindow.from+1,miniWindow.to),'power',true);}
 function clampView(from,to){const span=Math.min(baseTo-baseFrom,Math.max(60000,to-from));let start=Math.max(baseFrom,Math.min(from,baseTo-span));viewFrom=start;viewTo=start+span;selectedPoint=null;$('chartTooltip').hidden=true;drawHistory();delayedHistory();}
@@ -534,4 +539,4 @@ window.addEventListener('resize',()=>{drawHistory();drawMini();});
 
 for(const [id,method] of [['chooseAppRole','chooseAppRole'],['migrationBackup','migrationBackup'],['migrationImport','migrationImport']])$(id).onclick=()=>{if(typeof deviceNative?.[method]==='function')deviceNative[method]();else toast('Diese Funktion steht in der installierten AutarPie-App bereit.');};
 if(typeof deviceNative?.appRole==='function')$('appRoleLabel').textContent=({central:'Zentrale · Daten sammeln und im WLAN bereitstellen',viewer:'Anzeigehandy · mit einer Zentrale koppeln',direct:'Eigenständig · Victron direkt, ohne Zentrale'})[deviceNative.appRole()]||'Betriebsart wählen';
-window.AutarPieApp={get dashboard(){return dashboard;},get snapshot(){return snapshot;},get solar(){return solar;},get roller(){return roller;},native:deviceNative,read:historyRead,loadMini,showPage,openModal,closeModal,toast,poll,theme,reading,icon,escapeHtml};
+window.AutarPieApp={get dashboard(){return dashboard;},get snapshot(){return snapshot;},get solar(){return solar;},get roller(){return roller;},native:deviceNative,read:historyRead,loadMini,repaint:()=>{drawHistory();drawMini();},showPage,openModal,closeModal,toast,poll,theme,reading,icon,escapeHtml};
