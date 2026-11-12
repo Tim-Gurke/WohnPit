@@ -220,8 +220,10 @@ final class HistoryDb extends SQLiteOpenHelper {
     }
 
     JSONArray query(long from, long to, String metric, String source) throws Exception {
+        if(metric.equals("state")){HistoryQuery raw=HistoryQuery.raw(from,to,metric,source);JSONArray states=new JSONArray();try(Cursor c=getReadableDatabase().rawQuery(raw.sql+" LIMIT 100000",raw.args)){while(c.moveToNext())states.put(new JSONObject().put("t",c.getLong(0)).put("v",c.getDouble(1)).put("period",c.getInt(2)).put("device",c.getString(3)).put("origin",c.getString(4)));}return states;}
+
         if(flowKey(metric)!=null)return energyFlow(from,to,source).getJSONObject(flowKey(metric)).getJSONArray("points");
-        if(metric.equals("solarEnergy")||metric.equals("dischargeEnergy")||metric.equals("batteryEnergy"))return energyData(from,to,metric,source).getJSONArray("points");
+        if(metric.equals("loadEnergy")||metric.equals("solarEnergy")||metric.equals("dischargeEnergy")||metric.equals("batteryEnergy"))return energyData(from,to,metric,source).getJSONArray("points");
         HistoryQuery query=HistoryQuery.raw(Math.max(0,from-EnergyIntegral.LOOKAROUND),Math.min(System.currentTimeMillis(),to+EnergyIntegral.LOOKAROUND),metric,source);
         Map<String,List<SampleTimeline.Sample>> devices=new LinkedHashMap<>();Map<String,String> kinds=new HashMap<>();
         try(Cursor c=getReadableDatabase().rawQuery(query.sql,query.args)){
@@ -265,7 +267,7 @@ final class HistoryDb extends SQLiteOpenHelper {
 
     JSONObject dashboardData(long from,long to,String metric) throws Exception {
         if(flowKey(metric)!=null)return energyFlow(from,to,"all").getJSONObject(flowKey(metric));
-        if(metric.equals("solarEnergy")||metric.equals("dischargeEnergy")||metric.equals("batteryEnergy"))return energyData(from,to,metric,"all");
+        if(metric.equals("loadEnergy")||metric.equals("solarEnergy")||metric.equals("dischargeEnergy")||metric.equals("batteryEnergy"))return energyData(from,to,metric,"all");
         JSONObject summary=new JSONObject();
         HistoryQuery aggregate=HistoryQuery.summary(from,to,metric,"all");
         try (Cursor c=getReadableDatabase().rawQuery(aggregate.sql,aggregate.args)) {
@@ -293,11 +295,11 @@ final class HistoryDb extends SQLiteOpenHelper {
     JSONObject energyData(long from,long to,String metric,String source) throws Exception {
         boolean discharge=metric.equals("dischargeEnergy");
         boolean balance=metric.equals("batteryEnergy");
-        if(!discharge&&!balance&&!metric.equals("solarEnergy"))throw new IllegalArgumentException("Unbekannte Energiegröße.");
+        if(!discharge&&!balance&&!metric.equals("solarEnergy")&&!metric.equals("loadEnergy"))throw new IllegalArgumentException("Unbekannte Energiegröße.");
         to=Math.min(to,System.currentTimeMillis());
         if(to<=from)return new JSONObject().put("points",new JSONArray()).put("summary",new JSONObject());
-        EnergyIntegral.Result result=discharge||balance?EnergyIntegral.calculateIntervals(batteryIntervals(from,to,source,null),from,to,discharge,balance):EnergyIntegral.calculate(powerSamples(from,to,"solar",source),from,to,false);
-        return energyJson(result,from,to,balance?"battery-balance":discharge?"shunt":"solar");
+        EnergyIntegral.Result result=discharge||balance?EnergyIntegral.calculateIntervals(batteryIntervals(from,to,source,null),from,to,discharge,balance):EnergyIntegral.calculate(metric.equals("loadEnergy")?fieldSamples(from,to,"loadPower",source,null):powerSamples(from,to,"solar",source),from,to,false);
+        return energyJson(result,from,to,balance?"battery-balance":discharge?"shunt":metric.equals("loadEnergy")?"load":"solar");
     }
 
     private static String flowKey(String metric){
