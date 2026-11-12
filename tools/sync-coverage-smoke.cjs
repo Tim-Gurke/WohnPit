@@ -1,3 +1,4 @@
+const autarpieControls=require('./autarpie-test-controls.cjs');
 const waitForPage=require('./browser-wait.cjs');
 const {chromium}=require('playwright');
 const assert=require('node:assert/strict');
@@ -26,7 +27,7 @@ const path=require('node:path');
   const scenario=()=>f[window.activeShort?'short':window.activeGap?'gap':'complete'];
   window.WattPit={snapshot:()=>JSON.stringify(window.mock),dashboard:()=>JSON.stringify(window.testBoard),saveDashboard:()=>'',settings:()=>'',history:()=>JSON.stringify(scenario().power),dashboardHistory:(from,to,metric)=>JSON.stringify(metric.toLowerCase().includes('energy')?scenario().flow.solar:scenario().power),energyHistory:()=>JSON.stringify({accountingVersion:2,...scenario().flow}),energyHistoryWindow:()=>JSON.stringify({accountingVersion:2,...scenario().flow})};
  },fixture);
- await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));
+ await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));await autarpieControls.prepare(page);
  const moves=async()=>((await page.locator('[data-tile="coverage-solar"] .tile-sparkline path').last().getAttribute('d')).match(/M/g)||[]).length;
  const trace=async canvas=>page.evaluate(canvas=>window.curveTraces.filter(x=>x.canvas===canvas).map(x=>x.path).join(''),canvas);
  for(const gap of [false,true]){
