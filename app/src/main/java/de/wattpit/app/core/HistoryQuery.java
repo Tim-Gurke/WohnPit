@@ -9,6 +9,7 @@ public final class HistoryQuery {
     private HistoryQuery(String sql, List<String> args) { this.sql=sql;this.args=args.toArray(new String[0]); }
     public static HistoryQuery build(long from,long to,String metric,String source) {
         Selection selection = select(from,to,metric,source);
+        if(metric.equals("state"))return new HistoryQuery("SELECT ts t,ts last,device,kind,origin,state v,state lo,state hi,1 n,period resolution FROM readings WHERE "+selection.where+" ORDER BY ts LIMIT 100000",selection.args);
         long bucket=Math.max(1,(to-from)/600);
         List<String> args=new ArrayList<>(selection.args);
         args.add(String.valueOf(bucket));
