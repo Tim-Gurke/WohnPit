@@ -180,7 +180,7 @@ function poll() {
       if(sourceChanged){reads?.invalidate(true);points=[];miniPoints=[];energyData=null;}
       const lanChanged=sourceChanged||snapshot.lan&&lastLanConnection!==snapshot.lan.connected;
       if(lanChanged)lastLanConnection=snapshot.lan?.connected;
-      if(lanChanged||snapshot.historyRevision!=null&&snapshot.historyRevision!==lastHistoryRevision&&Date.now()-lastAnalysisRefresh>=30000){lastAnalysisRefresh=Date.now();lastHistoryRevision=snapshot.historyRevision;reads?.invalidate();dashboard?.clearCache();lastMiniLoad=0;if(page==='history'&&!demo)loadHistory();}
+      if(lanChanged||snapshot.historyRevision!=null&&snapshot.historyRevision!==lastHistoryRevision){lastAnalysisRefresh=Date.now();lastHistoryRevision=snapshot.historyRevision;reads?.invalidate(false,!lanChanged);dashboard?.clearCache();lastMiniLoad=0;if(page==='history'&&!demo)loadHistory();}
       if (snapshot.eventId && snapshot.eventId !== lastEvent) { toast(snapshot.event); lastEvent = snapshot.eventId; }
       if (document.documentElement.dataset.theme !== snapshot.settings.theme) theme(snapshot.settings.theme,false);
     } catch (error) { console.error('Snapshot unavailable',error); }
@@ -526,7 +526,7 @@ roller = new window.WattRoller({native,read:historyRead,isDemo:()=>demo,getSolar
 configuration = new window.WattSettingsBackup({native,getSnapshot:()=>snapshot,dashboard,equipment,openModal,closeModal,toast,applied:backup=>{
   settingsDirty=false;poll();
   dashboard.config=window.WattDashboardCore.normalize(backup.dashboard);dashboard.saved=JSON.parse(JSON.stringify(dashboard.config));dashboard.cache.clear();
-  theme(snapshot.settings.theme,false);extras.palette(snapshot.settings.palette||'classic',false);equipment.key='';equipment.render();dashboard.render();renderSettings();loadMini(true);
+  theme(snapshot.settings.theme,false);extras.palette(snapshot.settings.palette||'classic',false);equipment.key='';equipment.render();dashboard.render();renderSettings();loadMini(true);window.onAutarPieConfigurationApplied?.(backup);
 }});
 theme(!native?localStorage.getItem('wattpit-preview-theme')||'dark':'dark',false);
 lanUi=new window.WattLan({native:deviceNative,toast,openModal,closeModal});

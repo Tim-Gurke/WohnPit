@@ -25,7 +25,7 @@ final class AnalysisExchange {
         case "archive_clock_state":return "device:s,payload:s";
         default:throw new IllegalArgumentException("Unbekannte Datentabelle.");
     }}
-    static boolean incremental(String table){return table.equals("observations")||table.equals("forecasts");}
+    static boolean incremental(String table){return table.equals("observations")||table.equals("forecasts")||table.equals("roller_raw")||table.equals("load_raw")||table.equals("input_intervals");}
     static JSONObject state(Repository repo,SolarPlanning plan,long controlRevision)throws Exception{
         StringBuilder text=new StringBuilder();for(String key:new String[]{"weatherCache","devices","equipment-v1","solar-setup-v1","weatherPlace","rollerChargeWindows",SpecialUses.KEY})text.append(repo.prefs.getString(key,""));
         String token=java.util.Base64.getEncoder().encodeToString(java.security.MessageDigest.getInstance("SHA-256").digest(text.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
@@ -70,14 +70,19 @@ final class AnalysisExchange {
     static JSONObject page(Context context,Repository repo,SolarPlanning plan,String table,long from,long to,String expected,long after)throws Exception{
         if(from<0||to<=from||to-from>376L*86400000||to>System.currentTimeMillis()+86400000||after<0)throw new IllegalArgumentException("Ungültiger Datenzeitraum.");
         RollerLedger ledger=RollerLedger.get(context);SQLiteDatabase db=database(table,repo,plan,ledger,false);String before=version(table,repo,plan,ledger,from,to);
-        if(!before.equals(expected))return new JSONObject().put("changed",true);
+        boolean bounded=table.equals("roller_raw")||table.equals("load_raw")||table.equals("input_intervals");long highWater=Long.MAX_VALUE;
+        if(bounded){if(!expected.matches("[0-9]+:[0-9]+"))throw new IllegalArgumentException("Ungültiger Datenstand.");highWater=Long.parseLong(expected.split(":")[0]);}
+        else if(!before.equals(expected))return new JSONObject().put("changed",true);
         String[] fields=schema(table).split(",");List<String> columns=new ArrayList<>();for(String f:fields)columns.add(f.split(":")[0]);JSONArray rows=new JSONArray();long cursor=after;
-        try(Cursor c=db.rawQuery("SELECT rowid,"+String.join(",",columns)+" FROM "+table+" WHERE "+where(table,from,to)+" AND rowid>? ORDER BY rowid LIMIT "+PAGE,new String[]{""+after})){
+        try(Cursor c=db.rawQuery("SELECT rowid,"+String.join(",",columns)+" FROM "+table+" WHERE "+where(table,from,to)+" AND rowid>? AND rowid<="+highWater+" ORDER BY rowid LIMIT "+PAGE,new String[]{""+after})){
             while(c.moveToNext()){cursor=c.getLong(0);JSONArray row=new JSONArray();for(int i=0;i<fields.length;i++){
                 String type=fields[i].split(":")[1];if(c.isNull(i+1))row.put(JSONObject.NULL);else if(type.equals("s"))row.put(c.getString(i+1));else if(type.equals("l"))row.put(c.getLong(i+1));else row.put(c.getDouble(i+1));
             }rows.put(row);}
         }
-        return new JSONObject().put("rows",rows).put("cursor",cursor).put("complete",rows.length()<PAGE).put("changed",!expected.equals(version(table,repo,plan,ledger,from,to)));
+        // Mutable minute buckets use replacement rowids. New packets after this watermark
+        // belong to the next delta, rather than repeatedly cancelling a long first transfer.
+        if(bounded&&rows.length()<PAGE)cursor=Math.max(cursor,highWater);
+        return new JSONObject().put("rows",rows).put("cursor",cursor).put("complete",rows.length()<PAGE).put("changed",!bounded&&!expected.equals(version(table,repo,plan,ledger,from,to)));
     }
     static void install(String table,Repository repo,SolarPlanning plan,RollerLedger ledger,long from,long to,JSONArray rows)throws Exception{
         SQLiteDatabase db=database(table,repo,plan,ledger,true);String[] fields=schema(table).split(",");db.beginTransaction();try{

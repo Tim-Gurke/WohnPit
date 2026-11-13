@@ -31,7 +31,7 @@ const path=require('node:path');
  const moves=async()=>((await page.locator('[data-tile="coverage-solar"] .tile-sparkline path').last().getAttribute('d')).match(/M/g)||[]).length;
  const trace=async canvas=>page.evaluate(canvas=>window.curveTraces.filter(x=>x.canvas===canvas).map(x=>x.path).join(''),canvas);
  for(const gap of [false,true]){
-  await page.evaluate(gap=>{window.activeGap=gap;window.mock.historyRevision++;poll();},gap);
+  await page.clock.setFixedTime(new Date((await page.evaluate(()=>Date.now()))+31000));await page.evaluate(gap=>{window.activeGap=gap;window.mock.historyRevision++;poll();},gap);
   await waitForPage(page,expected=>((document.querySelector('[data-tile="coverage-solar"] .tile-sparkline path:last-child')?.getAttribute('d')||'').match(/M/g)||[]).length===expected,gap?2:1);
   assert.equal(await moves(),gap?2:1,'overview lost or invented a source-boundary gap');
   assert.match(await page.locator('[data-tile="coverage-energy"] .tile-hint').textContent(),gap?/66 %/:/100 %/);

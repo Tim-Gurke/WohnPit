@@ -54,7 +54,7 @@ board.tiles=['solarEnergy','mobileSolarEnergy','consumptionEnergy','energyBalanc
   }
   assert.equal(await page.evaluate(()=>fixture.calls.length),initialCalls,'unchanged windows must not repeatedly request or borrow each other');
   assert.deepEqual(await page.evaluate(()=>dashboard.config.tiles.filter(t=>t.metric!=='lan').map(t=>t.period.mode)),['sunrise','sunrise','today','today']);
-  await page.evaluate(()=>{fixture.hold=true;fixture.revision++;poll();});
+  await page.clock.setFixedTime(new Date((await page.evaluate(()=>Date.now()))+31000));await page.evaluate(()=>{fixture.hold=true;fixture.revision++;poll();});
   assert.equal(await number('mobileSolarEnergy').textContent(),'42,84');assert.match(await hint('mobileSolarEnergy').textContent(),/Geschätzt · Letzter Stand · neue Daten werden geladen/);
   // Drain every queued refresh as an error; the original estimates remain visible.
   for(let i=0;i<8;i++)await page.evaluate(()=>{for(const reply of fixture.held.splice(0))reply(true);});
@@ -64,7 +64,7 @@ board.tiles=['solarEnergy','mobileSolarEnergy','consumptionEnergy','energyBalanc
   await waitForText(number('mobileSolarEnergy'),'44,84');
   await waitForText(number('consumptionEnergy'),'114,74');
   assert.doesNotMatch(await hint('mobileSolarEnergy').textContent(),/Letzter Stand|geladen|fehlgeschlagen/,'a complete revised estimate must replace the old value');
-  await page.evaluate(()=>{fixture.hold=true;reads.setActive(false);window.wattDisplayActive=false;clearTimeout(readRepaint);});
+  await page.clock.setFixedTime(new Date((await page.evaluate(()=>Date.now()))+31000));await page.evaluate(()=>{fixture.hold=true;reads.setActive(false);window.wattDisplayActive=false;clearTimeout(readRepaint);});
   const cases=[];
   for(const width of [320,390,844])for(const theme of ['dark','light'])for(const scale of [50,100,150]){
    await page.setViewportSize({width,height:1000});

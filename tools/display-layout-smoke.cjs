@@ -41,7 +41,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),path
   }};
   await check();
   // A later viewer refresh adds exactly the long warning/status combination from the report.
-  await page.evaluate(()=>{window.late=true;window.hold=true;window.revision++;poll();});
+  await page.clock.setFixedTime(new Date((await page.evaluate(()=>Date.now()))+31000));await page.evaluate(()=>{window.late=true;window.hold=true;window.revision++;poll();});
   await check();await page.evaluate(()=>{window.drain();window.hold=false;});
   await waitForPage(page,()=>document.querySelector('[data-tile="layout-consumptionEnergy"] .tile-hint')?.textContent.includes('auffällige Messwerte'));await check();
   assert.match(await page.locator('[data-tile="layout-consumptionEnergy"] .tile-hint').textContent(),/Teilsumme/);

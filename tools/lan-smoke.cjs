@@ -52,7 +52,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=r
   await page.locator('#closeModal').click();await page.locator('[data-page="overview"]').click();
   await until(()=>window.asyncQueries>0);
   await page.locator('[data-page="history"]').click();await until(()=>!historyPending&&points.length>0);assert.equal(await page.evaluate(()=>points[0].v),28);
-  await page.evaluate(()=>{window.power=37;window.rev++;poll();});await until(()=>!historyPending&&points[0]?.v===37);
+  await page.clock.setFixedTime(new Date((await page.evaluate(()=>Date.now()))+31000));await page.evaluate(()=>{window.power=37;window.rev++;poll();});await until(()=>!historyPending&&points[0]?.v===37);
   await page.evaluate(()=>{window.connected=false;poll();});assert.match(await page.locator('#lanStatus').textContent(),/nicht erreichbar.*Stand/);
   await autarpieControls.openSettings(page);assert.equal(await page.locator('#saveSettings').isDisabled(),false);assert.equal(await page.locator('#editEquipment').isDisabled(),false);assert.equal(await page.locator('#themeButtons button').first().isEnabled(),true);
   await page.locator('[data-page="overview"]').click();await page.evaluate(()=>{window.connected=true;poll();});

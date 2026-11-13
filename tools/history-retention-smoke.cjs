@@ -47,9 +47,9 @@ const preset=require('../app/src/main/assets/dashboard-preset.json');
   if(process.env.WATTPIT_SCREENSHOT_DIR){fs.mkdirSync(process.env.WATTPIT_SCREENSHOT_DIR,{recursive:true});await page.screenshot({path:path.join(process.env.WATTPIT_SCREENSHOT_DIR,'viewer-first-statistics-'+theme+'.png'),fullPage:true});}
   await page.evaluate(()=>{const tile=dashboard.config.tiles.find(t=>t.metric==='consumptionEnergy');if(!dashboard.detail)dashboard.detail=new WattTileDetail(dashboard);dashboard.detail.open(tile.id);});
   await until(()=>document.querySelector('#detailReading .detail-number')?.textContent==='640,00');
-  await page.evaluate(()=>{window.auto=false;window.revision++;poll();dashboard.detail.refresh(false);});
+  await page.clock.setFixedTime(new Date((await page.evaluate(()=>Date.now()))+31000));await page.evaluate(()=>{window.auto=false;window.revision++;poll();dashboard.detail.refresh(false);});
   assert.equal(await page.locator('#detailReading .detail-number').textContent(),'640,00');assert.match(await page.locator('#detailNote').textContent(),/Letzter Stand/);await page.locator('#detailClose').click();
-  await page.evaluate(()=>{window.auto=false;window.revision++;poll();});
+  await page.clock.setFixedTime(new Date((await page.evaluate(()=>Date.now()))+31000));await page.evaluate(()=>{window.auto=false;window.revision++;poll();});
   assert.equal(await consumption.locator('.tile-number').textContent(),'640,00');assert.equal(await page.evaluate(()=>miniPoints.length),482);assert.match(await consumption.locator('.tile-hint').textContent(),/Letzter Stand/);
   await page.evaluate(()=>window.drain(true));await page.waitForTimeout(120);assert.equal(await consumption.locator('.tile-number').textContent(),'640,00');assert.match(await consumption.locator('.tile-hint').textContent(),/Aktualisierung fehlgeschlagen/);
   await page.clock.setFixedTime(new Date('2026-10-27T19:10:00Z'));await page.evaluate(()=>poll());

@@ -192,6 +192,9 @@ public final class LanSyncProof {
             check(reply.getBoolean("returnRequested")&&handover.remoteOwns(),"a previously locked roller can be returned after ride end and stable home contact without another lock command");
             viewer.rollerLink("released",link);check(handover.remoteOwns(),"return waits for confirmed rider disconnect and a settling interval");Thread.sleep(1600);
             check(!handover.remoteOwns(),"the host can reconnect after the rider has released the link");
+            Field returningExpiry=RollerHandover.class.getDeclaredField("expires");returningExpiry.setAccessible(true);returningExpiry.setLong(handover,android.os.SystemClock.elapsedRealtime()-1);
+            check(!handover.remoteOwns()&&handover.snapshot().getString("phase").equals("returning"),"an expired 45-second peer lease cannot erase an acknowledged return while the central retries Bluetooth");
+            reply=viewer.rollerLink("released",link);check(!reply.getBoolean("returnRequested")&&!reply.getBoolean("granted"),"a repeated release after a lost response is idempotent and never grants a competing reader");
             handover.hostSample(BmsPacket.decode(frame));reply=viewer.rollerLink("inspect",link);
             check(reply.getBoolean("hostFresh")&&reply.getString("phase").equals("host")&&source.running,"only a fresh host BMS sample completes the return; solar recording remains active throughout");
             other=false;try{viewer.rollerLink("take",new JSONObject(link.toString()).put("operation",1));}catch(IllegalArgumentException expected){other=true;}

@@ -60,7 +60,7 @@ final class RollerStore {
         boolean assignedOutput=!profile.optString("chargePath").equals("load-output")||now>=plantPrefs.getLong("outputMeasuredAt",0)&&now-plantPrefs.getLong("outputMeasuredAt",0)<=45000&&plantPrefs.getInt("outputMeasuredState",-1)==1&&plantPrefs.getFloat("outputMeasuredCurrent",0)>.1f;
         int action=0;boolean started=false;
         if(profile.optBoolean("autoSpecialUse")&&(!session.active||automatic))action=detector.sample(now,assignedOutput?watts:0,session.active);
-        if(action==1){automatic=true;session.start(detector.startAt);startSoc=p.soc>=0?(double)p.soc:null;startSocAt=now;endReason="";revision++;if(!central)session.sample(detector.startAt,detector.startPower,idle,efficiency);autoWindowFrom=detector.startAt;autoWindowTo=now;started=true;}
+        if(action==1){automatic=true;session.start(detector.startAt);startSoc=p.soc>=0?(double)p.soc:null;startSocAt=now;endSoc=startSoc;endSocAt=startSocAt;endReason="";revision++;if(!central)session.sample(detector.startAt,detector.startPower,idle,efficiency);autoWindowFrom=detector.startAt;autoWindowTo=now;started=true;}
         if(assignedOutput&&session.active&&automatic&&!started&&continuousObservation&&lastAcceptedAt>0&&now-lastAcceptedAt<=RollerEnergy.MAX_GAP_MS&&(lastAcceptedPower>RollerEnergy.AutoCharge.STOP_WATTS||watts>RollerEnergy.AutoCharge.STOP_WATTS)){
             // Finite observed intervals: a lost BMS never excludes hours of ordinary demand.
             if(autoWindowTo!=lastAcceptedAt)autoWindowFrom=lastAcceptedAt;
@@ -82,7 +82,7 @@ final class RollerStore {
     }catch(JSONException ignored){}}
     synchronized void toggle(boolean start){
         long now=System.currentTimeMillis();
-        if(start){if(session.active)return;if(!fresh(now))throw new IllegalArgumentException("Zuerst aktuelle BMS-Werte empfangen.");automatic=false;detector.interrupt();session.start(Math.max(now,session.started+1));startSoc=live.isNull("soc")?null:live.optDouble("soc");startSocAt=live.optLong("at");endReason="";revision++;if(!central)session.sample(now,live.optDouble("power"),profile.optDouble("idleWatts"),profile.optDouble("conversionEfficiency"));}
+        if(start){if(session.active)return;if(!fresh(now))throw new IllegalArgumentException("Zuerst aktuelle BMS-Werte empfangen.");automatic=false;detector.interrupt();session.start(Math.max(now,session.started+1));startSoc=live.isNull("soc")?null:live.optDouble("soc");startSocAt=live.optLong("at");endSoc=startSoc;endSocAt=startSocAt;endReason="";revision++;if(!central)session.sample(now,live.optDouble("power"),profile.optDouble("idleWatts"),profile.optDouble("conversionEfficiency"));}
         else {if(!session.active)return;endReason="Manuell beendet";if(profile.optBoolean("autoSpecialUse"))detector.suppress();session.stop(now);revision++;archiveSession();}
         saveSession();
     }

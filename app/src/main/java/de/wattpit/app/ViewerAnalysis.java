@@ -77,12 +77,12 @@ final class ViewerAnalysis {
             JSONObject m=get("analysisMetadata",new JSONArray().put(from).put(to));
             if(m.optBoolean("changed"))continue;
             if(m.getInt("algorithm")!=SolarPlanning.ALGORITHM)throw new IOException("Bitte Hauptgerät und Anzeige auf dieselbe AutarPie-Version aktualisieren.");
-            JSONObject versions=m.getJSONObject("tables");boolean changed=false;
+            JSONObject versions=m.getJSONObject("tables");boolean changed=false;long dirtyRollerFrom=Long.MAX_VALUE,dirtyRollerTo=0;
             for(String table:AnalysisExchange.ALL){
                 String version=versions.getString(table),scope=(table.equals("model_weather")||table.equals("device_settings")||table.equals("input_intervals")||table.equals("roller_raw")||table.equals("load_raw"))?":"+from+":"+to:"";
                 String key="analysis.table."+table+scope;boolean incremental=AnalysisExchange.incremental(table);
                 if(version.equals(repo.prefs.getString(key,"")))continue;
-                long cursor=incremental?repo.prefs.getLong("analysis.cursor."+table,0):0;JSONArray rows=new JSONArray();
+                String cursorKey="analysis.cursor."+table+scope;long cursor=incremental?repo.prefs.getLong(cursorKey,0):0;JSONArray rows=new JSONArray();
                 note("Berechnungsgrundlagen werden abgeglichen …");
                 while(true){
                     JSONObject page=get("analysisModelPage",new JSONArray().put(table).put(from).put(to).put(version).put(cursor));
@@ -92,8 +92,8 @@ final class ViewerAnalysis {
                     if(next<=cursor||rows.length()>250000)throw new IOException("Unvollständige Berechnungsgrundlagen.");cursor=next;note("Berechnungsgrundlagen werden abgeglichen …");
                 }
                 if(changed)break;
-                AnalysisExchange.install(table,repo,planning,ledger,from,to,rows);
-                SharedPreferences.Editor edit=repo.prefs.edit().putString(key,version);if(incremental)edit.putLong("analysis.cursor."+table,cursor);edit.commit();
+                AnalysisExchange.install(table,repo,planning,ledger,from,to,rows);if(table.equals("roller_raw"))for(int i=0;i<rows.length();i++){JSONArray row=rows.getJSONArray(i);dirtyRollerFrom=Math.min(dirtyRollerFrom,row.getLong(1));dirtyRollerTo=Math.max(dirtyRollerTo,row.getLong(2));}
+                SharedPreferences.Editor edit=repo.prefs.edit().putString(key,version);if(incremental)edit.putLong(cursorKey,cursor);edit.commit();
             }
             if(changed)continue;
             JSONObject settings=m.getJSONObject("settings");SharedPreferences.Editor edit=repo.prefs.edit();
@@ -102,7 +102,7 @@ final class ViewerAnalysis {
                 JSONObject markers=m.getJSONObject("markers");for(Iterator<String> it=markers.keys();it.hasNext();){String key=it.next();Object value=markers.get(key);if(value instanceof Number){if(key.startsWith("planningEnergyVersion."))edit.putInt(key,((Number)value).intValue());else edit.putLong(key,((Number)value).longValue());}else edit.putString(key,value.toString());}
                 edit.putBoolean("analysis.seeded",true);
             }
-            edit.putString("analysisTimezone",m.getString("timezone")).commit();ledger.derive(from,to);metadata=m;return;
+            edit.putString("analysisTimezone",m.getString("timezone")).commit();if(dirtyRollerTo>dirtyRollerFrom)ledger.derive(dirtyRollerFrom,dirtyRollerTo);metadata=m;return;
         }
         throw new IOException("Die Berechnungsgrundlagen ändern sich gerade. Bitte erneut versuchen.");
     }
