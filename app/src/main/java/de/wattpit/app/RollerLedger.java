@@ -28,8 +28,8 @@ final class RollerLedger extends SQLiteOpenHelper {
     private static void loadSchema(SQLiteDatabase db){db.execSQL("CREATE TABLE IF NOT EXISTS load_raw(source TEXT NOT NULL,start INTEGER NOT NULL,end INTEGER NOT NULL,payload TEXT NOT NULL,mac TEXT NOT NULL,PRIMARY KEY(source,start,mac))");db.execSQL("CREATE INDEX IF NOT EXISTS load_end ON load_raw(end)");db.execSQL("CREATE INDEX IF NOT EXISTS roller_raw_end ON roller_raw(end)");}
     @Override public void onUpgrade(SQLiteDatabase db,int old,int next){if(old<2)rawSchema(db);if(old<3)loadSchema(db);}
     synchronized void loadRaw(String plant,String regulator,JSONObject sample,boolean exclusive,String scooter)throws Exception{
-        long at=sample.optLong("at"),bucket=at/60000*60000;if(at<=0||!sample.has("current")||!sample.has("voltage")||!sample.has("state"))return;
-        JSONObject point=new JSONObject().put("at",at).put("voltage",sample.getDouble("voltage")).put("current",sample.getDouble("current")).put("state",sample.getInt("state")).put("mode",sample.has("mode")?sample.get("mode"):JSONObject.NULL).put("exclusive",exclusive).put("scooter",scooter);
+        long at=sample.optLong("at"),bucket=at/60000*60000;if(at<=0)return;
+        JSONObject point=new JSONObject().put("at",at).put("exclusive",exclusive).put("scooter",scooter);for(String key:new String[]{"voltage","current","state","mode","offReason"})if(sample.has(key)&&!sample.isNull(key)&&Double.isFinite(sample.optDouble(key,Double.NaN)))point.put(key,sample.get(key));if(point.length()==3)return;
         SQLiteDatabase db=getWritableDatabase();JSONArray values=new JSONArray();try(Cursor c=db.rawQuery("SELECT payload FROM load_raw WHERE source=? AND start=? AND mac=?",new String[]{plant,""+bucket,regulator})){if(c.moveToFirst())values=new JSONArray(c.getString(0));}
         if(values.length()>=128)return;values.put(point);ContentValues row=new ContentValues();row.put("source",plant);row.put("start",bucket);row.put("end",at);row.put("payload",values.toString());row.put("mac",regulator);db.insertWithOnConflict("load_raw",null,row,SQLiteDatabase.CONFLICT_REPLACE);
         if(at-lastLoadPrune>3600000){db.delete("load_raw","end<?",new String[]{""+LearningWindow.since(at)});lastLoadPrune=at;}
@@ -45,12 +45,22 @@ final class RollerLedger extends SQLiteOpenHelper {
         try(Cursor c=getReadableDatabase().rawQuery("SELECT source,mac,payload FROM roller_raw WHERE end>? AND start<? ORDER BY start",new String[]{""+from,""+to})){while(c.moveToNext()){JSONArray values=new JSONArray(c.getString(2));for(int i=0;i<values.length();i++){JSONArray v=values.getJSONArray(i);long a=v.getLong(0),b=v.getLong(1);if(b<=from||a>=to)continue;double p=v.getDouble(2),q=v.getDouble(3),idle=v.getDouble(4),eff=v.getDouble(5);double input=(de.wattpit.app.core.RollerEnergy.inputWatts(Math.max(0,p),idle,eff)+de.wattpit.app.core.RollerEnergy.inputWatts(Math.max(0,q),idle,eff))*.5*(b-a)/3600000.0;add(c.getString(0),c.getString(1),v.getLong(6),a,b,input);}}}
     }
     synchronized JSONObject loadHistory(String plant,long from,long to,String field,String device)throws JSONException{
-        if(!java.util.Arrays.asList("voltage","current","power","state","mode").contains(field)||from<0||to<=from)throw new IllegalArgumentException("Unbekannter Lastausgangswert.");
-        JSONArray points=new JSONArray();String selected=device==null?"":device;long previous=0;double total=0,min=Double.POSITIVE_INFINITY,max=Double.NEGATIVE_INFINITY,last=0;int count=0;
-        try(Cursor c=getReadableDatabase().rawQuery("SELECT mac,payload FROM load_raw WHERE source=? AND end>=? AND start<=? ORDER BY start",new String[]{plant,""+from,""+to})){
-            while(c.moveToNext()){String mac=c.getString(0);if(selected.isEmpty())selected=mac;if(!selected.equals(mac))continue;JSONArray rows=new JSONArray(c.getString(1));for(int i=0;i<rows.length();i++){JSONObject p=rows.getJSONObject(i);long at=p.optLong("at");if(at<from||at>to)continue;double v=field.equals("power")?p.optDouble("voltage",Double.NaN)*p.optDouble("current",Double.NaN):p.optDouble(field,Double.NaN);if(!Double.isFinite(v))continue;points.put(new JSONObject().put("t",at).put("last",at).put("device",mac).put("kind","output").put("origin","live").put("v",v).put("min",v).put("max",v).put("n",1).put("period",15).put("gap",previous==0||at-previous>45000));previous=at;total+=v;min=Math.min(min,v);max=Math.max(max,v);last=v;count++;}}
+        if(!java.util.Arrays.asList("voltage","current","power","state","mode","energy").contains(field)||from<0||to<=from)throw new IllegalArgumentException("Unbekannter Lastausgangswert.");
+        boolean energy=field.equals("energy");JSONArray points=new JSONArray();String selected=device==null?"":device;long previous=0,covered=0;double previousPower=Double.NaN,wh=0,total=0,min=Double.POSITIVE_INFINITY,max=Double.NEGATIVE_INFINITY,last=0;int count=0;boolean interrupted=true;
+        long binSize=Math.max(1,(to-from)/1200);
+        try(Cursor c=getReadableDatabase().rawQuery("SELECT mac,payload FROM load_raw WHERE source=? AND end>=? AND start<=? ORDER BY start",new String[]{plant,""+Math.max(0,from-45000),""+to})){
+            while(c.moveToNext()){String mac=c.getString(0);if(selected.isEmpty())selected=mac;if(!selected.equals(mac))continue;JSONArray rows=new JSONArray(c.getString(1));for(int i=0;i<rows.length();i++){
+                JSONObject p=rows.getJSONObject(i);long at=p.optLong("at");if(at>to)continue;double power=p.optDouble("voltage",Double.NaN)*p.optDouble("current",Double.NaN),v=energy?power:field.equals("power")?power:p.optDouble(field,Double.NaN);boolean gap=previous==0||at<=previous||at-previous>45000;
+                if(energy){if(!gap&&Double.isFinite(power)&&Double.isFinite(previousPower)&&power>=0&&previousPower>=0){long start=Math.max(from,previous);if(at>start){double first=previousPower+(power-previousPower)*(start-previous)/(double)(at-previous);wh+=(first+power)*.5*(at-start)/3600000.0;covered+=at-start;v=wh;gap=interrupted;interrupted=false;}}else{interrupted=true;v=Double.NaN;}}
+                previous=at;previousPower=power;if(at<from||!Double.isFinite(v))continue;
+                JSONObject point=new JSONObject().put("t",at).put("last",at).put("device",mac).put("kind","output").put("origin","live").put("v",v).put("min",v).put("max",v).put("n",1).put("period",15).put("gap",gap);
+                JSONObject tail=points.length()>0?points.getJSONObject(points.length()-1):null;
+                if(tail!=null&&!gap&&tail.optLong("t")/binSize==at/binSize){tail.put("last",at).put("v",v).put("min",Math.min(tail.getDouble("min"),v)).put("max",Math.max(tail.getDouble("max"),v)).put("n",tail.optInt("n")+1);}else points.put(point);
+                total+=v;min=Math.min(min,v);max=Math.max(max,v);last=v;count++;
+            }}
         }
-        JSONObject summary=new JSONObject();if(count>0)summary.put("avg",total/count).put("last",last).put("min",min).put("max",max).put("count",count);
+        JSONObject summary=new JSONObject().put("count",count);if(count>0)summary.put("avg",total/count).put("last",last).put("min",min).put("max",max);
+        if(energy)summary.put("coverage",covered/(double)(to-from)).put("coveredMillis",covered).put("gapMillis",Math.max(0,to-from-covered));
         return new JSONObject().put("points",points).put("summary",summary);
     }
     synchronized JSONObject summary(String plant,long from,long to)throws JSONException{

@@ -8,7 +8,7 @@ Unter Einstellungen → Zentrale & Verbindungen → Aufzeichnung, Archiv & Autos
 
 ## Bereiche, Kurzwahlen und eigene Dashboards
 
-„Bereiche“ im Kopf öffnet alle Anwendungen, auch wenn ihre untere Kurzwahl ausgeblendet ist. „Kurzwahlen & Dashboards“ bietet Ein-/Auswahl und Reihenfolge. Dort lassen sich eigene Dashboards umbenennen, kopieren und löschen. „Eigenes Dashboard“ startet leer oder übernimmt eine Kopie eines vorhandenen Dashboards. Eine Kopie lässt die Vorlage unverändert.
+„Menü“ im Kopf öffnet alle Anwendungen, auch wenn ihre untere Kurzwahl ausgeblendet ist. „Kurzwahlen & Dashboards“ bietet Ein-/Auswahl und Reihenfolge. Ziehen am Griff oder die Pfeile ändern sofort die sichtbare Liste; die verschobene Zeile wird kurz hervorgehoben. Android-Zurück führt vom Einstellungsdialog zur Gruppe, zur Einstellungsübersicht und zum Menü auf dem zuvor geöffneten Dashboard. Dort lassen sich eigene Dashboards umbenennen, kopieren und löschen. „Eigenes Dashboard“ startet leer oder übernimmt eine Kopie eines vorhandenen Dashboards. Eine Kopie lässt die Vorlage unverändert.
 
 „Aktuelles Dashboard bearbeiten“ öffnet die Anordnung. Kacheln hinzufügen, verschieben, skalieren oder über ihr Menü anpassen. „Fertig“ beendet das Anordnen. Pro Gerät bleiben Hoch- und Queransicht getrennt. Entfernen betrifft nur das aktuelle Dashboard und verlangt eine Bestätigung; Geräte und Messdaten bleiben gespeichert.
 
@@ -72,3 +72,23 @@ Die Ladephasen-Zeitleiste zeigt heute gemessene Reglerphasen wie Bulk, Absorptio
 Gas/Wasser: Beschaffung oder Flaschenwechsel eintragen; daraus lernen Bedarf und Reichweite. Eine reine Inhaltskorrektur unter „Bekannter Vorrat“ korrigiert den Bestand, ohne als neuer Verbrauch zu zählen. Details unter [Gas und Wasser](GAS-WASSER.md).
 
 Die portable Einstellungssicherung enthält auch Dashboards, Kurzwahlen und Erscheinungsbild. Verbindungskennungen bleiben außerhalb dieser portablen Sicherung. Für einen vollständigen Geräteumzug die private Gesamtsicherung verwenden und niemals auf GitHub veröffentlichen. Hintergrund-/Bluetooth-Freigaben hängen am Android-Gerät und müssen dort kontrolliert werden.
+
+## Neue Funktionen ab 3.0.1
+
+**Standardansicht ausprobieren:** Menü → Einstellungen → Daten & Sicherung → Ansicht sichern. Anschließend „Zurücksetzen auswählen“ öffnen, gewünschte Bereiche markieren und übernehmen. Für die komplette Standardansicht „Alles auswählen“. Danach über „Wiederherstellen“ dieselbe Einstellungssicherung wählen und die gewünschten Bereiche zurückholen. Farben, Auswahl, Anordnung und Dashboards sind getrennt auswählbar. Messungen und Geräte werden durch diese Ansichtsfunktionen nicht gelöscht.
+
+**Dashboard-Farbe:** Auf dem gewünschten Dashboard Menü → Farben dieses Dashboards. Eigenes Design aktivieren, Seiten-/Kachelflächen und gegebenenfalls eine gemeinsame Wertfarbe festlegen. Die Vorschau zeigt ihre gemeinsame Wirkung. Einzelne Kachelausnahmen bleiben erhalten; „auf alle Kacheln anwenden“ hebt ihre entsprechenden Ausnahmen ausdrücklich auf. Jeder Farbdialog beginnt mit der aktuellen Farbe und zeigt App-Farben sowie automatisch gemerkte eigene Mischfarben.
+
+**Neue Kacheln:** Menü → Aktuelles Dashboard bearbeiten → Kachel hinzufügen. „Rollerladung“, „Restreichweite“, „Restladezeit“, Einzelzellwerte, Solarstrom gesamt und die einzelnen Lastausgangswerte stehen in derselben Auswahl. Zellen kommen aus dem BMS; ohne entsprechende aktuelle Antwort erscheinen keine errechneten Ersatzwerte. Bei Reglerwerten die passende Gerätezuordnung in der Kachel einstellen. Eine nach einem Import fehlende Gerätezuordnung bleibt sichtbar und verwendet keinen anderen Regler.
+
+**Wirkungsgrad:** Unter E-Scooter oder Solar & Speicher → Lastausgang → Einrichten den Regler wählen, „E-Scooter“ zuordnen und bestätigen, dass ausschließlich die Rollerladung an diesem Ausgang hängt. Aktive Lastmessung einschalten. Aktueller Wirkungsgrad benötigt zeitlich passende, unabhängige Eingangs- und BMS-Messwerte. Ladungswirkungsgrad verwendet nur gemeinsam gemessene Abschnitte. Profil-Wirkungsgrad ist eine Annahme für Planung/Schätzung und wird nicht als gemessener Wirkungsgrad ausgegeben. Restreichweite benötigt Wh/km im Rollerprofil; Restladezeit verwendet dessen Ladeziel.
+
+**Eigene Rechnung:** Kachel „Eigene Formel“ hinzufügen. Messwerte für A/B auswählen, bei Bedarf Regler, Einheit und Zellnummer bestimmen. Vorlage wählen oder etwa `=A/B*100` eingeben. Faktor und Korrekturwert werden anschließend angewendet. Die Vorschau nennt Quelle und Werte. Einheiten und Plausibilität prüfen; keine Gerätebefehle werden ausgeführt. Für einen Verlauf einen gemeinsamen Zeitraum wählen; nur geeignete tatsächlich gespeicherte Eingangsgrößen können eine vergangene Kurve liefern.
+
+**Wetter:** Seitlich nach links zu bis zu drei vorhandenen vergangenen Tagen wischen; „Heute“ kehrt zum aktuellen Tag zurück. Die normale Vorschau zeigt bis zu 16 Kalendertage einschließlich heute. Menü → Einstellungen → Solaranlage → Wettertrend aktiviert die zusätzliche grobe Wochenübersicht bis 46 Tage. Die Zusatzfunktion beginnt ausgeschaltet und beeinflusst die normale Akku-Prognose nicht.
+
+**Unterwegs Wasser/Gas eintragen:** Auf dem bereits gekoppelten Anzeigehandy wie gewohnt erfassen. Offline erscheint der Eintrag als „Übertragung ausstehend“. Die Warteschlange überlebt einen Neustart. Bei Rückkehr zur bekannten Zentrale erfolgt die Übertragung automatisch; deren Bestätigung schließt den Vorgang ab. Ausstehende Einträge lassen sich prüfen; Konflikte werden erklärt. Vor der Bestätigung die App-Daten nicht löschen.
+
+**Last schalten:** Ein Schaltwunsch darf einen Archivabruf unterbrechen und wartet erforderlichenfalls auf eine laufende Liveabfrage. Die Anzeige unterscheidet vorgemerkt, gesendet und bestätigt. Nach 45 Sekunden verfällt ein nicht ausgeführter wartender Auftrag; bei fehlender Bestätigung Verbindung prüfen und erneut bedienen. „Aus“ pausiert zugleich die Automatik. Firmware-Schutzbedingungen und ein gemeldeter Abschaltgrund bleiben vom tatsächlichen Schaltzustand getrennt.
+
+[Alle Änderungen und Prüfgrenzen von 3.0.1](changes-3.0.1.md)

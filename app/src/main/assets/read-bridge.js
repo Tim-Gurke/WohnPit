@@ -33,7 +33,7 @@
     }
     // A new revision invalidates freshness, not the last successfully displayed values.
     invalidate(drop=false,throttled=false){
-      this.throttled=throttled;if(!throttled){clearTimeout(this.deferTimer);this.deferTimer=null;}
+      this.throttled=throttled;if(!throttled)this.forcedGeneration=this.generation+1;if(!throttled){clearTimeout(this.deferTimer);this.deferTimer=null;}
       this.generation++;
       // New live readings make results older, but must not restart the first
       // transfer or remove the other visible charts from the waiting queue.
@@ -77,7 +77,7 @@
       }
       const cached=this.cache.get(key);
       if(cached?.generation===this.generation&&(!cached.error||cached.retryAt>Date.now()))return this.value(cached,method);
-      if(cached?.data&&cached.generation!==this.generation&&this.throttled&&Date.now()-cached.at<30000){
+      if(cached?.data&&!cached.error&&cached.generation>=(this.forcedGeneration||0)&&cached.generation!==this.generation&&this.throttled&&Date.now()-cached.at<30000){
         if(!this.deferTimer){this.deferTimer=setTimeout(()=>{this.deferTimer=null;if(this.active)this.ready('refresh');},Math.max(1,30000-(Date.now()-cached.at)));this.deferTimer?.unref?.();}
         return this.value(cached,method,false);
       }

@@ -6,15 +6,15 @@ import java.util.*;
 public final class EnergyProtocol {
     private EnergyProtocol(){}
     public static byte[] solarRead(int reg){
-        if(!Arrays.asList(0xedab,0xeda8,0xeda9,0xedad,0xedbb).contains(reg))throw new IllegalArgumentException("Unbekannter Livewert.");
+        if(!Arrays.asList(0xedab,0xeda8,0xeda9,0xedad,0xedbb,0xed91).contains(reg))throw new IllegalArgumentException("Unbekannter Livewert.");
         return new byte[]{5,3,(byte)0x81,0x19,(byte)(reg>>8),(byte)reg};
     }
     public static byte[] output(int previousMode,boolean on){
         if(previousMode<0||previousMode>255)throw new IllegalArgumentException("Der Ausgangsmodus ist unbekannt.");
-        return new byte[]{6,3,(byte)0x82,0x19,(byte)0xed,(byte)0xab,0x41,(byte)((previousMode&0xf8)|(on?4:0))};
+        return new byte[]{6,3,(byte)0x82,0x19,(byte)0xed,(byte)0xab,0x41,(byte)((previousMode&0xf0)|(on?4:0))};
     }
     public static Double solarValue(int reg,byte[] data){
-        int size=reg==0xedab||reg==0xeda8?1:2;if(data==null||data.length!=size)return null;
+        int size=reg==0xedab||reg==0xeda8||reg==0xed91?1:2;if(data==null||data.length!=size)return null;
         long raw=ArchiveCodec.u(data,0,size);if(raw==(size==1?255:65535))return null;
         if(reg==0xeda8&&raw>1)return null;return raw/(reg==0xedad?10.0:reg==0xeda9||reg==0xedbb?100.0:1.0);
     }

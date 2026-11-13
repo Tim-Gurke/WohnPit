@@ -139,3 +139,8 @@ test('initial visible reads take priority over learning, while later refreshes d
  b.invalidate();read('solar');read('power');assert.equal(b.initialPending(),false,'complete earlier series allow learning even as recording continues');
  b.result({id:requests.at(-1).id,data:{points:[{v:3}],summary:{last:3}}});b.result({id:requests.at(-1).id,data:{points:[{v:4}],summary:{last:4}}});
 });
+test('routine revisions throttle cached reads, but explicit refresh and import completion keep priority',()=>{
+ const {b,requests,reply}=viewer(),args=[0,100000,'power','all'];b.read('history',args,'tile');reply({points:[{v:1}]});const first=requests.length;
+ b.invalidate(false,true);const old=JSON.parse(b.read('history',args,'tile'));assert.equal(old.stale,true);assert.equal(old.pending,false);assert.equal(requests.length,first);
+ b.invalidate();b.invalidate(false,true);b.read('history',args,'tile');assert.equal(requests.length,first+1,'a following routine revision cannot suppress an explicit refresh');reply({points:[{v:2}]});
+});

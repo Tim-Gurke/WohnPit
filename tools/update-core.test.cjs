@@ -46,3 +46,21 @@ test('source switches within the supported sampling interval stay connected whil
  assert.equal(D.seriesGap({t:1000,device:'a',origin:'live',period:30},{t:30000,device:'a',origin:'archive',period:30}),false);
  assert.equal(D.seriesGap({t:1000,device:'a'},{t:2000,device:'a',gap:true}),true);assert.equal(D.seriesGap({t:1000,device:'a'},{t:2000,device:'b',gap:false}),true);
 });
+test('formula curves align the same measurement times, retain gaps and never interpolate missing values as zero',()=>{
+ const config={expression:'=A/B*100',variables:{A:{metric:'rollerPower'},B:{metric:'loadPower'}}};
+ const p=(t,v,extra={})=>({t,v,period:2,device:'same',...extra});
+ const aligned=U.formulaSeries(config,{A:{points:[p(0,80),p(2000,100),p(4000,120)]},B:{points:[p(0,100),p(4000,150)]}});
+ assert.deepEqual(aligned.points.map(p=>p.v),[80,80,80]);
+ const missing=U.formulaSeries(config,{A:{points:[p(0,80),p(2000,100),p(4000,120)]},B:{points:[p(0,null),p(4000,150)]}});
+ assert.deepEqual(missing.points.map(p=>p.t),[4000]);
+ const gap=U.formulaSeries(config,{A:{points:[p(0,80),p(2000,100),p(4000,120,{gap:true})]},B:{points:[p(0,100),p(4000,150)]}});
+ assert.equal(gap.points.at(-1).gap,true);
+ const mismatch=U.formulaSeries(config,{A:{points:[p(0,80),p(4000,120,{device:'other'})]},B:{points:[p(0,100),p(2000,125),p(4000,150)]}});
+ assert.deepEqual(mismatch.points.map(p=>p.t),[0,4000]);assert.equal(mismatch.points.at(-1).gap,true);
+});
+test('missing selected regulators remain unknown and percentage results are not rescaled by their display unit',()=>{
+ const s=snapshot();assert.equal(M.read({metric:'loadVoltage',device:'removed'},s,null,null,()=>null,s.now).value,null);
+ const tile=D.tile('formula');tile.formula={expression:'=A/B*100',variables:{A:{metric:'rollerPower'},B:{metric:'loadPower'}}};tile.unit='%';
+ assert.equal(D.convert(80,'%',tile.metric,s),80);assert.equal(M.read(tile,s,null,null,source=>({value:source.metric==='rollerPower'?96:120,at:s.now}),s.now).value,80);
+ assert.equal(D.format(null,D.tile('loadState')),'—');
+});

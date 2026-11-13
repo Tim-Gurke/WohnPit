@@ -52,7 +52,7 @@ const C=require('../app/src/main/assets/dashboard-core.js');
  await autarpieControls.openSettings(page);await page.locator('#exportConfiguration').click();const backup=await page.evaluate(()=>window.savedBackup.dashboard);
  assert.equal(backup.energyFlowVersion,1);assert.equal(backup.energyPeriod,undefined);assert.equal(backup.tiles.find(t=>t.metric==='energyBalance').period.mode,'last');
  await page.locator('[data-page="overview"]').click();await edit('energyBalance');await page.locator('#removeTile').click();await page.locator('#confirmRemoveTile').click();
- await autarpieControls.openSettings(page);await page.locator('#importConfiguration').click();await page.locator('#applyConfigurationImport').click();assert.deepEqual(await page.evaluate(()=>dashboard.config),backup);
+ await autarpieControls.openSettings(page);await page.locator('#importConfiguration').click();await page.locator('#apImportFullSettings').click();await page.locator('#applyConfigurationImport').click();assert.deepEqual(await page.evaluate(()=>dashboard.config),backup);
  await page.locator('[data-page="overview"]').click();
  for(const width of [390,1000]){await page.setViewportSize({width,height:1100});for(const theme of ['light','dark']){if(await page.locator('html').getAttribute('data-theme')!==theme)await autarpieControls.toggleTheme(page);assert.equal(await number('consumptionEnergy'),'0,00');assert.equal(await page.evaluate(()=>document.body.scrollWidth>innerWidth),false);}}
  assert.deepEqual(errors,[]);await browser.close();console.log('Energy trio: upgrade preserves layouts; sunrise yield/full-day consumption; matching queries shared; independent periods; temporary detail; signed residuals; missing/zero; export/import; both themes/layouts passed.');

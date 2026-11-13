@@ -94,5 +94,15 @@ public final class RollerStoreProof {
   for(int i=0;i<=3;i++)auto.accept(packet,at+74000+i*2000);
   require(auto.snapshot().getJSONObject("session").getBoolean("active")&&!auto.snapshot().getBoolean("autoSuppressed"),"the next physical charge starts automatically after a confirmed intervening end");
 
+  RollerLedger ledger=new RollerLedger(c,"load-metrics-proof.db");long loadAt=System.currentTimeMillis()-600000;
+  for(int i=0;i<3;i++){long time=loadAt+(i==2?90000:i*15000);ledger.loadRaw("plant","reg-a",new JSONObject().put("at",time).put("voltage",12).put("current",10).put("state",1),true,"scooter");ledger.loadRaw("plant","reg-b",new JSONObject().put("at",time).put("voltage",12).put("current",1).put("state",1),false,"");}
+  JSONObject loadSummary=ledger.loadHistory("plant",loadAt,loadAt+100000,"energy","reg-a").getJSONObject("summary");
+  require(Math.abs(loadSummary.getDouble("last")-.5)<1e-9&&loadSummary.getLong("coveredMillis")==15000,"output Wh use only the selected regulator and preserve a 75-second measurement gap");
+  require(Math.abs(ledger.loadHistory("plant",loadAt,loadAt+100000,"energy","reg-b").getJSONObject("summary").getDouble("last")-.05)<1e-9,"a second regulator has independent measured energy");
+  require(ledger.loadHistory("plant",loadAt,loadAt+100000,"power","missing").getJSONObject("summary").getInt("count")==0,"removed regulator references never fall back to a different device");
+  for(int i=0;i<2;i++)ledger.loadRaw("plant","reg-no-voltage",new JSONObject().put("at",loadAt+i*15000).put("current",2).put("state",1),false,"");
+  require(ledger.loadHistory("plant",loadAt,loadAt+100000,"current","reg-no-voltage").getJSONObject("summary").getInt("count")==2,"current and state history survive unsupported output-voltage registers");
+  require(ledger.loadHistory("plant",loadAt,loadAt+100000,"energy","reg-no-voltage").getJSONObject("summary").isNull("last"),"missing output voltage never invents measured Wh");
+
  }
 }

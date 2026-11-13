@@ -279,8 +279,9 @@ final class Repository {
         for (int i=0;i<list.length();i++) {
             JSONObject c = list.getJSONObject(i);
             if (c.getString("mac").equals(original.isEmpty() ? mac : original)) previous = c;
-            else if (c.getString("kind").equals(kind)) throw new IllegalArgumentException("Ein Gerät dieses Typs ist schon eingerichtet. Bitte dieses Gerät bearbeiten.");
+            else if (kind.equals("shunt") && c.getString("kind").equals(kind)) throw new IllegalArgumentException("Ein Batteriewächter ist schon eingerichtet. Bitte dieses Gerät bearbeiten.");
         }
+        if(previous==null&&list.length()>=9)throw new IllegalArgumentException("Bis zu acht Solarregler und ein Batteriewächter sind möglich.");
         String key = input.optString("key", "").trim();
         String secret;
         if (key.isEmpty() && previous != null && previous.getString("mac").equals(mac)) secret = previous.getString("secret");

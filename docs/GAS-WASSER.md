@@ -107,7 +107,7 @@ Es werden keine Versorgungskacheln ungefragt in vorhandene Übersichten eingefü
 
 ## Verbindung, Speicherung und Grenzen
 
-Bei unterbrochener Verbindung bleibt der letzte empfangene Stand sichtbar und wird gekennzeichnet. Neue Einträge brauchen eine Bestätigung der Zentrale; ein fehlgeschlagener oder überholter Befehl wird nicht als Erfolg dargestellt. Journal und Vorschlagsmengen gehören zur gemeinsamen Anlage, die Kachelanordnung zum jeweiligen Handy.
+Bei unterbrochener Verbindung bleibt der letzte empfangene Stand sichtbar und wird gekennzeichnet. Ab 3.0.1 können Einträge auf einem bereits gekoppelten Anzeigehandy auch offline gespeichert werden. „Übertragung ausstehend“ bedeutet zunächst nur auf diesem Handy gespeichert. Sobald dieselbe bekannte Zentrale erreichbar ist, werden die Vorgänge automatisch mit einer festen Kennung übertragen und bestätigt. Wiederholte Übertragung erzeugt keinen zweiten Eintrag. Änderungen an inzwischen bearbeiteten Einträgen erscheinen als Konflikt zur Prüfung. Datum und Uhrzeit der ursprünglichen Eingabe bleiben erhalten; die Einstellungen der Behältergrößen erfordern weiter die Zentrale. Journal und Vorschlagsmengen gehören zur gemeinsamen Anlage, die Kachelanordnung zum jeweiligen Handy.
 
 Das Journal bleibt bei einem normalen App-Update erhalten. Die bisherige Einstellungssicherung und der Energie-CSV-Export enthalten das Gas-/Wasserjournal noch nicht; sie sind keine vollständige Sicherung dieser neuen Daten. Nicht deinstallieren oder App-Daten löschen. Eine gesonderte Journal-Sicherung ist in dieser ersten Version noch nicht enthalten.
 

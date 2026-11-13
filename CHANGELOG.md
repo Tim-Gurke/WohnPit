@@ -8,6 +8,10 @@ Das bestehende GitHub-Repository heißt jetzt [`Tim-Gurke/AutarPie`](https://git
 
 ## Veröffentlichte Versionen
 
+### 3.0.1 · Anzeige, Messkacheln und Wiederherstellung
+
+Begrenzte Neuberechnungen und stabile Diagramme; Wetterrückschau, 16-Tage-Vorschau und optionaler Langfristtrend; selektives Zurücksetzen/Wiederherstellen; Farbpaletten und Dashboard-Design; sichtbare Kurzwahlreihenfolge, Menü-/Live-Position und Android-Zurück. Neue Roller-/Zell-/Reichweiten-/Wirkungsgrad- und Formel-Kacheln, mehrere getrennte Regler-Lastausgänge, priorisierte Schaltwünsche, ausführliches Ladejournal und dauerhafte Offline-Versorgungseinträge. Bestätigte BMS-Rückgabe und zeitweilige Verbindungsfehler abgesichert. Präziseres schlankes Logo, Originalpaket und Updatesignatur erhalten. [Umfang, Update und Prüfgrenzen](docs/changes-3.0.1.md).
+
 ### 3.0.0 · AutarPie
 
 Großes Cockpit-Update mit Ressourcen-Kreislauf-Symbol, frei wählbaren Bereichen, eigenen Dashboards, gemeinsamen Farben/Verläufen und bestätigter Kachel-/Größenbearbeitung. Native Zentralenoberfläche, Berechnung auf Anzeigen/eigenständigen Geräten, zeitlich begrenzte Überschusspläne, Lastausgang und 608PD-Grundintegration, gemeinsame Solareinrichtung mit stabilen Kreiskennungen und gemeinsamen Reglergrenzen, PV-Spannung, Phasenzeitleiste und Autostart. Paket und Updatesignatur bleiben erhalten. [Umfang, Update und Prüfgrenzen](docs/changes-3.0.0.md).

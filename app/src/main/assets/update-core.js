@@ -48,8 +48,8 @@
   const c=calculation(config),names=Object.keys(c.variables),times=[...new Set(names.flatMap(n=>(streams[n]?.points||[]).map(p=>p.t)))].sort((a,b)=>a-b),indices=Object.fromEntries(names.map(n=>[n,0])),points=[];let interrupted=true;
   for(const t of times){const values={};let gap=false,estimated=false,valid=true;
    for(const n of names){const rows=streams[n]?.points||[];let i=indices[n];while(i+1<rows.length&&rows[i+1].t<=t)i++;indices[n]=i;const a=rows[i],b=rows[i+1];let v=null;
-    if(a?.t===t){v=a.v;gap=gap||(i>0&&a.gap===true);}
-    else if(a&&b&&a.t<t&&b.t>t&&b.gap!==true&&(!a.device||!b.device||a.device===b.device)&&b.t-a.t<=Math.max(45000,(a.period||0)*1500,(b.period||0)*1500))v=a.v+(b.v-a.v)*(t-a.t)/(b.t-a.t);
+    if(a?.t===t){v=a.v;gap=gap||(i>0&&(a.gap===true||a.device&&rows[i-1].device&&a.device!==rows[i-1].device||a.t-rows[i-1].t>Math.max(45000,(a.period||0)*1500,(rows[i-1].period||0)*1500)));}
+    else if(a&&b&&finite(a.v)&&finite(b.v)&&a.t<t&&b.t>t&&b.gap!==true&&(!a.device||!b.device||a.device===b.device)&&b.t-a.t<=Math.max(45000,(a.period||0)*1500,(b.period||0)*1500))v=a.v+(b.v-a.v)*(t-a.t)/(b.t-a.t);
     if(!finite(v)){valid=false;break;}values[n]=convert(v,c.variables[n]);estimated=estimated||!!streams[n]?.estimated;
    }
    if(!valid){interrupted=true;continue;}try{const v=formula(c.expression,values)*c.factor+c.offset;if(!Number.isFinite(v))throw Error();points.push({t,last:t,v,min:v,max:v,n:1,gap:interrupted||gap,estimated,kind:'formula',device:'formula',origin:'calculated'});interrupted=false;}catch(_){interrupted=true;}

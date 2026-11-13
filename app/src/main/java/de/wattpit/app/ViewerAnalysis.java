@@ -79,6 +79,7 @@ final class ViewerAnalysis {
             if(m.getInt("algorithm")!=SolarPlanning.ALGORITHM)throw new IOException("Bitte Hauptgerät und Anzeige auf dieselbe AutarPie-Version aktualisieren.");
             JSONObject versions=m.getJSONObject("tables");boolean changed=false;long dirtyRollerFrom=Long.MAX_VALUE,dirtyRollerTo=0;
             for(String table:AnalysisExchange.ALL){
+                if(!versions.has(table))throw new IOException("Bitte Zentrale und Anzeigen auf AutarPie 3.0.1 aktualisieren.");
                 String version=versions.getString(table),scope=(table.equals("model_weather")||table.equals("device_settings")||table.equals("input_intervals")||table.equals("roller_raw")||table.equals("load_raw"))?":"+from+":"+to:"";
                 String key="analysis.table."+table+scope;boolean incremental=AnalysisExchange.incremental(table);
                 if(version.equals(repo.prefs.getString(key,"")))continue;

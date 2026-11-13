@@ -31,7 +31,7 @@
     solarTemperature: {label:'Batterietemperatur am Regler',group:'Solar',kind:'solar',field:'temperature',backend:'solarTemperature',units:['°C'],min:-20,max:60,digits:1,color:'#81baf4',hint:'Nur mit vorhandenem Temperatursensor; aus dem Gerätearchiv.'},
     solarVoltage: {label:'Regler-Batteriespannung', group:'Solar', kind:'solar', field:'voltage', units:['V','mV'], min:10, max:15, digits:2, color:'#81baf4', hint:'Batterieseitige Spannung am SmartSolar; keine PV-Eingangsspannung.'},
     solarCurrent: {label:'Regler → Batterie · netto', group:'Solar', kind:'solar', field:'current', units:['A','mA'], min:0, max:20, digits:2, color:'#e8bb57',hint:'Netto-Strom am Batterieanschluss dieses Reglers nach dessen Lastausgang. Kein Gesamt-Solarstrom.'},
-    load:         {label:'Lastausgang-Strom', group:'Solar', kind:'solar', field:'load', units:['A','mA'], min:0, max:20, digits:2, color:'#e8bb57'},
+    load:         {label:'Lastausgang · Strom', group:'Solar', kind:'solar', field:'load', units:['A','mA'], min:0, max:20, digits:2, color:'#e8bb57'},
     state:        {label:'Ladephase', group:'Solar', kind:'solar', field:'state', units:[''], min:0, max:255, digits:0, color:'#e8bb57', status:true},
     error:        {label:'Reglerfehler', group:'Solar', kind:'solar', field:'error', units:['Code'], min:0, max:255, digits:0, color:'#e8bb57', status:true},
     shuntRssi:    {label:'Shunt-Signal', group:'Verbindung', kind:'shunt', units:['dBm'], min:-100, max:-30, digits:0, color:'#81baf4', liveOnly:true},
@@ -59,7 +59,7 @@
   ];
   for(const [id,label,resource,field,unit,min,max,digits]of external)CATALOG[id]={label,group:resource==='scooter'?'E-Scooter':resource==='model'?'Modellbau':'Lastausgang',kind:resource==='scooter'?'roller':resource==='model'?'isdt':'output',resourceCategory:resource,field,units:[unit],min,max,digits,color:resource==='model'?'#b080d8':resource==='scooter'?'#56bdb5':'#99a9bb',liveOnly:true,status:['isdtMode','loadState'].includes(id),hint:id==='rollerStored'?'Geschätzter Speicherinhalt aus BMS-Kapazität und Nennspannung.':'Aktuelle bestätigte Gerätewerte. Fehlender Empfang bleibt unbekannt.'};
   CATALOG.loadPower.liveOnly=false;CATALOG.loadPower.backend='loadPower';
-  CATALOG.loadEnergy={label:'Lastausgang · Energie',group:'Lastausgang',kind:'output',resourceCategory:'calculated',backend:'loadEnergy',units:['Wh','kWh'],min:0,max:2000,digits:2,color:'#64bd8d',energy:true,hint:'Aus gespeicherten Laststrom- und Regler-Batteriespannungswerten integrierte Energie. Messlücken bleiben offen; bereits im Shunt-Gesamtverbrauch enthalten.'};
+  CATALOG.loadEnergy={label:'Lastausgang · Verbrauch',group:'Lastausgang',kind:'output',resourceCategory:'calculated',backend:'loadEnergy',units:['Wh','kWh'],min:0,max:2000,digits:2,color:'#64bd8d',energy:true,hint:'Aus gespeicherten Laststrom- und Regler-Batteriespannungswerten integrierte Energie. Messlücken bleiben offen; bereits im Shunt-Gesamtverbrauch enthalten.'};
   for(const kind of ['water','gas']){
     const label=kind==='water'?'Wasser':'Gas',unit=kind==='water'?'L':'kg',color=kind==='water'?'#4c65e0':'#c2c200';
     for(const [suffix,title,field,duration,need] of [['Stock','Restvorrat','stock',false],['Range','Reichweite','remainingHours',true],['Daily','Tagesbedarf','daily',false],['Need3','Bedarf · 3 Tage','needs',false,3],['Need7','Bedarf · 7 Tage','needs',false,7],['Need14','Bedarf · 14 Tage','needs',false,14],['Last',kind==='water'?'Seit letzter Beschaffung':'Seit letztem Flaschenwechsel','lastAt',true],['Interval','Üblicher Abstand','intervalHours',true],['Next','Bis zur nächsten Beschaffung','nextSupplyAt',true]]){
@@ -222,7 +222,7 @@
     const m=CATALOG[metric] || CATALOG.soc;
     return {id:id || 'tile-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7),metric:CATALOG[metric]?metric:'soc',title:'',unit:m.units[0],type:m.widget|| (m.energy?'chart':metric==='soc'?'gauge':'number'),
       device:'',cell:1,rangeReserve:false,digits:m.digits,fontSize:20,color:m.color,colorSource:'value',colorMid:'#81baf4',colorEnd:'#e8bb57',adaptiveColor:true,multicolor:false,scaleSource:'central',invert:false,reverseSign:metric==='dischargeEnergy',min:m.min,max:m.max,scaleMode:m.energy?'auto':'fixed',valueMode:'history',background:'auto',opacity:100,
-      period:{mode:m.energy?'today':'live',amount:6,unit:'h',aggregate:m.energy||m.status?'last':'avg',resetAt:Date.now(),from:0,to:0},layouts:{compact:position(m.widget?{w:12,h:4}:{h:m.resource?(m.resourceDuration?6:4):m.energy?6:metric==='chargeTime'?4:3}),wide:position(m.widget?{w:12,h:4}:{h:m.resource?(m.resourceDuration?6:4):m.energy?6:metric==='chargeTime'?4:3},true)}};
+      period:{mode:m.energy?'today':'live',amount:6,unit:'h',aggregate:m.energy||m.status?'last':'avg',resetAt:Date.now(),from:0,to:0},layouts:{compact:position(m.widget?{w:12,h:m.widget==='charge'?11:4}:{h:m.resource?(m.resourceDuration?6:4):m.energy?6:metric==='chargeTime'?4:3}),wide:position(m.widget?{w:12,h:m.widget==='charge'?11:4}:{h:m.resource?(m.resourceDuration?6:4):m.energy?6:metric==='chargeTime'?4:3},true)}};
   }
   function normalizeTile(input,seen) {
     if (!input || !CATALOG[input.metric]) return null;
@@ -367,6 +367,8 @@
     if(!finite(value))return '—';
     if(t.metric==='isdtMode')return ({0:'Bereit',1:'Laden',3:'Powerbank'})[value]||'Unbekannt';
     if(t.metric==='rollerChargeTime'&&Number(value)===0)return 'Ziel erreicht';
+    if(t.metric==='loadMode')return ({0:'Immer aus',1:'BatteryLife',2:'Schwellenprofil 1',3:'Schwellenprofil 2',4:'Immer an',5:'Benutzerprofil 1',6:'Benutzerprofil 2',7:'AES'})[value&15]||'Modus '+value;
+    if(t.metric==='loadOffReason'){if(!finite(value))return 'Unbekannt';return value===0?'Kein Abschaltgrund':[[1,'Unterspannung'],[2,'Kurzschluss'],[4,'Zeitprogramm'],[8,'Ferneingang'],[16,'Guthaben'],[128,'Gerätestart']].filter(([b])=>value&b).map(([,n])=>n).join(' · ')||'Code '+value;}
     if(t.metric==='loadState')return value===1?'An':value===0?'Aus':'Unbekannt';
     if(CATALOG[t.metric]?.resourceDuration)return supplies.duration(Number(value));
     if(t.metric==='state')return PHASES[value] || 'Code '+value;

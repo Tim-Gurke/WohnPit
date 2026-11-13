@@ -100,7 +100,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),path
   await page.evaluate(()=>{window.failEnergy=true;reads.invalidate(true);dashboard.cache.clear();window.revision++;poll();});
   await waitForPage(page,()=>document.querySelector('[data-tile="layout-consumptionEnergy"] .tile-chart-empty')?.textContent==='Werte konnten nicht geladen werden');
   await page.evaluate(()=>{window.failEnergy=false;});
-  await page.clock.setFixedTime(new Date('2026-10-30T17:27:06Z'));
+  await page.clock.setFixedTime(new Date((await page.evaluate(()=>Date.now()))+6000));
   await page.evaluate(()=>poll());
   await waitForPage(page,()=>document.querySelector('[data-tile="layout-consumptionEnergy"] .tile-number')?.textContent==='332,16');
   await autarpieControls.openSettings(page);await page.locator('#apSizeOpen').click();assert.equal(await page.locator('#apSize').getAttribute('min'),'50');await page.locator('#apSize').fill('73');await page.locator('#apSize').dispatchEvent('input');
