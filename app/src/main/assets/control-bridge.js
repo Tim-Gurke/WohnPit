@@ -1,6 +1,6 @@
 (function(root){
   'use strict';
-  const actions=new Set(['saveSolarInstallation','saveAppearance','saveCentralSettings','saveLoadConfiguration','setLoadOutput','submitChargePlan','saveCharger','chargerCommand','savePresence','saveAbsence','resolveAbsence','saveSolarSetup','saveSolarSite','weatherPlace','refreshWeather','saveEquipment','saveRoller','saveSupplies','refreshSuppliesWeather','saveSpecialUses','rollerReconnect','saveDevice','removeDevice','importSettings','start','stop','importArchive','importMissingArchive','cancelArchive','backgroundArchive']);
+  const actions=new Set(['saveSolarInstallation','saveAppearance','saveCentralSettings','saveLoadConfiguration','setLoadOutput','submitChargePlan','saveCharger','chargerCommand','savePresence','saveAbsence','resolveAbsence','saveSolarSetup','saveSolarSite','weatherPlace','refreshWeather','requestWeatherTrend','saveEquipment','saveRoller','saveSupplies','refreshSuppliesWeather','saveSpecialUses','rollerReconnect','saveDevice','removeDevice','importSettings','start','stop','importArchive','importMissingArchive','cancelArchive','backgroundArchive']);
   root.WattControlBridge=class{
     constructor(native,notify,changed,revision){
       this.revision=revision;this.native=native;this.notify=notify;this.changed=changed;this.next=0;this.pending=null;this.formRevision=null;

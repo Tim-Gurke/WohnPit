@@ -15,7 +15,7 @@
       const configured=!!p.mac||!!session.started,viewer=!!this.a.native?.isLanViewer?.();
       $('rollerPanel').hidden=this.a.isDemo()||!configured;$('rollerWelcome').hidden=configured&&!this.a.isDemo();$('rollerViewerNote').hidden=!viewer;$('rollerSetup').disabled=false;
       $('rollerActionStatus').hidden=!this.feedback;$('rollerActionStatus').textContent=this.feedback||'';
-      $('rollerName').textContent=p.name;const h=s.handover||{};if($('rollerOwner'))$('rollerOwner').textContent=h.owner?`${h.owner} · ${h.fresh?(h.dischargeEnabled?'Lastausgang freigegeben':'Lastausgang gesperrt'):'Sperrzustand noch nicht aktuell bestätigt'}${h.at?' · '+new Date(h.at).toLocaleTimeString('de-DE'):''}`:'';
+      $('rollerName').textContent=p.name;const h=s.handover||{};if($('rollerOwner'))$('rollerOwner').textContent=h.owner?`${h.owner} · ${h.fresh?(h.dischargeEnabled?'BMS-Fahrfreigabe an':'BMS-Fahrfreigabe gesperrt'):'Sperrzustand noch nicht aktuell bestätigt'}${h.at?' · '+new Date(h.at).toLocaleTimeString('de-DE'):''}`:'';
       $('rollerState').textContent=this.a.isDemo()?'Demo · Rollerwerte werden nicht angezeigt':(session.active?(session.automatic?'Automatisch erkannt · Sondernutzung läuft · ':'Sondernutzung · Rollerladung läuft · '):'')+(s.status||'Direkte BMS-Verbindung in der Android-App');
       const live=this.a.isDemo()?{}:l;
       for(const cell of $('rollerValues').children){const slot=Number(cell.dataset.rollerSlot),key=this.values[slot],m=C.displayReading(key,p,live,session),text=(m.approximate&&m.value!==null?'≈ ':'')+num(m.value,m.digits??1)+' '+m.unit;

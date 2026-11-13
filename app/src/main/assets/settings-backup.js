@@ -27,6 +27,7 @@
     const A=typeof module==='object'&&module.exports?require('./autarpie-core.js'):globalThis.AutarPieCore;
     if(input.workspace){if(!Array.isArray(input.workspace.pages)||input.workspace.pages.length>40)fail('Ungültige Dashboards.');result.workspace=A.normalize(input.workspace,result.dashboard);for(const p of result.workspace.pages)if(p.board)p.board=D.normalize(p.board);}
     if(input.appearance)result.appearance=A.appearance(input.appearance);
+    if(Array.isArray(input.ownColors))result.ownColors=[...new Set(input.ownColors.filter(v=>/^#[0-9a-f]{6}$/i.test(v)).map(v=>v.toLowerCase()))].slice(0,512);
     result.solarSetup=S.normalize(input.solarSetup||{},result.equipment);
     for(const g of result.equipment.groups)if(g.placement==='mobile')result.solarSetup.groups[g.id].active=false;
     if(typeof input.createdAt==='string'&&input.createdAt.length<=40&&Number.isFinite(Date.parse(input.createdAt)))result.createdAt=input.createdAt;
@@ -34,7 +35,7 @@
   }
   function create(snapshot,dashboard,equipment){
     const s=snapshot.settings||{};
-    return normalize({format:'wattnpit-settings',version:1,createdAt:new Date().toISOString(),settings:{theme:s.theme||'dark',palette:s.palette||'classic',capacity:s.capacity??100,sampleSeconds:s.sampleSeconds??10,miniRange:s.miniRange||'sunrise'},dashboard,equipment,weatherPlace:s.weatherPlace||{},solarSetup:s.solarSetup||{},specialUses:s.specialUses||{version:1,profiles:[],events:[]},workspace:globalThis.AutarPieUI?.workspace||snapshot.workspace,appearance:globalThis.AutarPieUI?.appearance||s.appearance});
+    return normalize({format:'wattnpit-settings',version:1,createdAt:new Date().toISOString(),settings:{theme:s.theme||'dark',palette:s.palette||'classic',capacity:s.capacity??100,sampleSeconds:s.sampleSeconds??10,miniRange:s.miniRange||'sunrise'},dashboard,equipment,weatherPlace:s.weatherPlace||{},solarSetup:s.solarSetup||{},specialUses:s.specialUses||{version:1,profiles:[],events:[]},ownColors:globalThis.WattColorInput?.ownColors?.()||snapshot.ownColors,workspace:globalThis.AutarPieUI?.workspace||snapshot.workspace,appearance:globalThis.AutarPieUI?.appearance||s.appearance});
   }
   return {normalize,create};
 });

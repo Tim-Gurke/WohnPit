@@ -91,13 +91,14 @@ public final class ArchiveService extends Service {
     @Override public int onStartCommand(Intent intent,int flags,int startId){
         if(AppRole.viewerOnly(this)||LanSync.get(this).viewer()){stopSelf();return START_NOT_STICKY;}
         if(intent==null){stopSelf();return START_NOT_STICKY;}
+        if("CONTROL_PREEMPT".equals(intent.getAction())){cancelled=true;failOperation(new IOException("manual control priority"));received.offer(new byte[0]);if(!started)stopSelf();return START_NOT_STICKY;}
         if("CANCEL".equals(intent.getAction())){cancelled=true;repository.pauseAutomaticArchives();failOperation(new IOException("cancelled"));received.offer(new byte[0]);if(!started)stopSelf();return START_NOT_STICKY;}
         if(started)return START_NOT_STICKY;
         liveOnly="LIVE".equals(intent.getAction())||"OUTPUT".equals(intent.getAction());
         if(liveOnly){
             started=true;automatic=true;kind="solar";try{JSONArray configs=repository.configs();for(int i=0;i<configs.length();i++)if(configs.getJSONObject(i).optString("kind").equals("solar")){mac=configs.getJSONObject(i).getString("mac");break;}if(mac.isEmpty())throw new IllegalArgumentException("Kein Solarladeregler eingerichtet.");repository.liveBusy=true;
                 if(Build.VERSION.SDK_INT>=31)startForeground(11,notification("Livewerte / Lastausgang"),ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE);else startForeground(11,notification("Livewerte / Lastausgang"));
-                final Boolean desired=intent.hasExtra("desiredOutput")?intent.getBooleanExtra("desiredOutput",false):null;worker.execute(()->runLive(desired));
+                final Boolean desired=intent.hasExtra("desiredOutput")?intent.getBooleanExtra("desiredOutput",false):null;final long commandVersion=intent.getLongExtra("commandVersion",-1);worker.execute(()->runLive(desired,commandVersion));
             }catch(Exception e){EnergyStore.error(false,Repository.safeError(e));stopSelf();}return START_NOT_STICKY;
         }
         started=true;mac=intent.getStringExtra("mac");
@@ -246,11 +247,12 @@ public final class ArchiveService extends Service {
         }
         throw new TimeoutException();
     }
-    private void runLive(Boolean desired){
+    private void runLive(Boolean desired,long commandVersion){
         try{
             BluetoothManager manager=getSystemService(BluetoothManager.class);BluetoothAdapter adapter=manager==null?null:manager.getAdapter();if(adapter==null||!adapter.isEnabled())throw new IllegalArgumentException("Bluetooth ist ausgeschaltet.");
             connect(adapter.getRemoteDevice(mac));
-            if(desired!=null){Double mode=EnergyProtocol.solarValue(0xedab,exchange(0xedab,EnergyProtocol.solarRead(0xedab),null,2500));if(mode==null)throw new IllegalArgumentException("Ausgangsmodus nicht lesbar; Schalten nicht ausgeführt.");exchange(0xedab,EnergyProtocol.output(mode.intValue(),desired),null,2500);}
+            if(desired!=null&&!EnergyStore.currentCommand(commandVersion))return;
+            if(desired!=null){Double mode=EnergyProtocol.solarValue(0xedab,exchange(0xedab,EnergyProtocol.solarRead(0xedab),null,2500));if(mode==null)throw new IllegalArgumentException("Ausgangsmodus nicht lesbar; Schalten nicht ausgeführt.");if(!EnergyStore.currentCommand(commandVersion))return;exchange(0xedab,EnergyProtocol.output(mode.intValue(),desired),null,2500);}
             JSONObject sample=new JSONObject().put("at",System.currentTimeMillis());
             for(int register:new int[]{0xedbb,0xedab,0xeda8,0xeda9,0xedad})try{Double value=EnergyProtocol.solarValue(register,exchange(register,EnergyProtocol.solarRead(register),null,2000));if(value!=null)sample.put(register==0xedbb?"pvVoltage":register==0xedab?"mode":register==0xeda8?"state":register==0xeda9?"voltage":"current",value);}catch(TimeoutException ignored){}
             sample.put("at",System.currentTimeMillis());EnergyStore.live(repository,mac,sample);try{repository.activeSolarReading(mac,sample);}catch(Exception storage){repository.message("Livewerte empfangen; die Speicherung konnte nicht abgeschlossen werden.");}

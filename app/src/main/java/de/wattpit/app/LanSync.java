@@ -236,7 +236,7 @@ final class LanSync {
         return query(method,args,null);
     }
     JSONObject query(String method,JSONArray args,Consumer<String> progress)throws Exception{
-        if(Arrays.asList("rollerEnergy","history","dashboardHistory","energyHistoryWindow","energyHistory","dailyEnergy").contains(method)){analysisPending=true;try{JSONObject result=analysis().query(method,args,progress);analysisAt=result.getJSONObject("analysis").optLong("at");return result;}finally{analysisPending=false;}}
+        if(Arrays.asList("rollerEnergy","loadHistory","history","dashboardHistory","energyHistoryWindow","energyHistory","dailyEnergy").contains(method)){analysisPending=true;try{JSONObject result=analysis().query(method,args,progress);analysisAt=result.getJSONObject("analysis").optLong("at");return result;}finally{analysisPending=false;}}
         return queryInput(method,args);
     }
     int analysisProtocol(){return remote.optInt("analysisProtocol");}

@@ -34,6 +34,13 @@ public final class BmsPacket {
         if (23 + (b[26] & 255) * 2 > length) return null;
         return new BmsPacket(b);
     }
+    /** Read-only JBD command 04. Never substitutes total voltage for missing cells. */
+    public static double[] decodeCells(byte[] b){
+        if(b==null||b.length<9||(b[0]&255)!=0xdd||(b[1]&255)!=4||b[2]!=0)return null;
+        int length=b[3]&255;if(length<2||length>128||(length&1)!=0||b.length!=length+7||(b[b.length-1]&255)!=0x77)return null;
+        int sum=0;for(int i=2;i<length+4;i++)sum+=b[i]&255;if(((-sum)&65535)!=u16(b,length+4))return null;
+        double[] result=new double[length/2];for(int i=0;i<result.length;i++){result[i]=u16(b,4+i*2)/1000.0;if(result[i]<=0||result[i]>6)return null;}return result;
+    }
     private static int u16(byte[] b, int i) { return ((b[i] & 255) << 8) | (b[i + 1] & 255); }
 }
 

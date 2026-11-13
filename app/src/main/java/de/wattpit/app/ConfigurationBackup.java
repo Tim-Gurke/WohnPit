@@ -25,6 +25,7 @@ final class ConfigurationBackup {
         result.put("solarSetup",solar);
         if(input.has("workspace"))result.put("workspace",AutarPieConfig.workspace(input.getJSONObject("workspace").toString()));
         if(input.has("appearance"))result.put("appearance",AutarPieConfig.appearance(input.getJSONObject("appearance").toString()));
+        if(input.has("ownColors")){JSONArray given=input.getJSONArray("ownColors"),paletteColors=new JSONArray();if(given.length()>512)throw new IllegalArgumentException("Zu viele eigene Farben.");Set<String> seenColors=new HashSet<>();for(int i=0;i<given.length();i++){String value=given.getString(i).toLowerCase(Locale.ROOT);if(!value.matches("#[0-9a-f]{6}"))throw new IllegalArgumentException("Ungültige eigene Farbe.");if(seenColors.add(value))paletteColors.put(value);}result.put("ownColors",paletteColors);}
         if(input.has("specialUses"))result.put("specialUses",SpecialUses.checked(input.getJSONObject("specialUses")));
         if(input.has("createdAt"))result.put("createdAt",input.optString("createdAt").substring(0,Math.min(40,input.optString("createdAt").length())));
         return result;
@@ -36,7 +37,7 @@ final class ConfigurationBackup {
         for(int i=0;i<rows.length();i++){
             JSONObject row=rows.getJSONObject(i);String id=row.getString("id"),metric=row.getString("metric");
             if(!id.matches("[a-zA-Z0-9_-]{1,90}")||!ids.add(id)||!metric.matches("[a-zA-Z][a-zA-Z0-9]{0,40}"))throw new IllegalArgumentException("Ungültige Kachel in der Sicherung.");
-            JSONObject tile=pick(row,"id","metric","title","unit","type","digits","fontSize","color","colorSource","colorMid","colorEnd","adaptiveColor","multicolor","invert","min","max","scaleMode","valueMode","reverseSign","background","opacity","scaleSource");
+            JSONObject tile=pick(row,"id","metric","title","unit","type","digits","fontSize","color","colorSource","colorMid","colorEnd","adaptiveColor","multicolor","invert","min","max","scaleMode","valueMode","reverseSign","background","opacity","scaleSource","device","cell","rangeReserve","formula");
             if(row.has("backgroundSurface"))tile.put("backgroundSurface",AutarPieConfig.surface(row.getJSONObject("backgroundSurface")));
             tile.put("fontSize",Math.max(18,Math.min(20,row.optDouble("fontSize",20))));
             if(row.has("period"))tile.put("period",pick(row.getJSONObject("period"),"mode","amount","unit","aggregate","resetAt","from","to"));

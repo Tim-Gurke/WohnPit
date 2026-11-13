@@ -66,7 +66,7 @@ final class Repository {
             return result.put("syncing",true).put("dataAt",lastSnapshotAt).put("settings",settingsSnapshot()).put("running",running).put("status",status)
                 .put("equipment",new JSONObject(prefs.getString("equipment-v1","{\"version\":1,\"groups\":[]}")))
                 .put("energy",EnergyStore.snapshot(this)).put("archive",archive).put("archiveBusy",archiveBusy).put("weather",new JSONObject(prefs.getString("weatherCache","{}")))
-                .put("weatherError",prefs.getString("weatherError","")).toString();
+                .put("weatherTrend",new JSONObject(prefs.getString("weatherTrend","{}"))).put("weatherTrendError",prefs.getString("weatherTrendError","" )).put("weatherError",prefs.getString("weatherError","")).toString();
         }catch(Exception e){return "{\"syncing\":true}";}
     }
     synchronized void archiveState(String mac,boolean active,String text,int done,int total){
@@ -404,7 +404,7 @@ final class Repository {
         }
         if (now - statsTime > 30_000) { cachedStats = db.stats(); statsTime = now; }
         JSONObject result=new JSONObject().put("dataAt",now).put("archiveBusy",archiveBusy).put("historyRevision",historyRevision).put("running",running).put("status",status).put("devices",devices).put("found",discovery)
-                .put("equipment",equipment()).put("archiveDiagnostics",new JSONObject(prefs.getString("archiveDiagnostics","{}"))).put("archive",archive).put("deviceHistory",db.histories()).put("weatherError",prefs.getString("weatherError","")).put("weather",new JSONObject(prefs.getString("weatherCache","{}"))).put("readings",readings).put("stats",cachedStats).put("solarDaily",db.daily()).put("event",event).put("eventId",eventId)
+                .put("equipment",equipment()).put("archiveDiagnostics",new JSONObject(prefs.getString("archiveDiagnostics","{}"))).put("archive",archive).put("deviceHistory",db.histories()).put("weatherTrend",new JSONObject(prefs.getString("weatherTrend","{}"))).put("weatherTrendError",prefs.getString("weatherTrendError","" )).put("weatherError",prefs.getString("weatherError","")).put("weather",new JSONObject(prefs.getString("weatherCache","{}"))).put("readings",readings).put("stats",cachedStats).put("solarDaily",db.daily()).put("event",event).put("eventId",eventId)
                 .put("energy",EnergyStore.snapshot(this)).put("settings",settingsSnapshot()).put("deviceSettings",deviceSettingsSnapshot());
         if(!archiveBusy){lastSnapshot=result.toString();lastSnapshotAt=now;}
         return result;

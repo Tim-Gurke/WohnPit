@@ -10,6 +10,8 @@ import java.security.MessageDigest;
 
 /** Same-phone bridge for official ScootPit; LAN credentials never leave AutarPie. */
 public final class RollerLinkProvider extends ContentProvider {
+    private final java.util.Map<String,JSONObject> ownership=new java.util.concurrent.ConcurrentHashMap<>();
+    private final java.util.Map<String,Long> ownershipAt=new java.util.concurrent.ConcurrentHashMap<>();
     @Override public boolean onCreate(){return true;}
     @SuppressWarnings("deprecation") private void authorize(){
         PackageManager pm=getContext().getPackageManager();String[] names=pm.getPackagesForUid(Binder.getCallingUid());
@@ -28,8 +30,14 @@ public final class RollerLinkProvider extends ContentProvider {
             LanSync lan=LanSync.get(getContext());if(!lan.viewer()){out.putBoolean("available",false);return out;}
             if(extras==null||extras.getString("payload","").length()>5000)throw new IllegalArgumentException();
             JSONObject data=new JSONObject(extras.getString("payload","{}")).put("mac",mac);
-            JSONObject response=lan.rollerLink(method,data);out.putBoolean("available",true);out.putString("response",response.toString());
-        }catch(Exception e){out.putBoolean("available",e instanceof IllegalArgumentException);out.putString("error",e instanceof IllegalArgumentException?e.getMessage():"Zentrale nicht erreichbar · direkte BMS-Verbindung bleibt möglich");}
+            JSONObject response=lan.rollerLink(method,data);if(response.optBoolean("available")){String key=mac+":"+data.optLong("epoch");if(ownership.size()>16){ownership.clear();ownershipAt.clear();}ownership.put(key,new JSONObject(response.toString()));ownershipAt.put(key,SystemClock.elapsedRealtime());}out.putBoolean("available",true);out.putString("response",response.toString());
+        }catch(Exception e){
+            // A lost LAN response is not a Bluetooth release. Preserve the last ownership
+            // acknowledgement through a bounded network interruption, especially on return.
+            try{JSONObject data=new JSONObject(extras==null?"{}":extras.getString("payload","{}"));String key=mac+":"+data.optLong("epoch");JSONObject cached=ownership.get(key);long age=SystemClock.elapsedRealtime()-ownershipAt.getOrDefault(key,0L);
+                if(!(e instanceof IllegalArgumentException)&&cached!=null&&age>=0&&age<60000){JSONObject held=new JSONObject(cached.toString());held.put("available",true).put("hostFresh",false).put("returnRequested",false).put("granted",cached.optBoolean("granted")&&!method.equals("released")&&!cached.optString("phase").equals("returning")).put("message","Netzantwort fehlt · bestätigte BMS-Zuständigkeit bleibt erhalten");out.putBoolean("available",true);out.putString("response",held.toString());return out;}
+            }catch(JSONException ignored){}
+            out.putBoolean("available",e instanceof IllegalArgumentException);out.putString("error",e instanceof IllegalArgumentException?e.getMessage():"Zentrale nicht erreichbar · direkte BMS-Verbindung bleibt möglich");}
         return out;
     }
     @Override public Cursor query(Uri u,String[] p,String s,String[] a,String o){authorize();throw new UnsupportedOperationException();}

@@ -15,7 +15,7 @@ final class WeatherClient {
     private static final AtomicBoolean BUSY=new AtomicBoolean();
     static JSONObject get(String url) throws Exception {
         URL target=new URL(url);
-        if(!target.getProtocol().equals("https")||!(target.getHost().equals("api.open-meteo.com")||target.getHost().equals("geocoding-api.open-meteo.com")||target.getHost().equals("archive-api.open-meteo.com")))throw new IOException();
+        if(!target.getProtocol().equals("https")||!(target.getHost().equals("api.open-meteo.com")||target.getHost().equals("geocoding-api.open-meteo.com")||target.getHost().equals("archive-api.open-meteo.com")||target.getHost().equals("seasonal-api.open-meteo.com")))throw new IOException();
         HttpURLConnection c=(HttpURLConnection)target.openConnection();c.setConnectTimeout(12000);c.setReadTimeout(15000);c.setInstanceFollowRedirects(false);c.setRequestProperty("Accept","application/json");
         try {
             if(c.getResponseCode()!=200)throw new IOException();
@@ -62,11 +62,11 @@ final class WeatherClient {
             try {
                 JSONObject cached=new JSONObject(repository.prefs.getString("weatherCache","{}"));
                 int pastDays=pastDays(repository.prefs.getLong("planningWeatherSince",0),System.currentTimeMillis(),cached.optString("timezone","Europe/Berlin"));
-                if(!force&&cached.optInt("version")==5&&cached.optInt("pastDays",7)>=pastDays&&signature.equals(cached.optString("signature"))&&System.currentTimeMillis()-cached.optLong("updated")<6*3600000L)return;
+                if(!force&&cached.optInt("version")==5&&cached.optInt("forecastDays")>=16&&cached.optInt("pastDays",7)>=pastDays&&signature.equals(cached.optString("signature"))&&System.currentTimeMillis()-cached.optLong("updated")<6*3600000L)return;
                 JSONObject p=new JSONObject(place);long updated=System.currentTimeMillis();
-                String base="https://api.open-meteo.com/v1/forecast?latitude="+p.getDouble("latitude")+"&longitude="+p.getDouble("longitude")+"&forecast_days=15&past_days="+pastDays+"&timeformat=unixtime&timezone=auto";
+                String base="https://api.open-meteo.com/v1/forecast?latitude="+p.getDouble("latitude")+"&longitude="+p.getDouble("longitude")+"&forecast_days=16&past_days="+pastDays+"&timeformat=unixtime&timezone=auto";
                 JSONObject result=get(base+"&daily=weather_code,sunshine_duration,sunrise,sunset,shortwave_radiation_sum&hourly=shortwave_radiation,sunshine_duration");
-                JSONObject cache=timeline(result);JSONArray series=new JSONArray();
+                JSONObject cache=timeline(result).put("forecastDays",16);JSONArray series=new JSONArray();
                 JSONObject eq=new JSONObject(equipment),plan=SolarPlanning.checked(new JSONObject(setup),eq);JSONArray groups=eq.getJSONArray("groups");java.util.Set<String> requested=new java.util.LinkedHashSet<>();boolean partial=false;
                 for(int i=0;i<groups.length();i++){
                     JSONObject g=groups.getJSONObject(i),setting=plan.getJSONObject("groups").getJSONObject(g.getString("id"));
@@ -82,6 +82,18 @@ final class WeatherClient {
             }catch(Exception e){if(place.equals(repository.prefs.getString("weatherPlace","")))repository.prefs.edit().putString("weatherError","Solarvorschau gerade nicht erreichbar. Gespeicherte Daten bleiben verfügbar.").apply();}
             finally {BUSY.set(false);if(!place.equals(repository.prefs.getString("weatherPlace",""))||!equipment.equals(repository.prefs.getString("equipment-v1","{\"version\":1,\"groups\":[]}"))||!setup.equals(repository.prefs.getString("solar-setup-v1","{}")))refresh(repository,false);}
         });
+    }
+    private static final AtomicBoolean TREND_BUSY=new AtomicBoolean();
+    static void trend(Repository repository){
+        String place=repository.prefs.getString("weatherPlace","");if(place.isEmpty()||!TREND_BUSY.compareAndSet(false,true))return;
+        NETWORK.execute(()->{try{
+            JSONObject previous=new JSONObject(repository.prefs.getString("weatherTrend","{}"));long now=System.currentTimeMillis();
+            if(place.equals(previous.optString("placeKey"))&&now-previous.optLong("updated")<24*3600000L)return;
+            JSONObject p=new JSONObject(place);
+            JSONObject data=get("https://seasonal-api.open-meteo.com/v1/seasonal?latitude="+p.getDouble("latitude")+"&longitude="+p.getDouble("longitude")+"&forecast_days=46&models=ecmwf_ec46_ensemble_mean&daily=temperature_2m_mean,precipitation_sum,shortwave_radiation_sum&timezone=auto");
+            if(data.optJSONObject("daily")==null||data.getJSONObject("daily").optJSONArray("time")==null)throw new IOException("Trenddaten fehlen.");
+            if(place.equals(repository.prefs.getString("weatherPlace","")))repository.prefs.edit().putString("weatherTrend",new JSONObject().put("updated",now).put("placeKey",place).put("place",p).put("source","Open-Meteo · ECMWF EC46").put("data",data).toString()).remove("weatherTrendError").apply();
+        }catch(Exception e){repository.prefs.edit().putString("weatherTrendError","Langfristtrend konnte nicht geladen werden. Letzten Datenstand prüfen.").apply();}finally{TREND_BUSY.set(false);}});
     }
     static int pastDays(long since,long now,String timezone){
         if(since<=0||since>now)return 7;java.time.ZoneId zone;try{zone=java.time.ZoneId.of(timezone);}catch(Exception e){zone=java.time.ZoneId.of("Europe/Berlin");}

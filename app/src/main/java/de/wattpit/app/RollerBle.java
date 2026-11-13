@@ -14,6 +14,8 @@ final class RollerBle {
     private static UUID uuid(String id){return UUID.fromString("0000"+id+"-0000-1000-8000-00805f9b34fb");}
     private static final UUID SERVICE=uuid("ff00"),NOTIFY=uuid("ff01"),WRITE=uuid("ff02"),CCCD=uuid("2902");
     private static final byte[] REQUEST={(byte)0xdd,(byte)0xa5,3,0,(byte)0xff,(byte)0xfd,0x77};
+    private static final byte[] CELL_REQUEST={(byte)0xdd,(byte)0xa5,4,0,(byte)0xff,(byte)0xfc,0x77};
+    private long cellRequested;
     private final Context context;
     private final RollerStore store;
     private final ScootLink scoot;
@@ -60,9 +62,9 @@ final class RollerBle {
                 if(adapter==null||!adapter.isEnabled()){close();store.status("Bluetooth ausgeschaltet");}
                 else if(gatt==null&&now>=retryAt){store.status("Verbinde Roller-BMS …");connectedAt=now;gatt=adapter.getRemoteDevice(mac).connectGatt(context,false,callback,BluetoothDevice.TRANSPORT_LE);if(gatt==null)failed("Android konnte die BMS-Verbindung nicht öffnen");}
                 else if(gatt!=null&&now-(lastPacket>0?lastPacket:connectedAt)>20000){failed("Zeitüberschreitung beim BMS-Empfang");}
-                else if(ready&&!busy){busy=true;boolean accepted;
-                    if(Build.VERSION.SDK_INT>=33)accepted=gatt.writeCharacteristic(write,REQUEST,BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE)==BluetoothStatusCodes.SUCCESS;
-                    else{write.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);write.setValue(REQUEST);accepted=gatt.writeCharacteristic(write);}
+                else if(ready&&!busy){busy=true;boolean accepted;byte[] request=now-cellRequested>=10000?CELL_REQUEST:REQUEST;if(request==CELL_REQUEST)cellRequested=now;
+                    if(Build.VERSION.SDK_INT>=33)accepted=gatt.writeCharacteristic(write,request,BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE)==BluetoothStatusCodes.SUCCESS;
+                    else{write.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);write.setValue(request);accepted=gatt.writeCharacteristic(write);}
                     if(!accepted)busy=false;
                 }
             }else store.status("Noch kein Roller-BMS ausgewählt");
@@ -93,8 +95,8 @@ final class RollerBle {
         if(pending.length+value.length>1024)pending=new byte[0];
         byte[] all=Arrays.copyOf(pending,pending.length+value.length);System.arraycopy(value,0,all,pending.length,value.length);int cursor=0;
         while(cursor+4<=all.length){if((all[cursor]&255)!=0xdd){cursor++;continue;}int size=(all[cursor+3]&255)+7;if(cursor+size>all.length)break;
-            BmsPacket packet=BmsPacket.decode(Arrays.copyOfRange(all,cursor,cursor+size));
-                if(packet!=null){lastPacket=SystemClock.elapsedRealtime();failures=0;retryAt=0;store.accept(packet,System.currentTimeMillis());handover.hostSample(packet);cursor+=size;}else cursor++;
+            byte[] frame=Arrays.copyOfRange(all,cursor,cursor+size);BmsPacket packet=BmsPacket.decode(frame);double[] cells=BmsPacket.decodeCells(frame);
+                if(packet!=null){lastPacket=SystemClock.elapsedRealtime();failures=0;retryAt=0;store.accept(packet,System.currentTimeMillis());handover.hostSample(packet);cursor+=size;}else if(cells!=null){store.acceptCells(cells,System.currentTimeMillis());cursor+=size;}else cursor++;
         }
         pending=Arrays.copyOfRange(all,cursor,all.length);
     });}

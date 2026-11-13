@@ -152,7 +152,7 @@
     for(const series of weather.solar||[])mapped.set(series.geometry,new Map((series.values||[]).map(p=>[p.t,p.v])));
     const byDay=new Map();for(const h of weather.hours||[]){const local=stamp(h.t-HOUR/2,weather.timezone);if(!local)continue;const list=byDay.get(local.day)||[];list.push({t:h.t,slot:part(local.hour)});byDay.set(local.day,list);}
     const dated=new Map(),counts=new Map();for(const d of weather.days||[]){counts.set(d.day,(counts.get(d.day)||0)+1);if(today&&d.day>=today&&!dated.has(d.day))dated.set(d.day,d);}
-    const days=[...dated.values()].slice(0,14);
+    const days=[...dated.values()].slice(0,16);
     for(let index=0;index<days.length;index++){
       const d=days[index],bins=PARTS.map(()=>({fixed:0,mobile:0,raw:0,remaining:0})),timeline=new Map((byDay.get(d.day)||[]).map(h=>[h.t,{from:h.t-HOUR,to:h.t,wh:0,raw:0,slot:h.slot}])),issues=[],add=(kind,g)=>{if(!issues.some(x=>x.kind===kind&&x.group===(g?.label||g?.id||'')))issues.push({kind,group:g?.label||g?.id||''});};const contributions=[];let complete=(equipment.groups||[]).length>0,unknownShade=false,seen=0;
       if(!complete)add('equipment');

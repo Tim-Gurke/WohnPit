@@ -2,7 +2,7 @@
   const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.WattReadBridge=api;
 })(typeof globalThis==='object'?globalThis:this,function(){
   'use strict';
-  const methods=new Set(['rollerEnergy','history','dashboardHistory','energyHistory','energyHistoryWindow','dailyEnergy']);
+  const methods=new Set(['rollerEnergy','loadHistory','history','dashboardHistory','energyHistory','energyHistoryWindow','dailyEnergy']);
   const missing=()=>({points:[],summary:{},pending:true});
   const pending=method=>method==='dailyEnergy'?{days:[],pending:true}:method.startsWith('energy')?{solar:missing(),consumption:missing(),balance:missing(),mobile:missing(),pending:true}:missing();
   return class {
@@ -25,7 +25,7 @@
       // Solar bounds that follow the live window must share its time bucket.
       // Otherwise every repaint creates a fresh energy query a few ms later.
       const energy=method.startsWith('energy');
-      return JSON.stringify([scope??null,method,args.map((v,i)=>i<2||energy&&i>=3&&(v===args[0]||v===args[1])?Math.floor(v/10000):v)]);
+      return JSON.stringify([scope??null,method,args.map((v,i)=>i<2||energy&&i>=3&&(v===args[0]||v===args[1])?Math.floor(v/30000):v)]);
     }
     remember(key,value){
       if(value.scope!=null)for(const [oldKey,old] of this.cache)if(old.method===value.method&&old.scope===value.scope)this.cache.delete(oldKey);

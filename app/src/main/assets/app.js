@@ -16,6 +16,7 @@ function repaintReads(){
   if(page==='overview'||window.AutarPieUI?.active===page){renderOverview();loadMini(true);}
   if(page==='history')loadHistory();
   dashboard?.detail?.refresh(false);
+  roller?.refreshJournal?.();
 }
 const reads=deviceNative&&window.WattReadBridge?new window.WattReadBridge(deviceNative,method=>{
   if(method==='dailyEnergy'){if(page==='history')renderDaily();return;}
@@ -59,7 +60,7 @@ let page = 'overview', demo = false, lastEvent = 0, settingsDirty = false, lastM
 let toastTimer, previousToast = '', previousToastTime = 0, deviceRenderKey = '';
 let metric = 'power', source = 'all', range = 'today', baseFrom, baseTo, viewFrom, viewTo, points = [], manualY = null, scale = null, loadTimer, selectedPoint = null;
 let settingsRevision=-1;
-let currentImport = null, lastHistoryRevision=-1, historyPending=false, archiveRequestedUntil=0, lastLanConnection, lastLanSource;
+let currentImport = null, lastHistoryRevision=-1, historyPending=false, archiveRequestedUntil=0, lastLanConnection, lastLanSource,lastAnalysisRefresh=0;
 let dashboard = null, extras = null, equipment = null, configuration = null, lifecycle = null, solar = null, roller = null, lanUi = null, presence = null, supplies = null;
 const overviewLandscape = window.matchMedia('(orientation: landscape)');
 
@@ -134,7 +135,7 @@ function renderOverview() {
   const status = $('liveStatus'), any = shunt || solar;
   status.className = 'status-chip' + (demo ? ' warning' : any ? ' live' : snapshot.running ? ' warning' : '');
   status.querySelector('span').textContent = demo ? 'Demo' : any ? 'Live' : snapshot.running ? 'Warte auf Geräte' : 'Pausiert';
-  const direction = shunt?.current == null ? 'Noch kein Livewert' : shunt.current > .03 ? 'Akku wird geladen' : shunt.current < -.03 ? 'Akku wird entladen' : 'Bilanz ausgeglichen';
+  const direction = shunt?.current == null ? 'Noch kein Livewert' : shunt.current > .03 ? 'Wohnwagenakku wird geladen' : shunt.current < -.03 ? 'Wohnwagenakku wird entladen' : 'Bilanz ausgeglichen';
   $('batteryState').innerHTML = `<i class="dot ${shunt?.alarm ? 'orange' : 'mint'}"></i>${shunt?.alarm ? `Shunt-Alarm 0x${shunt.alarm.toString(16).toUpperCase()}` : direction}`;
   $('lastSeen').textContent = shunt ? (demo ? 'Beispieldaten' : `Stand ${clock(shunt.t)}`) : 'Kein Empfang';
   $('overviewRecord').classList.toggle('active',snapshot.running && !demo);
@@ -179,7 +180,7 @@ function poll() {
       if(sourceChanged){reads?.invalidate(true);points=[];miniPoints=[];energyData=null;}
       const lanChanged=sourceChanged||snapshot.lan&&lastLanConnection!==snapshot.lan.connected;
       if(lanChanged)lastLanConnection=snapshot.lan?.connected;
-      if(lanChanged||snapshot.historyRevision!=null&&snapshot.historyRevision!==lastHistoryRevision){lastHistoryRevision=snapshot.historyRevision;reads?.invalidate();dashboard?.clearCache();lastMiniLoad=0;if(page==='history'&&!demo)loadHistory();}
+      if(lanChanged||snapshot.historyRevision!=null&&snapshot.historyRevision!==lastHistoryRevision&&Date.now()-lastAnalysisRefresh>=30000){lastAnalysisRefresh=Date.now();lastHistoryRevision=snapshot.historyRevision;reads?.invalidate();dashboard?.clearCache();lastMiniLoad=0;if(page==='history'&&!demo)loadHistory();}
       if (snapshot.eventId && snapshot.eventId !== lastEvent) { toast(snapshot.event); lastEvent = snapshot.eventId; }
       if (document.documentElement.dataset.theme !== snapshot.settings.theme) theme(snapshot.settings.theme,false);
     } catch (error) { console.error('Snapshot unavailable',error); }
@@ -232,7 +233,8 @@ window.handleBack = () => {
   if(lifecycle?.back())return true;
   if (!$('modal').hidden) { closeModal(); return true; }
   if (dashboard?.detail?.active) { dashboard.detail.close(); return true; }
-  if (page !== 'overview') { showPage('overview'); return true; }
+  if (window.AutarPieUI?.back?.()) return true;
+  if (page !== 'overview'&&!window.AutarPieUI) { showPage('overview'); return true; }
   return false;
 };
 function deviceForm(device={},found=false) {
@@ -393,7 +395,7 @@ function canvasChart(canvas,data,from,to,chosen,mini=false) {
     for(const p of s.points){if(segment.length && window.WattDashboardCore.seriesGap(segment[segment.length-1],p,gapLimit)){segments.push(segment);segment=[];}segment.push(p);}if(segment.length)segments.push(segment);
     for(const segment of segments){
       if(segment.some(p=>p.n>1)){ctx.beginPath();segment.forEach((p,i)=>i?ctx.lineTo(x(p.t),y(p.max)):ctx.moveTo(x(p.t),y(p.max)));[...segment].reverse().forEach(p=>ctx.lineTo(x(p.t),y(p.min)));ctx.closePath();ctx.globalAlpha=.16;ctx.fillStyle=color;ctx.fill();ctx.globalAlpha=1;}
-      ctx.strokeStyle=color;ctx.lineWidth=mini?2:2.2;ctx.setLineDash(s.kind==='balance'?[6,3]:s.origin==='csv'?[5,4]:[]);ctx.beginPath();segment.forEach((p,i)=>i?ctx.lineTo(x(p.t),y(p.v)):ctx.moveTo(x(p.t),y(p.v)));ctx.stroke();ctx.setLineDash([]);
+      ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle=color;ctx.lineWidth=mini?2:2.2;ctx.setLineDash(s.kind==='balance'?[6,3]:s.origin==='csv'?[5,4]:[]);ctx.beginPath();segment.forEach((p,i)=>i?ctx.lineTo(x(p.t),y(p.v)):ctx.moveTo(x(p.t),y(p.v)));ctx.stroke();ctx.setLineDash([]);
       if(segment.length===1){ctx.beginPath();ctx.arc(x(segment[0].t),y(segment[0].v),2.5,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();}
     }
   }
@@ -539,4 +541,4 @@ window.addEventListener('resize',()=>{drawHistory();drawMini();});
 
 for(const [id,method] of [['chooseAppRole','chooseAppRole'],['migrationBackup','migrationBackup'],['migrationImport','migrationImport']])$(id).onclick=()=>{if(typeof deviceNative?.[method]==='function')deviceNative[method]();else toast('Diese Funktion steht in der installierten AutarPie-App bereit.');};
 if(typeof deviceNative?.appRole==='function')$('appRoleLabel').textContent=({central:'Zentrale · Daten sammeln und im WLAN bereitstellen',viewer:'Anzeigehandy · mit einer Zentrale koppeln',direct:'Eigenständig · Victron direkt, ohne Zentrale'})[deviceNative.appRole()]||'Betriebsart wählen';
-window.AutarPieApp={get dashboard(){return dashboard;},get snapshot(){return snapshot;},get solar(){return solar;},get roller(){return roller;},native:deviceNative,read:historyRead,loadMini,repaint:()=>{drawHistory();drawMini();},showPage,openModal,closeModal,toast,poll,theme,reading,icon,escapeHtml};
+window.AutarPieApp={get dashboard(){return dashboard;},get snapshot(){return snapshot;},get solar(){return solar;},get supplies(){return supplies;},get equipment(){return equipment;},get roller(){return roller;},native:deviceNative,read:historyRead,loadMini,repaint:()=>{drawHistory();drawMini();},showPage,openModal,closeModal,toast,poll,theme,reading,icon,escapeHtml};

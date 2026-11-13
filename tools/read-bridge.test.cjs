@@ -63,7 +63,7 @@ test('energy bounds following a live window share its bucket without a repaint q
  const {b,requests,reply}=viewer();b.read('energyHistoryWindow',[0,100000,'all',0,100000],'today');reply({accountingVersion:2,solar:{summary:{last:20}},consumption:{summary:{last:30}},balance:{summary:{last:-10}},mobile:{summary:{last:0}}});
  for(let delta=1;delta<1000;delta++)assert.equal(JSON.parse(b.read('energyHistoryWindow',[0,100000+delta,'all',0,100000+delta],'today')).solar.summary.last,20);
  assert.equal(requests.length,1,'repainting must not start another native calculation within the existing time bucket');
- b.read('energyHistoryWindow',[0,110000,'all',0,110000],'today');assert.equal(requests.length,2,'the next bucket must still refresh');
+ b.read('energyHistoryWindow',[0,120000,'all',0,120000],'today');assert.equal(requests.length,2,'the next bucket must still refresh');
 });
 test('independent solar boundaries remain distinct even within a live time bucket',()=>{
  const {b,requests,reply}=viewer();b.read('energyHistoryWindow',[0,100000,'all',2000,90000],'today');reply({solar:{summary:{last:20}}});

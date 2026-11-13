@@ -38,6 +38,7 @@ final class PlantCommands {
             case "saveSolarSetup":arity(args,2);planning.save(args.getString(0),args.getBoolean(1));break;
             case "saveSolarSite":arity(args,2);planning.saveSite(args.getString(0),args.getString(1));break;
             case "weatherPlace":arity(args,1);WeatherClient.place(repo,new JSONObject(args.getString(0)));break;
+            case "requestWeatherTrend":arity(args,0);WeatherClient.trend(repo);break;
             case "refreshWeather":arity(args,0);WeatherClient.refresh(repo,true);break;
             case "saveEquipment":arity(args,1);if(args.getString(0).length()>20000)throw new IllegalArgumentException("Die Anlagenkonfiguration ist zu groß.");repo.saveEquipment(new JSONObject(args.getString(0)));WeatherClient.refresh(repo,true);break;
             case "savePresence":arity(args,1);PresenceStore.get(context).mode(args.getString(0));break;

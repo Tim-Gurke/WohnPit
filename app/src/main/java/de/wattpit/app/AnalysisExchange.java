@@ -9,7 +9,7 @@ import java.util.*;
 /** Typed calculation inputs only. The central phone never builds a plot for this protocol. */
 final class AnalysisExchange {
     static final String[] TABLES={"contexts","display_contexts","model_weather","observations","forecasts","confirmed_setups"};
-    static final String[] ALL={"contexts","display_contexts","model_weather","observations","forecasts","confirmed_setups","device_settings","input_intervals","roller_raw","archive_clock_state"};
+    static final String[] ALL={"contexts","display_contexts","model_weather","observations","forecasts","confirmed_setups","device_settings","input_intervals","roller_raw","load_raw","archive_clock_state"};
     static final int PAGE=256;
     static String schema(String table){switch(table){
         case "contexts":return "at:l,key:s,mobile_free:l,source:s,solar_key:s,payload:s";
@@ -19,6 +19,7 @@ final class AnalysisExchange {
         case "forecasts":return "key:s,start:l,end:l,issued:l,payload:s";
         case "confirmed_setups":return "source:s,id:s,start:l,end:l,key:s,solar_key:s,payload:s,weather:s";
         case "device_settings":return "device:s,start:l,end:l,payload:s";
+        case "load_raw":return "source:s,start:l,end:l,payload:s,mac:s";
         case "roller_raw":return "source:s,start:l,end:l,payload:s,mac:s";
         case "input_intervals":return "source:s,start:l,end:l,wh:d,mac:s,session:l";
         case "archive_clock_state":return "device:s,payload:s";
@@ -34,14 +35,14 @@ final class AnalysisExchange {
     static SQLiteDatabase database(String table,Repository repo,SolarPlanning plan,RollerLedger ledger,boolean write){
         // schema() is also the table-name whitelist, before any SQL is constructed.
         schema(table);
-        if(table.equals("input_intervals")||table.equals("roller_raw"))return write?ledger.getWritableDatabase():ledger.getReadableDatabase();
+        if(table.equals("input_intervals")||table.equals("roller_raw")||table.equals("load_raw"))return write?ledger.getWritableDatabase():ledger.getReadableDatabase();
         if(table.equals("device_settings")||table.equals("archive_clock_state"))return write?repo.db.getWritableDatabase():repo.db.getReadableDatabase();
         return write?plan.getWritableDatabase():plan.getReadableDatabase();
     }
     static String where(String table,long from,long to){
         long since=LearningWindow.since(System.currentTimeMillis())-10L*86400000;
         if(table.equals("model_weather"))return "end>"+from+" AND end<="+(to+3600000);
-        if(table.equals("input_intervals")||table.equals("roller_raw"))return "end>"+from+" AND start<"+to;
+        if(table.equals("input_intervals")||table.equals("roller_raw")||table.equals("load_raw"))return "end>"+from+" AND start<"+to;
         if(table.equals("device_settings"))return "end>="+Math.max(0,from-de.wattpit.app.core.VictronSettings.MAX_AGE)+" AND start<="+to;
         if(table.equals("observations")||table.equals("forecasts")||table.equals("confirmed_setups"))return "end>="+since;
         return "1=1";

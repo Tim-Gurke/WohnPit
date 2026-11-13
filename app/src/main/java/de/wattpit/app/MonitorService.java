@@ -83,7 +83,7 @@ public final class MonitorService extends Service {
         if (first) {
             CentralLog.add(this,"Aufzeichnung","Aufzeichnung gestartet");
             scheduleArchive(15000);
-            worker.scheduleWithFixedDelay(()->{if(!repository.running)return;try{EnergyStore.tick(this);long now=System.currentTimeMillis();if(!repository.archiveBusy&&!repository.liveBusy&&EnergyStore.config(repository).optBoolean("monitor",true)&&now-lastLiveRead>=15000){lastLiveRead=now;startForegroundService(new Intent(this,ArchiveService.class).setAction("LIVE"));}}catch(Exception e){EnergyStore.error(false,Repository.safeError(e));}},5,5,TimeUnit.SECONDS);
+            worker.scheduleWithFixedDelay(()->{if(!repository.running)return;try{EnergyStore.tick(this);long now=System.currentTimeMillis();if(!repository.archiveBusy&&!repository.liveBusy&&!EnergyStore.commandPending()&&EnergyStore.config(repository).optBoolean("monitor",true)&&now-lastLiveRead>=15000){lastLiveRead=now;startForegroundService(new Intent(this,ArchiveService.class).setAction("LIVE"));}}catch(Exception e){EnergyStore.error(false,Repository.safeError(e));}},5,5,TimeUnit.SECONDS);
             worker.scheduleWithFixedDelay(() -> main.post(() -> {
             if (!repository.running) return;
             PresenceStore.get(this).tick();

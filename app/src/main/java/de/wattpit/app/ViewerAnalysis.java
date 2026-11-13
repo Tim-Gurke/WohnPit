@@ -79,7 +79,7 @@ final class ViewerAnalysis {
             if(m.getInt("algorithm")!=SolarPlanning.ALGORITHM)throw new IOException("Bitte Hauptgerät und Anzeige auf dieselbe AutarPie-Version aktualisieren.");
             JSONObject versions=m.getJSONObject("tables");boolean changed=false;
             for(String table:AnalysisExchange.ALL){
-                String version=versions.getString(table),scope=(table.equals("model_weather")||table.equals("device_settings")||table.equals("input_intervals")||table.equals("roller_raw"))?":"+from+":"+to:"";
+                String version=versions.getString(table),scope=(table.equals("model_weather")||table.equals("device_settings")||table.equals("input_intervals")||table.equals("roller_raw")||table.equals("load_raw"))?":"+from+":"+to:"";
                 String key="analysis.table."+table+scope;boolean incremental=AnalysisExchange.incremental(table);
                 if(version.equals(repo.prefs.getString(key,"")))continue;
                 long cursor=incremental?repo.prefs.getLong("analysis.cursor."+table,0):0;JSONArray rows=new JSONArray();
@@ -135,7 +135,8 @@ final class ViewerAnalysis {
             if(from<0||to<=from||to-from>(method.equals("dailyEnergy")?32L:366L)*86400000||(!method.equals("dailyEnergy")&&to>now+86400000))throw new IOException("Ungültiger Zeitraum.");
             prepare(from,Math.max(from+1,Math.min(to,now)));note("Auswertung auf diesem Handy …");JSONObject result;
             switch(method){
-                case "rollerEnergy":result=ledger.summary(RollerLedger.source(repo.prefs),from,to);break;
+                case "loadHistory":result=ledger.loadHistory(RollerLedger.source(repo.prefs),from,to,args.getString(2),args.optString(3));break;
+                            case "rollerEnergy":result=ledger.summary(RollerLedger.source(repo.prefs),from,to);break;
                 case "history":result=new JSONObject().put("points",planning.history(from,to,args.getString(2),args.getString(3)));break;
                 case "dashboardHistory":result=planning.dashboardData(from,to,args.getString(2));break;
                 case "energyHistoryWindow":result=planning.energyFlow(from,to,args.getLong(3),args.getLong(4),args.getString(2));break;

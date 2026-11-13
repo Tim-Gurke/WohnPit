@@ -26,9 +26,11 @@
     if(s.count===3&&p>=high-half&&p<=high+half)return mix(c[1],c[2],(p-high+half)/(2*half));
     return p<low?c[0]:s.count===3&&p<high?c[1]:c[2];
   }
+  function dashboardDesign(x={}){const d={enabled:x.enabled===true};for(const k of ['app','tile'])if(x[k])d[k]=surface(x[k]);for(const k of ['accent','text','value'])if(hex(x[k],null))d[k]=hex(x[k],null);return d;}
+  function pageAppearance(global,page){const a=appearance(global),d=dashboardDesign(page?.design);if(!d.enabled)return a;for(const k of ['app','tile','accent'])if(d[k])a[k]=d[k];if(d.app||d.tile)a.customSurfaces=true;if(d.value){a.colors=Object.fromEntries(Object.keys(a.colors).map(k=>[k,d.value]));a.metricColors={};}return a;}
   function normalize(x={},legacy={}){
-    const pages=PAGES.map(([id,name])=>({id,name,builtin:true,board:x.pages?.find(p=>p.id===id)?.board|| (id==='overview'?legacy:null)}));
-    for(const p of x.pages||[])if(!PAGES.some(([id])=>id===p.id)&&key(p.id)&&typeof p.name==='string'&&p.name.trim()&&!pages.some(q=>q.id===p.id)&&pages.length<40)pages.push({id:p.id,name:p.name.trim().slice(0,60),builtin:false,board:p.board||null});
+    const pages=PAGES.map(([id,name])=>({id,name,builtin:true,board:x.pages?.find(p=>p.id===id)?.board|| (id==='overview'?legacy:null),design:dashboardDesign(x.pages?.find(p=>p.id===id)?.design)}));
+    for(const p of x.pages||[])if(!PAGES.some(([id])=>id===p.id)&&key(p.id)&&typeof p.name==='string'&&p.name.trim()&&!pages.some(q=>q.id===p.id)&&pages.length<40)pages.push({id:p.id,name:p.name.trim().slice(0,60),builtin:false,board:p.board||null,design:dashboardDesign(p.design)});
     const ids=new Set(pages.map(p=>p.id)),navigation=Array.isArray(x.navigation)?[...new Set(x.navigation.filter(id=>ids.has(id)))]:['overview','storage','supplies','history'];
     return {version:1,pages,navigation};
   }
@@ -52,5 +54,5 @@
     for(let i=0;i<rows.length;i++){const p=rows[i],end=Math.min(to,p.t+Math.max(45000,(p.period||0)*1500),rows[i+1]?.t??to);if(p.t>cursor)push(cursor,p.t,'unknown');if(end>cursor){push(Math.max(cursor,p.t),end,p.v);cursor=end;}}
     if(cursor<to)push(cursor,to,'unknown');return segments;
   }
-  return {availableSurplus,surfaceBase,textOn,phases,CATEGORIES,PAGES,clone,appearance,surface,surfaceCss,category,metricColor,scaleColor,normalize,createPage,deletePage,chargeSettings,chargeDecision};
+  return {dashboardDesign,pageAppearance,availableSurplus,surfaceBase,textOn,phases,CATEGORIES,PAGES,clone,appearance,surface,surfaceCss,category,metricColor,scaleColor,normalize,createPage,deletePage,chargeSettings,chargeDecision};
 });

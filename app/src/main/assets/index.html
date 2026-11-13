@@ -17,6 +17,7 @@
 <link rel="stylesheet" href="supplies.css">
 <link rel="stylesheet" href="value-colors.css">
 <link rel="stylesheet" href="autarpie.css">
+<link rel="stylesheet" href="update.css">
 </head>
 <body>
 <header class="topbar">
@@ -120,10 +121,12 @@
 <aside id="syncCompact" class="sync-compact" hidden><button id="syncOpen" aria-label="Synchronisationsfortschritt und Abbrechen öffnen"><span class="sync-compact-icon" aria-hidden="true">↻</span><span><strong id="syncCompactTitle"></strong><small id="syncCompactDetail"></small></span><span aria-hidden="true">›</span></button></aside>
 <aside id="plantActionStatus" class="plant-action-status" role="status" aria-live="polite" hidden></aside>
 <div id="toast" class="toast" role="status" hidden></div>
+<script src="update-core.js"></script>
 <script src="autarpie-core.js"></script>
 <script src="supplies-core.js"></script>
 <script src="weather-history.js"></script>
 <script src="supplies-ui.js"></script>
+<script src="metrics-core.js"></script>
 <script src="dashboard-core.js"></script>
 <script src="value-colors.js"></script>
 <script src="dashboard.js"></script>
@@ -148,5 +151,8 @@
 <script src="app.js"></script>
 <script src="autarpie-ui.js"></script>
 <script src="autarpie-energy.js"></script>
+<script src="metrics-ui.js"></script>
+<script src="update-ui.js"></script>
+<script src="supply-outbox.js"></script>
 </body>
 </html>

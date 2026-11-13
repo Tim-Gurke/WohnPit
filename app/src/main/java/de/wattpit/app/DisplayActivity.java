@@ -392,6 +392,7 @@ public final class DisplayActivity extends Activity {
                         if(remote!=lan.viewer()||owner!=lan.identity())return;
                         if(!foreground)throw new java.io.IOException("Anzeige pausiert. Beim Öffnen wird neu geladen.");
                         if(remote)data=lan.query(method,args,message->{try{call("onHistoryProgress",new JSONObject().put("id",id).put("message",message));}catch(JSONException ignored){}});else switch(method){
+                            case "loadHistory":data=RollerLedger.get(DisplayActivity.this).loadHistory(RollerLedger.source(repository.prefs),from,to,args.getString(2),args.optString(3));break;
                             case "rollerEnergy":data=RollerLedger.get(DisplayActivity.this).summary(RollerLedger.source(repository.prefs),from,to);break;
                             case "history":data=new JSONObject().put("points",solarPlanning.history(from,to,args.getString(2),args.getString(3)));break;
                             case "dashboardHistory":data=solarPlanning.dashboardData(from,to,args.getString(2));break;
@@ -433,6 +434,7 @@ public final class DisplayActivity extends Activity {
         @JavascriptInterface public String workspace(){return repository.prefs.getString(AutarPieConfig.WORKSPACE,"{}");}
         @JavascriptInterface public String appearance(){return repository.prefs.getString(AutarPieConfig.APPEARANCE,"{}");}
         @JavascriptInterface public String saveWorkspace(String json){try{JSONObject workspace=AutarPieConfig.workspace(json);SharedPreferences.Editor editor=repository.prefs.edit().putString(AutarPieConfig.WORKSPACE,workspace.toString());JSONArray pages=workspace.getJSONArray("pages");for(int i=0;i<pages.length();i++){JSONObject p=pages.getJSONObject(i);if(p.optString("id").equals("overview")&&p.optJSONObject("board")!=null)editor.putString("dashboard-v1",p.getJSONObject("board").toString());}return editor.commit()?"":"Dashboards konnten nicht gespeichert werden.";}catch(Exception e){return Repository.safeError(e);}}
+        @JavascriptInterface public String requestWeatherTrend(){return localControl("requestWeatherTrend",new JSONArray());}
         @JavascriptInterface public String saveAppearance(String json){return localControl("saveAppearance",new JSONArray().put(json));}
         @JavascriptInterface public void chooseChargerCapture(){runOnUiThread(()->{try{startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*"),IMPORT_CHARGER);}catch(Exception e){error(e);}});}
         @JavascriptInterface public String energySnapshot(){if(lan.viewer())try{return new JSONObject(lan.snapshot()).optJSONObject("energy").toString();}catch(Exception e){return "{}";}try{return EnergyStore.snapshot(repository).toString();}catch(Exception e){return "{}";}}
@@ -466,6 +468,7 @@ public final class DisplayActivity extends Activity {
                 return "";
             } catch(Exception e) { return Repository.safeError(e); }
         }
+        @JavascriptInterface public String loadHistory(long from,long to,String field,String device){return "{}";}
         @JavascriptInterface public String rollerEnergy(long from,long to){return "{}";}
         @JavascriptInterface public String dashboardHistory(long from,long to,String metric) {
             if(lan.viewer())return "{\"pending\":true}";

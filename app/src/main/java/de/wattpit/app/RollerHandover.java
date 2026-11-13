@@ -21,16 +21,16 @@ final class RollerHandover {
         if(events.length()>0&&text.equals(events.getJSONObject(events.length()-1).optString("text")))return;
         events.put(new JSONObject().put("at",System.currentTimeMillis()).put("text",text));if(events.length()>60)events.remove(0);
     }catch(JSONException ignored){}}
-    private void expire(long now){if(!peer.isEmpty()&&(now>=expires||!leasedMac.equals(RollerStore.get(context).mac()))){phase="host";peer=token=leasedMac="";closed=false;readyAt=resumeAt=0;event("Übergabe beendet · Zentrale versucht die Verbindung erneut");}}
+    private void expire(long now){if(!peer.isEmpty()&&((now>=expires&&!(phase.equals("returning")&&resumeAt>0))||!leasedMac.equals(RollerStore.get(context).mac()))){phase="host";peer=token=leasedMac="";closed=false;readyAt=resumeAt=0;event("Übergabe beendet · Zentrale versucht die Verbindung erneut");}}
     synchronized void reset(){phase="host";peer=token=leasedMac="";closed=false;readyAt=resumeAt=0;event("Anlagenverbund beendet · Zentrale liest selbst");}
     synchronized boolean remoteOwns(){long now=SystemClock.elapsedRealtime();expire(now);return !peer.isEmpty()&&(!phase.equals("returning")||resumeAt==0||now<resumeAt);}
     synchronized void hostClosed(){if(!peer.isEmpty()&&!closed){closed=true;readyAt=SystemClock.elapsedRealtime()+1500;event("Zentrale hat freigegeben · warte auf BMS-Werte vom Fahrhandy");}}
-    synchronized void hostSample(BmsPacket p){hostAt=System.currentTimeMillis();hostDischarge=p.dischargeEnabled;if(phase.equals("returning")&&resumeAt>0&&SystemClock.elapsedRealtime()>=resumeAt){phase="host";peer=token="";closed=false;readyAt=resumeAt=0;event("Roller wieder mit Zentrale verbunden");}}
+    synchronized void hostSample(BmsPacket p){hostAt=System.currentTimeMillis();hostDischarge=p.dischargeEnabled;if(phase.equals("returning")&&resumeAt>0&&SystemClock.elapsedRealtime()>=resumeAt){phase="host";peer=token=leasedMac="";closed=false;readyAt=resumeAt=0;event("Roller wieder mit Zentrale verbunden");}}
     synchronized long reconnectRevision(){return reconnectRevision;}
     synchronized void reconnect(){reconnectRevision++;event(remoteOwns()?"Fahrhandy liest das BMS · dessen Verbindung bleibt erhalten":"Roller-BMS wird neu verbunden");}
     synchronized JSONObject snapshot()throws JSONException{
         expire(SystemClock.elapsedRealtime());long at=phase.equals("host")?hostAt:remoteAt,age=System.currentTimeMillis()-at;boolean fresh=at>0&&age>=0&&age<=10000;
-        return new JSONObject().put("protocol",2).put("phase",phase).put("owner",phase.equals("host")?"Zentrale":name+" · ScootPit").put("status",message)
+        return new JSONObject().put("protocol",2).put("readerProtocol",3).put("retrying",phase.equals("returning")&&resumeAt>0).put("phase",phase).put("owner",phase.equals("host")?"Zentrale":name+" · ScootPit").put("status",message)
             .put("at",at).put("fresh",fresh).put("dischargeEnabled",fresh?(phase.equals("host")?hostDischarge:remoteDischarge):JSONObject.NULL).put("events",new JSONArray(events.toString()));
     }
     static JSONObject view(Context c)throws JSONException{JSONObject value=RollerStore.get(c).snapshot();return value.put("handover",get(c).snapshot());}
@@ -74,7 +74,7 @@ final class RollerHandover {
             phase="returning";event("BMS gesperrt · Rückgabe an die Zentrale wird abgestimmt");
         }
         if(action.equals("released")&&own&&phase.equals("returning")){
-            if(resumeAt==0){resumeAt=now+1500;expires=now+45000;event("Fahrhandy hat freigegeben · Zentrale verbindet sich");}
+            expires=now+45000;if(resumeAt==0){resumeAt=now+1500;event("Fahrhandy hat freigegeben · Zentrale verbindet sich");}
         }
         if(action.equals("cancel")&&own&&remoteAt==0){expires=now;expire(now);}
         return new JSONObject().put("protocol",2).put("available",true).put("phase",phase).put("granted",own&&closed&&now>=readyAt&&!phase.equals("returning"))

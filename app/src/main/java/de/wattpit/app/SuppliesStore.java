@@ -22,7 +22,8 @@ final class SuppliesStore {
     static synchronized void command(Repository repo,String json)throws Exception {
         if(json==null||json.length()>10000)throw new IllegalArgumentException("Ungültiger Gas-/Wassereintrag.");
         JSONObject command=new JSONObject(json),value=read(repo.prefs);String op=command.getString("op");
-        JSONArray events=value.getJSONArray("events");
+        JSONArray events=value.getJSONArray("events");String operation=command.optString("operationId");JSONArray operations=value.optJSONArray("operations");if(operations==null)operations=new JSONArray();
+        if(!operation.isEmpty()){if(!operation.matches("[A-Za-z0-9_-]{8,80}"))throw new IllegalArgumentException("Ungültige Eintragskennung.");for(int i=0;i<operations.length();i++)if(operation.equals(operations.optString(i)))return;}
         switch(op){
             case "defaults":{
                 JSONObject defaults=new JSONObject();for(String kind:new String[]{"water","gas"}){double amount=command.getDouble(kind);checkAmount(amount,kind,false);defaults.put(kind,amount);}
@@ -30,7 +31,7 @@ final class SuppliesStore {
                 value.put("defaults",defaults);break;
             }
             case "delete":{
-                String id=command.getString("id");JSONArray kept=new JSONArray();for(int i=0;i<events.length();i++)if(!id.equals(events.getJSONObject(i).getString("id")))kept.put(events.get(i));value.put("events",kept);break;
+                String id=command.getString("id");if(command.has("baseEvent"))for(int i=0;i<events.length();i++)if(id.equals(events.getJSONObject(i).getString("id"))&&!same(events.getJSONObject(i),command.getJSONObject("baseEvent")))throw new IllegalArgumentException("Der Eintrag wurde inzwischen geändert. Bitte den Konflikt prüfen.");JSONArray kept=new JSONArray();for(int i=0;i<events.length();i++)if(!id.equals(events.getJSONObject(i).getString("id")))kept.put(events.get(i));value.put("events",kept);break;
             }
             case "add":case "edit":{
                 JSONObject input=command.getJSONObject("event");String id=input.getString("id"),kind=input.getString("kind"),type=input.getString("type");
@@ -39,6 +40,7 @@ final class SuppliesStore {
                 if(at<946684800000L||at>System.currentTimeMillis()+300000L)throw new IllegalArgumentException("Bitte einen vergangenen oder aktuellen Zeitpunkt wählen.");
                 String note=input.optString("note","").trim();if(note.length()>240)throw new IllegalArgumentException("Die Notiz ist zu lang.");
                 int found=-1;JSONObject old=null;for(int i=0;i<events.length();i++)if(id.equals(events.getJSONObject(i).getString("id"))){found=i;old=events.getJSONObject(i);break;}
+                if(op.equals("edit")&&old!=null&&command.has("baseEvent")&&!same(old,command.getJSONObject("baseEvent")))throw new IllegalArgumentException("Der Eintrag wurde inzwischen geändert. Bitte den Konflikt prüfen.");
                 if(op.equals("edit")&&found<0)throw new IllegalArgumentException("Der Eintrag wurde inzwischen entfernt. Bitte neu laden.");
                 JSONObject location=input.has("site")?site(input.getJSONObject("site")):old!=null?old.optJSONObject("site"):site(new JSONObject(repo.prefs.getString("weatherPlace","{}")));
                 JSONObject event=new JSONObject().put("id",id).put("kind",kind).put("type",type).put("at",at).put("amount",amount).put("empty",input.optBoolean("empty",true)).put("note",note).put("order",old!=null?old.optLong("order"):value.optLong("revision")+1).put("site",location==null?new JSONObject():location);
@@ -51,6 +53,7 @@ final class SuppliesStore {
             }
             default:throw new IllegalArgumentException("Unbekannte Gas-/Wasseraktion.");
         }
+        if(!operation.isEmpty()){JSONArray kept=new JSONArray();for(int i=Math.max(0,operations.length()-499);i<operations.length();i++)kept.put(operations.getString(i));kept.put(operation);value.put("operations",kept);}
         value.put("revision",value.optLong("revision")+1).put("updated",System.currentTimeMillis());
         if(!repo.prefs.edit().putString(KEY,value.toString()).commit())throw new java.io.IOException("Der Eintrag konnte nicht gespeichert werden.");
         SuppliesWeather.refresh(repo,true);
