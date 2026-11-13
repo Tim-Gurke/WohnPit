@@ -49,6 +49,7 @@
     }
     clearCache() {this.cache.clear();this.update();}
     render() {
+      const weatherDays=this.weatherContent.querySelector('#weatherDays');if(weatherDays){if(weatherDays.clientWidth>0)this.weatherScroll=weatherDays.scrollLeft;delete weatherDays.dataset.positioned;if(this.weatherScroll!==undefined)weatherDays.dataset.restoreScroll=String(this.weatherScroll);}
       this.profile=screenProfile();
       this.board.classList.toggle('is-editing',this.editing);
       this.history.classList.toggle('is-editing',this.editing);$('miniHistoryResize').hidden=!this.editing;$('miniHistorySize').hidden=!this.editing;
