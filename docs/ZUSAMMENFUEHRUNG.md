@@ -34,7 +34,7 @@ Die gemeinsame WohnPit-App behält technisch die bisherige Watt’n’Pit-Update
 
 ## Bisherige WohnPit-Zentrale umziehen
 
-1. **[WohnPit 0.0.5 · Übernahme](https://github.com/Tim-Gurke/WohnPit/releases/download/v2.0.3/WohnPit-Uebernahme-v0.0.5.apk)** über die alte WohnPit-Zentrale installieren. Vorher nichts deinstallieren.
+1. **[WohnPit 0.0.5 · Übernahme](https://github.com/Tim-Gurke/AutarPie/releases/download/v2.0.3/WohnPit-Uebernahme-v0.0.5.apk)** über die alte WohnPit-Zentrale installieren. Vorher nichts deinstallieren.
 2. Aufzeichnung pausieren, Archivabruf beenden und einen Wetterabruf abwarten. Unter **Einstellungen und Daten → Vollständige Übernahmesicherung** eine lokale **.wohnpit-Datei** mit eigenem langem Kennwort erstellen. [Ausführliche Sicherungsanleitung](changes-0.0.5.md).
 3. Nach erfolgreicher Sicherung die alte App **WohnPit · Übernahme** vollständig beenden: Android-App-Info öffnen und **Beenden erzwingen / Stopp erzwingen** wählen. Die App installiert lassen, aber während des neuen Zentralbetriebs nicht wieder öffnen. Das Pausieren der Aufzeichnung allein beendet ihren WLAN-Verbunddienst nicht; dieser darf nicht gleichzeitig mit der neuen Zentrale dieselbe Anlage anbieten. Falls auf dem G5 noch eine alte Watt’n’Pit-Aufzeichnung läuft, auch diese pausieren. Danach **die aktuelle gemeinsame WohnPit-App** auf diesem Handy installieren. Ist das alte Watt’n’Pit noch vorhanden, aktualisiert diese APK dessen Installation; sonst wird die gemeinsame App neu installiert. Die App **WohnPit · Übernahme** bleibt daneben zunächst erhalten.
 4. In WohnPit **Übernahmesicherung einlesen** öffnen – beim Erststart oder später in den Einstellungen. Die .wohnpit-Datei wählen und das zugehörige Kennwort eingeben. Der Import ersetzt die Daten der Zielinstallation; deshalb einen dort benötigten eigenen Stand vorher ebenfalls vollständig sichern.
@@ -65,6 +65,6 @@ WohnPit ist nicht auf Wohnwagen beschränkt. Entscheidend sind passende Datenque
 
 ## Herkunft und Versionshistorie
 
-Das führende Projekt ist [WohnPit](https://github.com/Tim-Gurke/WohnPit). Die hier öffentlich gesicherte [bisherige Watt’n’Pit-Versionshistorie](wattnpit-archiv/CHANGELOG.md) und alle alten Quellstände bleiben erhalten. Die neue [WohnPit-Versionshistorie](../CHANGELOG.md) führt die gemeinsame Entwicklung fort. Je Repository bleiben nur die drei neuesten Releases veröffentlicht.
+Das führende Projekt heißt seit Version 3.0.0 **AutarPie**. Das bestehende [Repository heißt seit dem 13.11.2026 ebenfalls AutarPie](https://github.com/Tim-Gurke/AutarPie). Die hier öffentlich gesicherte [bisherige Watt’n’Pit-Versionshistorie](wattnpit-archiv/CHANGELOG.md) und alle alten Quellstände bleiben erhalten. Die neue [WohnPit-Versionshistorie](../CHANGELOG.md) führt die gemeinsame Entwicklung fort. Je Repository bleiben nur die drei neuesten Releases veröffentlicht.
 
 Die technischen Details der Übernahme und die Prüfgrenzen stehen in [WohnPit 2.0.0](changes-2.0.0.md). Ein Test im Emulator ersetzt keine Prüfung von Bluetooth, WLAN-Empfang oder Stromverbrauch am tatsächlichen G5.

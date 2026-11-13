@@ -1,8 +1,8 @@
 # Zusammenführung als WohnPit 2.0.0
 
-Stand 05.11.2026: Die Zusammenführung ist beschlossen, umgesetzt und als **WohnPit 2.0.0** veröffentlicht. Die Weiterentwicklung findet im [WohnPit-Repository](https://github.com/Tim-Gurke/WohnPit) statt. Dieses Repository erhält die bisherigen Watt’n’Pit-Quellstände und die Versionshistorie.
+Stand 05.11.2026: Die Zusammenführung ist beschlossen, umgesetzt und als **WohnPit 2.0.0** veröffentlicht. Die Weiterentwicklung findet im [WohnPit-Repository](https://github.com/Tim-Gurke/AutarPie) statt. Dieses Repository erhält die bisherigen Watt’n’Pit-Quellstände und die Versionshistorie.
 
-**[Gemeinsame Android-App herunterladen](https://github.com/Tim-Gurke/WohnPit/releases/latest)** · [Ausführliche Einrichtung und Umzugsanleitung](https://github.com/Tim-Gurke/WohnPit/blob/main/docs/ZUSAMMENFUEHRUNG.md) · [Screenshots und Änderungen](https://github.com/Tim-Gurke/WohnPit/releases/tag/v2.0.0)
+**[Gemeinsame Android-App herunterladen](https://github.com/Tim-Gurke/AutarPie/releases/latest)** · [Ausführliche Einrichtung und Umzugsanleitung](https://github.com/Tim-Gurke/AutarPie/blob/main/docs/ZUSAMMENFUEHRUNG.md) · [Screenshots und Änderungen](https://github.com/Tim-Gurke/AutarPie/releases/tag/v2.0.0)
 
 ## Eine App mit drei Betriebsarten
 
@@ -17,7 +17,7 @@ Die Betriebsart wird beim Erststart gewählt und kann später geändert werden. 
 ## Installation und Datenübernahme
 
 1. **Bisheriges Watt’n’Pit:** die aktuelle WohnPit-App über die vorhandene App installieren, nicht vorher deinstallieren. Die technische Kennung `de.wattpit.app`, Updatesignatur und ScootPit-Schnittstelle bleiben erhalten.
-2. **Bisherige WohnPit-Zentrale:** zuerst die [Übernahmeversion 0.0.5](https://github.com/Tim-Gurke/WohnPit/releases/tag/v0.0.5) über die alte App mit Kennung `de.wohnpit.app` installieren. Aufzeichnung pausieren und eine vollständige verschlüsselte `.wohnpit`-Sicherung lokal erstellen.
+2. **Bisherige WohnPit-Zentrale:** zuerst die [Übernahmeversion 0.0.5](https://github.com/Tim-Gurke/AutarPie/releases/tag/v0.0.5) über die alte App mit Kennung `de.wohnpit.app` installieren. Aufzeichnung pausieren und eine vollständige verschlüsselte `.wohnpit`-Sicherung lokal erstellen.
 3. Die gemeinsame WohnPit-App installieren, Sicherung importieren, Vorschau prüfen und die Übernahme bestätigen. App schließen und neu öffnen. Aufzeichnungen, Wetter, Journal, Lernstände und Einstellungen kontrollieren; Geräte bei Bedarf neu koppeln.
 4. Die alte Übernahme-App und die private Sicherung bis zur erfolgreichen Kontrolle behalten. Die ausführliche Anleitung oben beschreibt Reihenfolge, Rückweg und Grenzen.
 

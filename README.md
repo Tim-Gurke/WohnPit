@@ -4,7 +4,7 @@
 
 **Das lokale Cockpit für autarkes Leben.** Solar und Stromverteilung, Wohnwagenakku, E-Scooter, Modellbau, Gas und Wasser in einer gemeinsamen App. AutarPie führt **Watt’n’Pit und WohnPit** weiter.
 
-**[AutarPie 3.0.0 als APK herunterladen](https://github.com/Tim-Gurke/WohnPit/releases/download/v3.0.0/AutarPie-v3.0.0.apk)** · [Einrichtung und Bedienung](docs/AUTARPIE-3.md) · [Update und Prüfgrenzen](docs/changes-3.0.0.md) · [Vollständige Versionshistorie](CHANGELOG.md)
+**[AutarPie 3.0.0 als APK herunterladen](https://github.com/Tim-Gurke/AutarPie/releases/download/v3.0.0/AutarPie-v3.0.0.apk)** · [Einrichtung und Bedienung](docs/AUTARPIE-3.md) · [Update und Prüfgrenzen](docs/changes-3.0.0.md) · [Vollständige Versionshistorie](CHANGELOG.md)
 
 Android 8 oder neuer; das Cockpit benötigt einen aktuellen Android-System-WebView. Kein Konto, keine Werbung. Mess- und Lerndaten bleiben auf den eigenen Geräten. Der optionale Wetterabruf verwendet Open-Meteo. Der Anlagenverbund überträgt Daten verschlüsselt im lokalen WLAN.
 
@@ -59,7 +59,7 @@ Der 608PD erhält eine private Verbindung aus der eigenen Bluetooth-Aufzeichnung
 2. **Zuerst die Zentrale, danach die Anzeigehandys auf 3.0.0** aktualisieren.
 3. Die APK über die vorhandene gemeinsame App installieren, **nicht deinstallieren**.
 
-Name und Symbol ändern sich; Paket `de.wattpit.app`, Original-Updatesignatur, gespeicherte Daten, Kopplungen und ScootPit-Schnittstelle bleiben erhalten. Das Repository bleibt `Tim-Gurke/WohnPit`. Ein bereits abgeschlossener Umzug aus der alten separaten WohnPit-Zentrale muss nicht wiederholt werden.
+Name und Symbol ändern sich; Paket `de.wattpit.app`, Original-Updatesignatur, gespeicherte Daten, Kopplungen und ScootPit-Schnittstelle bleiben erhalten. Das bestehende Repository heißt seit dem 13.11.2026 [`Tim-Gurke/AutarPie`](https://github.com/Tim-Gurke/AutarPie). Die Umbenennung erfordert keine Neuinstallation. Ein bereits abgeschlossener Umzug aus der alten separaten WohnPit-Zentrale muss nicht wiederholt werden.
 
 Nur beim bisherigen separaten Paket `de.wohnpit.app` ist die alte [Umzugsanleitung](docs/ZUSAMMENFUEHRUNG.md) relevant. Das notwendige signierte Hilfsprogramm bleibt als `WohnPit-Uebernahme-v0.0.5.apk` im aktuellen Release verfügbar. Private Umzugs- und Signierdateien werden niemals veröffentlicht.
 

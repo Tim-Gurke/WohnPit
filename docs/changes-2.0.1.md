@@ -13,9 +13,9 @@ Livewerte kamen an, während Solarertrag, Verbrauch und Diagramme leer blieben. 
 
 **Auf S20/S10 beziehungsweise den Anzeigehandys über WohnPit 2.0.0 installieren. Nicht deinstallieren, keine Daten löschen und nicht neu koppeln.** Zentrale mit WohnPit 2.0.0 kann weiterlaufen; die Korrektur betrifft die Statistikabrufe in der Anzeige. Die gemeinsame 2.0.1-APK enthält weiterhin alle drei Betriebsarten.
 
-Ein bereits abgeschlossener Umzug muss nicht wiederholt werden. Wer noch die frühere WohnPit-Zentrale verwendet, beachtet weiterhin die [private Umzugsanleitung](https://github.com/Tim-Gurke/WohnPit/blob/main/docs/ZUSAMMENFUEHRUNG.md). Persönliche Umzugsdateien, Kennwörter und Geräteschlüssel werden nicht veröffentlicht.
+Ein bereits abgeschlossener Umzug muss nicht wiederholt werden. Wer noch die frühere WohnPit-Zentrale verwendet, beachtet weiterhin die [private Umzugsanleitung](https://github.com/Tim-Gurke/AutarPie/blob/main/docs/ZUSAMMENFUEHRUNG.md). Persönliche Umzugsdateien, Kennwörter und Geräteschlüssel werden nicht veröffentlicht.
 
-[Statistiken prüfen und Fehler eingrenzen](https://github.com/Tim-Gurke/WohnPit/blob/main/docs/ANZEIGE-STATISTIK.md) · [Vollständige Versionshistorie](https://github.com/Tim-Gurke/WohnPit/blob/main/CHANGELOG.md)
+[Statistiken prüfen und Fehler eingrenzen](https://github.com/Tim-Gurke/AutarPie/blob/main/docs/ANZEIGE-STATISTIK.md) · [Vollständige Versionshistorie](https://github.com/Tim-Gurke/AutarPie/blob/main/CHANGELOG.md)
 
 ## Prüfungen und Grenzen
 

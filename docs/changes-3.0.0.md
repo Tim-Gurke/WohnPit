@@ -9,7 +9,7 @@ WohnPit wird zum AutarPie-Cockpit für autarkes Leben: Energie, Speicher, E-Scoo
 3. Die neue APK über die bestehende gemeinsame WohnPit-/Watt’n’Pit-Installation installieren. **Nicht deinstallieren.** Paketkennung `de.wattpit.app`, bestehende Updatesignatur, Daten, Geräteverknüpfungen und ScootPit-Schnittstelle bleiben erhalten.
 4. Nach dem Update AutarPie einmal öffnen und die gespeicherte Rolle kontrollieren. Einen bereits abgeschlossenen Umzug aus der alten separaten WohnPit-Zentrale nicht wiederholen.
 
-Das GitHub-Repository bleibt `Tim-Gurke/WohnPit`; am Repository musst du nichts umstellen. Die bestehende ScootPit-Übergabe wird über dieselbe lokale Schnittstelle weitergeführt. Für die neuen gemeinsamen Einstellungen und Berechnungsgrundlagen sollen Zentrale und Anzeigen denselben Versionsstand 3.0.0 verwenden.
+Das bestehende GitHub-Repository wurde am 13.11.2026 von `Tim-Gurke/WohnPit` in [`Tim-Gurke/AutarPie`](https://github.com/Tim-Gurke/AutarPie) umbenannt. Die Umbenennung erfordert weder einen neuen App-Build noch eine Neuinstallation. Vorhandene lokale Git-Arbeitskopien können mit `git remote set-url origin https://github.com/Tim-Gurke/AutarPie.git` auf die neue Adresse umgestellt werden. Die bestehende ScootPit-Übergabe wird über dieselbe lokale Schnittstelle weitergeführt. Für die neuen gemeinsamen Einstellungen und Berechnungsgrundlagen sollen Zentrale und Anzeigen denselben Versionsstand 3.0.0 verwenden.
 
 ## Neu
 

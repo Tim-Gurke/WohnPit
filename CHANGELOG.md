@@ -2,6 +2,10 @@
 
 Die Dokumentation bleibt vollständig erhalten, auch wenn ältere GitHub-Releases gemäß der Drei-Release-Regel entfernt werden.
 
+## Projektpflege · 13.11.2026
+
+Das bestehende GitHub-Repository heißt jetzt [`Tim-Gurke/AutarPie`](https://github.com/Tim-Gurke/AutarPie). Download- und Dokumentationslinks sind auf die neue Adresse umgestellt. Diese Änderung betrifft die Projektdokumentation; die veröffentlichte APK bleibt Version 3.0.0.
+
 ## Veröffentlichte Versionen
 
 ### 3.0.0 · AutarPie

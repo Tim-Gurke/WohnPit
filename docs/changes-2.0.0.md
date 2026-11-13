@@ -25,7 +25,7 @@ Betriebsart beim Erststart wählen und später in den Einstellungen ändern. Bes
 
 **Die persönliche .wohnpit-Datei enthält private Schlüssel und Verknüpfungen und darf niemals öffentlich werden – auch verschlüsselt nicht.** Sie gehört nicht auf GitHub, in Releases, Prüfartefakte oder auf die Projektseite. Das Sicherungskennwort wird nicht gespeichert. Öffentliche APKs enthalten ausschließlich den App-Code; alle veröffentlichten Beispiele sind erfunden.
 
-[Ausführliche Installation und Umzugsanleitung](https://github.com/Tim-Gurke/WohnPit/blob/main/docs/ZUSAMMENFUEHRUNG.md) · [Farben und Wetter](https://github.com/Tim-Gurke/WohnPit/blob/main/docs/MESSWERTFARBEN-WETTER.md) · [Versionshistorie](https://github.com/Tim-Gurke/WohnPit/blob/main/CHANGELOG.md)
+[Ausführliche Installation und Umzugsanleitung](https://github.com/Tim-Gurke/AutarPie/blob/main/docs/ZUSAMMENFUEHRUNG.md) · [Farben und Wetter](https://github.com/Tim-Gurke/AutarPie/blob/main/docs/MESSWERTFARBEN-WETTER.md) · [Versionshistorie](https://github.com/Tim-Gurke/AutarPie/blob/main/CHANGELOG.md)
 
 ## Prüfung und Grenzen
 

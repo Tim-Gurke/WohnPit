@@ -16,7 +16,7 @@ Zuerst die gemeinsame Zentrale, danach die Anzeigehandys auf **2.0.3** aktualisi
 
 Die APK über die bestehende WohnPit- beziehungsweise Watt’n’Pit-Installation installieren. **Nicht deinstallieren, keine App-Daten löschen, keine Sicherung erneut importieren und nicht neu koppeln.** Danach die Übersicht geöffnet lassen, während der erste Abgleich läuft. Ein größerer vorhandener Datenbestand benötigt weiterhin Übertragungs- und Rechenzeit.
 
-Die bisherige Watt’n’Pit-Updatesignatur und App-Kennung bleiben erhalten. Die alte separate WohnPit-Zentrale 0.0.x benötigt weiterhin den in der [Umzugsanleitung](https://github.com/Tim-Gurke/WohnPit/blob/main/docs/ZUSAMMENFUEHRUNG.md) beschriebenen Übergang. Die signierte Übernahme-APK 0.0.5 bleibt als Hilfsprogramm im Release verfügbar; persönliche Umzugsdateien bleiben privat.
+Die bisherige Watt’n’Pit-Updatesignatur und App-Kennung bleiben erhalten. Die alte separate WohnPit-Zentrale 0.0.x benötigt weiterhin den in der [Umzugsanleitung](https://github.com/Tim-Gurke/AutarPie/blob/main/docs/ZUSAMMENFUEHRUNG.md) beschriebenen Übergang. Die signierte Übernahme-APK 0.0.5 bleibt als Hilfsprogramm im Release verfügbar; persönliche Umzugsdateien bleiben privat.
 
 ## Prüfungen
 
@@ -26,4 +26,4 @@ Ein zusätzlicher Oberflächentest verwendet genau diese nativen Berechnungserge
 
 Die persönlichen Daten und die Funkverbindungen auf G5, S20 und S10 wurden hier nicht am echten Gerät getestet.
 
-[Statistiken und Statusanzeigen](https://github.com/Tim-Gurke/WohnPit/blob/main/docs/ANZEIGE-STATISTIK.md) · [Installieren und umziehen](https://github.com/Tim-Gurke/WohnPit/blob/main/docs/ZUSAMMENFUEHRUNG.md) · [Versionshistorie](../CHANGELOG.md)
+[Statistiken und Statusanzeigen](https://github.com/Tim-Gurke/AutarPie/blob/main/docs/ANZEIGE-STATISTIK.md) · [Installieren und umziehen](https://github.com/Tim-Gurke/AutarPie/blob/main/docs/ZUSAMMENFUEHRUNG.md) · [Versionshistorie](../CHANGELOG.md)

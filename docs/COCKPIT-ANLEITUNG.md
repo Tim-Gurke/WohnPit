@@ -9,7 +9,7 @@ Für Erstinstallation, drei Betriebsarten und den privaten Umzug zuerst die [akt
 Mit WohnPit ab 0.0.4 stehen ein gemeinsames Versorgungsjournal, Verbrauchslernen und Reichweiten in Tagen und Stunden zur Verfügung. [Die vollständige Gas-/Wasseranleitung mit Screenshots](GAS-WASSER.md) erklärt Einrichtung, Wasserbeschaffungen, Gaswechsel, Restvorräte, Korrekturen, Wetterdaten und frei wählbare Kacheln. Zuerst WohnPit, danach die Anzeigehandys aktualisieren.
 
 
-Für **WohnPit 2.0.2**, die Zusammenführung von Watt’n’Pit und der bisherigen WohnPit-Zentrale · [Aktuelle APK herunterladen](https://github.com/Tim-Gurke/WohnPit/releases/latest) · [Zur Projektübersicht](../README.md)
+Für **WohnPit 2.0.2**, die Zusammenführung von Watt’n’Pit und der bisherigen WohnPit-Zentrale · [Aktuelle APK herunterladen](https://github.com/Tim-Gurke/AutarPie/releases/latest) · [Zur Projektübersicht](../README.md)
 
 WohnPit zeigt Solarleistung, Batteriezustand und gespeicherte Verläufe direkt auf deinem Android-Telefon. Die folgenden Screenshots stammen aus der App-Oberfläche mit **frei erfundenen Beispieldaten**. Wetterort und Gerätekennungen sind Beispiele; es sind keine privaten Verbindungsdaten enthalten. Eine sichtbare Demo liest keine Bluetooth-Geräte aus.
 

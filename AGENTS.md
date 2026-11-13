@@ -41,7 +41,7 @@ Dafür einen Android-Test mit tatsächlich getrennten App-UIDs beziehungsweise I
 
 ## AutarPie ab 3.0.0
 
-Am 12.11.2026 beauftragt: sichtbarer Name AutarPie und Ressourcen-Kreislauf-Symbol. Das Repository WohnPit, Paket `de.wattpit.app`, vorhandene Updatesignatur, Daten, Kopplungen und ScootPit-Schnittstelle bleiben erhalten. Die neuen Bereichsfarben ersetzen die alten Standardfarben; bewusste eigene Farben bleiben erhalten.
+Am 12.11.2026 beauftragt: sichtbarer Name AutarPie und Ressourcen-Kreislauf-Symbol. Das bestehende Repository wurde am 13.11.2026 von `Tim-Gurke/WohnPit` in `Tim-Gurke/AutarPie` umbenannt. Neue Projekt-, Download- und Dokumentationslinks verwenden `Tim-Gurke/AutarPie`. Paket `de.wattpit.app`, vorhandene Updatesignatur, Daten, Kopplungen und ScootPit-Schnittstelle bleiben erhalten. Die neuen Bereichsfarben ersetzen die alten Standardfarben; bewusste eigene Farben bleiben erhalten.
 
 Alle Prognosen, Energieauswertungen, Lernmodelle und Statistiken laufen auf Anzeigehandys oder im eigenständigen Betrieb. Die native Zentrale sammelt, speichert und synchronisiert Grundlagen und führt bestätigte Steueraufträge sowie zeitlich begrenzte Ladepläne mit direkten Abschaltbedingungen aus. Keine neue automatische Ladung ohne gültigen Anzeigeplan. Hardwarestatus und gesendeten Auftrag getrennt darstellen.
 
