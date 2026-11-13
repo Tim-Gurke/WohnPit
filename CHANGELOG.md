@@ -8,6 +8,11 @@ Das bestehende GitHub-Repository heißt jetzt [`Tim-Gurke/AutarPie`](https://git
 
 ## Veröffentlichte Versionen
 
+### 3.0.3 · Dashboardfarben eindeutig zuordnen
+
+Der Verlauf verwendet sein eigenes Design oder die gemeinsamen Vorgaben, unabhängig von der zuvor geöffneten Seite. Der Farbeditor bearbeitet die sichtbare Seite; Speichern und „auf alle Kacheln anwenden“ verändern weder das zuletzt geöffnete andere Dashboard noch seine Kachelanordnung. Diagramme verwenden die wirksamen Seitenfarben. Fehlgeschlagenes Speichern lässt sich für dieselbe Seite wiederholen. Mit tatsächlichen Seitenwechseln, Speicherung, Neustart und Hoch-/Queransicht gegen Rückfälle geprüft. Zentralen-Hotfix 3.0.2 bleibt enthalten. [Update und Prüfgrenzen](docs/changes-3.0.3.md).
+
+
 ### 3.0.2 · Zentrale reagiert wieder
 
 Hotfix für den in 3.0.1 eingeführten Deadlock zwischen Reglerabfrage und Repository-Snapshot. Gerätekonfiguration ohne gegenseitige Monitorsperre lesen, Lastarchivierung außerhalb der gemeinsamen Livewertsperre ausführen und die native Regleranzeige im Hintergrund abfragen. Nachgestellter 3.0.1-Fehler, paralleler Regressionstest und zusätzlicher Android-Test für einen belegten Regler. Bestehende Daten, Kopplungen, Layouts und Updatesignatur bleiben erhalten. [Ursache, Installation und Prüfung](docs/changes-3.0.2.md).
