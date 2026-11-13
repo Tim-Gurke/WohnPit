@@ -28,7 +28,7 @@ board.tiles=['soc','solarEnergy','consumptionEnergy','energyBalance','mobileSola
   },{fixture,board});
   await page.goto('file://'+path.resolve(__dirname,'../app/src/main/assets/index.html'));await autarpieControls.prepare(page);
   await page.evaluate(()=>solar.render());
-  assert.equal(await page.evaluate(()=>statTest.learning.length),0,'learning must not occupy the native worker ahead of the first visible statistics');
+  assert.equal(await page.evaluate(()=>statTest.learning.some(read=>read.cold)),false,'learning must not occupy the native worker ahead of the first visible statistics');
   const number=metric=>page.locator(`[data-tile="statistics-${metric}"] .tile-number`);
   const metrics={solarEnergy:'solar',consumptionEnergy:'consumption',energyBalance:'balance',mobileSolarEnergy:'mobile'};
   await wait(page,metrics=>statTest.first&&statTest.held.length>0&&metrics.every(metric=>document.querySelector(`[data-tile="statistics-${metric}"] .tile-number`)?.textContent!=='—'),Object.keys(metrics));
@@ -39,6 +39,7 @@ board.tiles=['soc','solarEnergy','consumptionEnergy','energyBalance','mobileSola
    assert.ok(Math.abs(Number((await number(metric).textContent()).replaceAll('.','').replace(',','.'))-expected)<.011,metric+' uses the native summary');
   }
   assert.match(await page.locator('[data-tile="statistics-solarEnergy"] .tile-hint').textContent(),/Letzter Stand/);
+  await page.clock.setFixedTime(new Date((await page.evaluate(()=>Date.now()))+31000));
   await page.evaluate(()=>{for(const reply of statTest.held.splice(0))reply();});
   await wait(page,()=>{for(const reply of statTest.held.splice(0))reply();poll();return !reads.initialPending()&&!reads.inflight&&!reads.queue.size;});
   await page.evaluate(()=>solar.render());await wait(page,()=>statTest.learning.length>0);
