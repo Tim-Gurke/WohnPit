@@ -126,12 +126,13 @@ public final class CentralActivity extends Activity {
         button(settings,"Android-App-Einstellungen",()->startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,Uri.parse("package:"+getPackageName()))));
         message=text(root,"",14,ACCENT);text(root,"© Tim Weißbach · AutarPie",12,MUTED);
     }
-    private void update(){try{if(output!=null){JSONObject o=EnergyStore.output(repository);boolean fresh=System.currentTimeMillis()-o.optLong("at")<=45000;output.setText(!fresh?"Keine aktuellen Ausgangswerte":(o.optInt("state",-1)==1?"An":o.optInt("state",-1)==0?"Aus":"Unbekannt")+" · "+(o.has("current")?String.format(Locale.GERMANY,"%.2f A",o.optDouble("current")):"Strom unbekannt"));}}catch(Exception ignored){}
-
+    private void update(){
         if(files.isShutdown()||!reading.compareAndSet(false,true))return;
         files.execute(()->{try{
+            JSONObject energy=EnergyStore.snapshot(repository),o=energy.getJSONObject("output");
             JSONObject supply=SuppliesStore.snapshot(repository);JSONObject data=repository.centralState(),r=RollerHandover.view(this),n=lan.state();String sync=repository.syncState();
             runOnUiThread(()->{if(!foreground)return;try{
+                if(output!=null){long now=System.currentTimeMillis(),at=o.optLong("at");boolean fresh=at>0&&now>=at&&now-at<=45000;output.setText((!fresh?"Keine aktuellen Ausgangswerte":(o.optInt("state",-1)==1?"An":o.optInt("state",-1)==0?"Aus":"Unbekannt")+" · "+(o.has("current")?String.format(Locale.GERMANY,"%.2f A",o.optDouble("current")):"Strom unbekannt"))+(energy.optString("outputError").isEmpty()?"":"\n"+energy.optString("outputError")));}
                 boolean active=data.optBoolean("running"),busy=new JSONObject(sync).optBoolean("busy");
                 JSONObject weather=supply.optJSONObject("weather");long weatherAt=weather==null?0:weather.optLong("updated");suppliesStatus.setText(supply.getJSONArray("events").length()+" gespeicherte Einträge"+(weatherAt>0?" · Wetterstand "+android.text.format.DateFormat.format("dd.MM. HH:mm",weatherAt):" · Wetter noch nicht ergänzt")+(weather!=null&&weather.optBoolean("pending")?" · Abruf läuft …":"")+(weather!=null&&!weather.optString("error").isEmpty()?"\n"+weather.optString("error"):""));
                 recording.setText(active?"Aufzeichnung aktiv":pendingStart?"Start wird vorbereitet …":"Aufzeichnung pausiert");recording.setTextColor(active?ACCENT:0xffe8bb57);

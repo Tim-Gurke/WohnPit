@@ -28,7 +28,18 @@ final class EnergyStore {
         if(assignment.equals("scooter")){RollerStore roller=RollerStore.get(repo.applicationContext());JSONObject profile=roller.snapshot().getJSONObject("profile");profile.put("chargePath","load-output").put("idleWatts",0).put("conversionEfficiency",clean.getDouble("efficiency")).put("chargeWatts",clean.getDouble("powerW")*clean.getDouble("efficiency")).put("targetPercent",clean.getDouble("target"));if(clean.optBoolean("enabled"))profile.put("autoSpecialUse",true).put("planCharge",true);roller.configure(profile.toString());}
         if(!repo.prefs.edit().putString(KEY,result.toString()).commit())throw new java.io.IOException();plan=new JSONObject();authority="";goalReached=false;manualOff=false;repo.prefs.edit().putBoolean("outputManualOff",false).putBoolean("outputGoalReached",false).apply();
     }
-    static synchronized void live(Repository repo,String mac,JSONObject sample)throws JSONException{solar.put(mac,new JSONObject(sample.toString()).put("device",mac));repo.prefs.edit().putLong("outputMeasuredAt",sample.optLong("at")).putInt("outputMeasuredState",sample.optInt("state",-1)).putFloat("outputMeasuredCurrent",(float)sample.optDouble("current",0)).apply();outputError="";try{RollerLedger.get(repo.applicationContext()).loadRaw(RollerLedger.source(repo.prefs),mac,sample,mac.equals(regulator(repo))&&config(repo).optString("assignment").equals("scooter")&&config(repo).optBoolean("exclusiveScooter"),RollerStore.get(repo.applicationContext()).mac());}catch(Exception e){repo.message("Lastmesswerte konnten nicht archiviert werden.");}}
+    static void live(Repository repo,String mac,JSONObject sample)throws JSONException{
+        boolean exclusive;
+        synchronized(EnergyStore.class){
+            solar.put(mac,new JSONObject(sample.toString()).put("device",mac));
+            repo.prefs.edit().putLong("outputMeasuredAt",sample.optLong("at")).putInt("outputMeasuredState",sample.optInt("state",-1)).putFloat("outputMeasuredCurrent",(float)sample.optDouble("current",0)).apply();
+            outputError="";JSONObject configuration=config(repo);
+            exclusive=mac.equals(regulator(repo))&&configuration.optString("assignment").equals("scooter")&&configuration.optBoolean("exclusiveScooter");
+        }
+        // SQLite and BMS waits must not hold the shared live-state monitor.
+        try{RollerLedger.get(repo.applicationContext()).loadRaw(RollerLedger.source(repo.prefs),mac,sample,exclusive,RollerStore.get(repo.applicationContext()).mac());}
+        catch(Exception failure){error(false,"Lastmesswerte empfangen; Archivspeicherung fehlgeschlagen.");}
+    }
     static synchronized void charger(JSONObject value){charger=value;chargerError="";}
     static synchronized void error(boolean isCharger,String text){if(isCharger)chargerError=text;else outputError=text;}
     static synchronized String regulator(Repository repo)throws JSONException{String selected=config(repo).optString("regulator");JSONArray configs=repo.configs();for(int i=0;i<configs.length();i++){JSONObject d=configs.getJSONObject(i);if(d.optString("kind").equals("solar")&&(selected.isEmpty()||selected.equals(d.optString("mac"))))return d.getString("mac");}return "";}

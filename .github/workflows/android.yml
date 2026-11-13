@@ -137,6 +137,7 @@ jobs:
             app/build/reports/archive-storage-proof/weather-contract-fixture.json
             app/build/reports/archive-foreground-proof/
             app/build/reports/lan-proof/report.json
+            app/build/reports/lan-proof/central-concurrency-results.log
             app/build/reports/lan-proof/results.log
             app/build/reports/lan-proof/presence-results.log
             app/build/reports/lan-proof/viewer-idle-results.log
@@ -178,14 +179,14 @@ jobs:
             adb install -r app/build/outputs/apk/debug/app-debug.apk
             adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
             adb shell am instrument -w -e class de.wattpit.app.UnifiedSmokeTest de.wattpit.app.test/androidx.test.runner.AndroidJUnitRunner | tee unified-emulator.log
-            python3 -c "from pathlib import Path; s=Path('unified-emulator.log').read_text(); assert 'OK (3 tests)' in s and 'FAILURES' not in s"
+            python3 -c "from pathlib import Path; s=Path('unified-emulator.log').read_text(); assert 'OK (4 tests)' in s and 'FAILURES' not in s"
             mkdir -p docs/images
-            adb pull /sdcard/Android/data/de.wattpit.app/files/autarpie-3.0.1-central.png docs/images/
-            adb pull /sdcard/Android/data/de.wattpit.app/files/autarpie-3.0.1-direct.png docs/images/
+            adb pull /sdcard/Android/data/de.wattpit.app/files/autarpie-3.0.2-central.png docs/images/
+            adb pull /sdcard/Android/data/de.wattpit.app/files/autarpie-3.0.2-direct.png docs/images/
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: AutarPie-3.0.1-Emulator
+          name: AutarPie-3.0.2-Emulator
           path: |
             unified-emulator.log
-            docs/images/autarpie-3.0.1-*.png
+            docs/images/autarpie-3.0.2-*.png

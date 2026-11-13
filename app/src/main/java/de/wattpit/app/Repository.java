@@ -109,7 +109,8 @@ final class Repository {
         }
         return text.toString();
     }
-    synchronized JSONArray configs() throws JSONException { return new JSONArray(prefs.getString("devices", "[]")); }
+    /** Immutable preference snapshot: never acquire the Repository monitor from a device-state lock. */
+    JSONArray configs() throws JSONException { return new JSONArray(prefs.getString("devices", "[]")); }
     /** Explicit manual requests bypass automatic cancellation/retry pauses. */
     JSONArray requestedArchiveDevices(String target)throws JSONException{
         if("AUTO".equals(target)||"RETRY".equals(target))return automaticArchiveDevices("RETRY".equals(target));

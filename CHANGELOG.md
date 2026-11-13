@@ -8,6 +8,10 @@ Das bestehende GitHub-Repository heißt jetzt [`Tim-Gurke/AutarPie`](https://git
 
 ## Veröffentlichte Versionen
 
+### 3.0.2 · Zentrale reagiert wieder
+
+Hotfix für den in 3.0.1 eingeführten Deadlock zwischen Reglerabfrage und Repository-Snapshot. Gerätekonfiguration ohne gegenseitige Monitorsperre lesen, Lastarchivierung außerhalb der gemeinsamen Livewertsperre ausführen und die native Regleranzeige im Hintergrund abfragen. Nachgestellter 3.0.1-Fehler, paralleler Regressionstest und zusätzlicher Android-Test für einen belegten Regler. Bestehende Daten, Kopplungen, Layouts und Updatesignatur bleiben erhalten. [Ursache, Installation und Prüfung](docs/changes-3.0.2.md).
+
 ### 3.0.1 · Anzeige, Messkacheln und Wiederherstellung
 
 Begrenzte Neuberechnungen und stabile Diagramme; Wetterrückschau, 16-Tage-Vorschau und optionaler Langfristtrend; selektives Zurücksetzen/Wiederherstellen; Farbpaletten und Dashboard-Design; sichtbare Kurzwahlreihenfolge, Menü-/Live-Position und Android-Zurück. Neue Roller-/Zell-/Reichweiten-/Wirkungsgrad- und Formel-Kacheln, mehrere getrennte Regler-Lastausgänge, priorisierte Schaltwünsche, ausführliches Ladejournal und dauerhafte Offline-Versorgungseinträge. Bestätigte BMS-Rückgabe und zeitweilige Verbindungsfehler abgesichert. Präziseres schlankes Logo, Originalpaket und Updatesignatur erhalten. [Umfang, Update und Prüfgrenzen](docs/changes-3.0.1.md).

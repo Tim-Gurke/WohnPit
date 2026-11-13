@@ -25,6 +25,7 @@ native_cp=os.pathsep.join(map(str,[a.android_jar.resolve(),*a.android_jar.resolv
 sources.append(root/'tools/LearningMigrationProof.java')
 sources.append(root/'tools/ViewerRefreshProof.java')
 sources.append(root/'tools/AutarPieConfigurationProof.java')
+sources.append(root/'tools/CentralConcurrencyProof.java')
 subprocess.run(['java','com.sun.tools.javac.Main','-cp',native_cp,'-d',str(classes),*map(str,sources)],check=True)
 classpath=os.pathsep.join(map(str,[classes,a.android_jar.resolve(),a.sqlite_jar.resolve(),a.slf4j_jar.resolve(),*a.android_jar.resolve().parent.glob('zxing-*.jar')]))
 r=subprocess.run(['java','-cp',classpath,'de.wattpit.app.LanSyncProof',str(out/'devices')],capture_output=True,text=True,timeout=90)
@@ -57,3 +58,6 @@ print(r9.stdout+r9.stderr,end='');(out/'statistics-results.log').write_text(r9.s
 
 r10=subprocess.run(['java','-cp',classpath,'de.wattpit.app.AutarPieConfigurationProof',str(out/'autarpie-config')],capture_output=True,text=True,timeout=30)
 print(r10.stdout+r10.stderr,end='');(out/'autarpie-config-results.log').write_text(r10.stdout+r10.stderr);r10.check_returncode()
+
+r11=subprocess.run(['java','-cp',classpath,'de.wattpit.app.CentralConcurrencyProof',str(out/'central-concurrency')],capture_output=True,text=True,timeout=20)
+print(r11.stdout+r11.stderr,end='');(out/'central-concurrency-results.log').write_text(r11.stdout+r11.stderr);r11.check_returncode()

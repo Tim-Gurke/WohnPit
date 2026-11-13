@@ -10,6 +10,10 @@ import android.widget.*;
 import de.wattpit.app.core.Reading;
 import java.io.*;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.*;
 
 /** Runs only against the isolated debug installation in the Android emulator. */
@@ -17,6 +21,23 @@ public final class UnifiedSmokeTest extends TestCase {
     private Instrumentation getInstrumentation(){return androidx.test.platform.app.InstrumentationRegistry.getInstrumentation();}
     private Context target(){return getInstrumentation().getTargetContext();}
     private void stopped()throws Exception{Context c=target();c.stopService(new Intent(c,MonitorService.class));c.stopService(new Intent(c,ArchiveService.class));c.stopService(new Intent(c,LanService.class));Repository repo=Repository.get(c);repo.running=false;repo.archiveBusy=false;repo.prefs.edit().putBoolean("recording",false).remove("weatherPlace").commit();}
+    public void testCentralUiDoesNotWaitForRegulatorMonitor()throws Exception{
+        stopped();Context c=target();Repository repo=Repository.get(c);String devices=repo.prefs.getString("devices","[]");String mac="00:00:00:00:00:02";
+        repo.prefs.edit().putString("devices","[{\"kind\":\"solar\",\"mac\":\"00:00:00:00:00:02\",\"name\":\"Testregler\"}]").commit();
+        EnergyStore.live(repo,mac,new org.json.JSONObject().put("at",System.currentTimeMillis()).put("state",1).put("current",8.4).put("voltage",13));
+        Activity central=select("Zentrale",CentralActivity.class);CountDownLatch held=new CountDownLatch(1),release=new CountDownLatch(1);AtomicBoolean responsive=new AtomicBoolean();
+        Thread blocker=new Thread(()->{synchronized(EnergyStore.class){held.countDown();try{release.await(1500,TimeUnit.MILLISECONDS);}catch(InterruptedException e){Thread.currentThread().interrupt();}}},"test-regulator-busy");blocker.setDaemon(true);blocker.start();assertTrue(held.await(2,TimeUnit.SECONDS));
+        try{
+            Method refresh=CentralActivity.class.getDeclaredMethod("update");refresh.setAccessible(true);long start=System.nanoTime();
+            getInstrumentation().runOnMainSync(()->{try{refresh.invoke(central);responsive.set(true);}catch(Exception e){throw new AssertionError(e);}});
+            assertTrue("central UI waited for regulator monitor",responsive.get()&&TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-start)<750);
+        }finally{release.countDown();blocker.join(2500);}
+        try{
+            Field output=CentralActivity.class.getDeclaredField("output");output.setAccessible(true);long until=System.nanoTime()+TimeUnit.SECONDS.toNanos(8);AtomicBoolean received=new AtomicBoolean();
+            while(System.nanoTime()<until&&!received.get()){getInstrumentation().runOnMainSync(()->{try{received.set(((TextView)output.get(central)).getText().toString().contains("8,40 A"));}catch(Exception e){throw new AssertionError(e);}});if(!received.get())Thread.sleep(50);}
+            assertTrue("confirmed current must reach the native console after the busy monitor is released",received.get());
+        }finally{repo.prefs.edit().putString("devices",devices).commit();getInstrumentation().runOnMainSync(central::finish);getInstrumentation().waitForIdleSync();}
+    }
     public void testEncryptedTakeoverBeforeChangingCurrentData()throws Exception{
         stopped();Context c=target();Repository repo=Repository.get(c);String mac="AA:00:00:00:00:77";Reading sample=new Reading();sample.device=mac;sample.kind="shunt";sample.timestamp=1770000000000L;sample.power=12.3;sample.period=10;repo.db.insert(sample);
         repo.prefs.edit().putString("proof-private-key","local-example-device-key").putLong("proof-long",123456789123L).putStringSet("proof-set",new HashSet<>(Arrays.asList("one","two"))).putString(SuppliesStore.KEY,"{\"version\":1,\"events\":[]}").commit();
@@ -45,9 +66,9 @@ public final class UnifiedSmokeTest extends TestCase {
     }
     private void screenshot(String name)throws Exception{File file=new File(target().getExternalFilesDir(null),name);Bitmap bitmap=getInstrumentation().getUiAutomation().takeScreenshot();try(OutputStream out=new FileOutputStream(file)){assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG,100,out));}bitmap.recycle();}
     public void testThreeRolesAndStandaloneTransport()throws Exception{
-        stopped();Context c=target();Activity display=select("Eigenständig",DisplayActivity.class);assertEquals("direct",AppRole.get(c));assertFalse(LanSync.get(c).host());assertFalse(LanSync.get(c).viewer());assertTrue(web(display.getWindow().getDecorView()));screenshot("autarpie-3.0.1-direct.png");
+        stopped();Context c=target();Activity display=select("Eigenständig",DisplayActivity.class);assertEquals("direct",AppRole.get(c));assertFalse(LanSync.get(c).host());assertFalse(LanSync.get(c).viewer());assertTrue(web(display.getWindow().getDecorView()));screenshot("autarpie-3.0.2-direct.png");
         // Switching is an explicit confirmed action when a role was already set.
-        c.getSharedPreferences(AppRole.PREFS,0).edit().remove(AppRole.KEY).commit();Activity central=select("Zentrale",CentralActivity.class);assertEquals("central",AppRole.get(c));assertTrue(LanSync.get(c).host());assertFalse(web(central.getWindow().getDecorView()));screenshot("autarpie-3.0.1-central.png");String host= c.getSharedPreferences("wattpit-lan",0).getString("config","");
+        c.getSharedPreferences(AppRole.PREFS,0).edit().remove(AppRole.KEY).commit();Activity central=select("Zentrale",CentralActivity.class);assertEquals("central",AppRole.get(c));assertTrue(LanSync.get(c).host());assertFalse(web(central.getWindow().getDecorView()));screenshot("autarpie-3.0.2-central.png");String host= c.getSharedPreferences("wattpit-lan",0).getString("config","");
         c.getSharedPreferences(AppRole.PREFS,0).edit().remove(AppRole.KEY).commit();Activity viewer=select("Anzeigehandy",DisplayActivity.class);assertEquals("viewer",AppRole.get(c));assertTrue(AppRole.viewerOnly(c));assertFalse(LanSync.get(c).host());assertTrue(web(viewer.getWindow().getDecorView()));
         c.startService(new Intent(c,MonitorService.class));Thread.sleep(500);assertFalse(Repository.get(c).running);assertFalse(Repository.get(c).prefs.getBoolean("recording",true));
         AppRole.save(c,"central");assertEquals(host,c.getSharedPreferences("wattpit-lan",0).getString("config",""));AppRole.save(c,"direct");assertFalse(LanSync.get(c).host());assertFalse(LanSync.get(c).viewer());
