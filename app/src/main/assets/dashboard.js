@@ -49,7 +49,7 @@
     }
     clearCache() {this.cache.clear();this.update();}
     render() {
-      const weatherDays=this.weatherContent.querySelector('#weatherDays');if(weatherDays){if(weatherDays.clientWidth>0)this.weatherScroll=weatherDays.scrollLeft;delete weatherDays.dataset.positioned;if(this.weatherScroll!==undefined)weatherDays.dataset.restoreScroll=String(this.weatherScroll);}
+      const weatherDays=this.weatherContent.querySelector('#weatherDays'),today=weatherDays?.querySelector('[data-solar-day="0"]');if(weatherDays){if(weatherDays.clientWidth>0&&today&&weatherDays.dataset.positioned==='true'){const zoom=weatherDays.getBoundingClientRect().width/weatherDays.clientWidth||1;this.weatherOffset=-(today.getBoundingClientRect().left-weatherDays.getBoundingClientRect().left)/zoom;}delete weatherDays.dataset.positioned;if(this.weatherOffset!==undefined)weatherDays.dataset.restoreOffset=String(this.weatherOffset);}
       this.profile=screenProfile();
       this.board.classList.toggle('is-editing',this.editing);
       this.history.classList.toggle('is-editing',this.editing);$('miniHistoryResize').hidden=!this.editing;$('miniHistorySize').hidden=!this.editing;

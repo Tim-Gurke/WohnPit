@@ -23,7 +23,9 @@ jobs:
         run: |
           npm install --no-save --prefix "$RUNNER_TEMP/autarpie-ui" playwright@1.51.1
           NODE_PATH="$RUNNER_TEMP/autarpie-ui/node_modules" node tools/autarpie-smoke.cjs
-          NODE_PATH="$RUNNER_TEMP/autarpie-ui/node_modules" node tools/update-smoke.cjs
+          for attempt in 1 2; do
+            NODE_PATH="$RUNNER_TEMP/autarpie-ui/node_modules" node tools/update-smoke.cjs
+          done
       - uses: actions/upload-artifact@v4
         if: always()
         with:
