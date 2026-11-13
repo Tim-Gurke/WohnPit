@@ -4,7 +4,7 @@
  const normalize=x=>Number.isFinite(Number(x))?Math.round(Math.max(50,Math.min(150,Number(x)))):100;
  let saved=100;try{saved=normalize(native?.displayScale?native.displayScale():localStorage.getItem(key)??100);}catch(_){}
  function apply(value){value=normalize(value);document.documentElement.style.zoom=String(value/100);document.documentElement.style.setProperty('--app-scale',String(value/100));window.dispatchEvent(new Event('resize'));return value;}
- window.WattDisplay={normalize,apply,get value(){return normalize(parseFloat(document.documentElement.style.zoom)*100);}};apply(saved);
+ window.WattDisplay={normalize,apply,restored(value){saved=normalize(value);apply(saved);const open=document.getElementById('apSizeOpen');if(open)open.textContent='Größe einstellen · '+saved+' %';},get value(){return normalize(parseFloat(document.documentElement.style.zoom)*100);}};apply(saved);
  document.addEventListener('DOMContentLoaded',()=>{
   const input=document.getElementById('displayScale'),reset=document.getElementById('resetDisplayScale');if(!input)return;
   const row=input.closest('.setting-row')||input.parentElement;input.hidden=true;if(reset)reset.hidden=true;const old=document.getElementById('displayScaleValue');if(old)old.hidden=true;

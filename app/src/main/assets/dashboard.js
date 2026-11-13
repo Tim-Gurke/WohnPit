@@ -155,7 +155,7 @@
     }
     data(t,window,solarFrom=window.from,solarTo=window.to,retainScope) {
       if(this.a.isBlocked?.()||window.to<=window.from)return {points:[],summary:{}};
-      const m=C.CATALOG[t.metric];if(m.computedHistory)return window.AutarPieMetricUI?.history(this,t,window)||{points:[],summary:{},error:'Berechnung noch nicht verfügbar'};if((m.kind==='output'&&!m.energy)||['loadVoltage','loadMode'].includes(t.metric))return window.AutarPieMetricUI?.sourceHistory(this,t,window,'load-'+t.id)||{points:[],summary:{}};const backend=m.backend || m.field;
+      const m=C.CATALOG[t.metric];if(m.computedHistory)return globalThis.AutarPieMetricUI?.history(this,t,window)||{points:[],summary:{},error:'Berechnung noch nicht verfügbar'};if((m.kind==='output'&&!m.energy)||['loadVoltage','loadMode'].includes(t.metric))return globalThis.AutarPieMetricUI?.sourceHistory(this,t,window,'load-'+t.id)||{points:[],summary:{}};const backend=m.backend || m.field;
       const period=t.period,day=['today','sunrise'].includes(period.mode)?new Date(window.from).toLocaleDateString('sv-SE'):'';
       const baseScope=retainScope||JSON.stringify(['dashboard',m.flow?'flow':backend,period,day,this.a.isDemo()]);
       // A full-day solar query includes time outside the physical solar
@@ -237,7 +237,7 @@
     update() {
       if(this.a.isBlocked?.()||!this.a.getSnapshot)return;
       const snapshot=this.a.getSnapshot(),shunt=this.a.reading('shunt'),solar=this.a.reading('solar'),now=this.a.dataTime?.()??Date.now();
-      this.updateChargeEstimate(shunt,snapshot);window.AutarPieMetricUI?.prepare(this,snapshot,now);
+      this.updateChargeEstimate(shunt,snapshot);globalThis.AutarPieMetricUI?.prepare(this,snapshot,now);
       const sun=C.miniWindow('sunrise',snapshot.weather||{},now);
       let visibilityChanged=false;
       for(const t of this.config.tiles){
@@ -247,7 +247,7 @@
           if(el.hidden!==hidden){el.hidden=hidden;visibilityChanged=true;}
           el.querySelector('.weather-disabled').hidden=configured;continue;
         }
-        if(C.CATALOG[t.metric].widget){if(t.metric==='rollerCharge')this.widgets.charge.content.innerHTML=window.AutarPieMetricUI?.chargeWidget(snapshot)||'';continue;}
+        if(C.CATALOG[t.metric].widget){if(t.metric==='rollerCharge')this.widgets.charge.content.innerHTML=globalThis.AutarPieMetricUI?.chargeWidget(snapshot)||'';continue;}
         if(t.colorSource==='value')t.color=C.metricColor(this.config,t.metric);
         el.style.setProperty('--tile-color',this.paint(t.color,t,true));
         el.style.setProperty('--tile-muted',this.paint(getComputedStyle(document.documentElement).getPropertyValue('--muted').trim(),t,true));
@@ -266,7 +266,7 @@
         if(window?.solarFrom!=null&&t.metric==='solar'&&!m.flow&&data){const points=(data.points||[]).filter(p=>p.t>=window.from&&p.t<=window.to);data={...data,points,summary:this.summary(points)};}
         let value=C.displayValue(t,data?.summary,shunt,solar,snapshot,this.chargeEstimate);
         value=C.convert(value,t.unit,t.metric,snapshot);
-        const info=window.AutarPieMetricUI?.describe(t,snapshot,shunt,solar,now);const estimated=m.modelPower||m.estimated||info?.estimated||data?.summary?.modelledMillis>0;
+        const info=globalThis.AutarPieMetricUI?.describe(t,snapshot,shunt,solar,now);const estimated=m.modelPower||m.estimated||info?.estimated||data?.summary?.modelledMillis>0;
         const reading=`<strong class="tile-number">${esc(C.format(value,t))}</strong><span class="tile-unit">${!m.status?esc(t.unit):''}${estimated?'<small class="tile-estimate-tag"> · geschätzt</small>':''}</span>`;
         const visual=el.querySelector('.tile-visual');
         if(t.type==='gauge')visual.innerHTML=this.gauge(t,value,reading);
@@ -390,8 +390,8 @@
       const appearance=`<details><summary>Farben & Schrift</summary><div class="form-grid">${field('Farbzuordnung',select('tileColorSource',[['value','Zentrale Messwertfarbe'],['custom','Eigene Kachelfarbe']]))}${field('Wertfarbe',H.field('tileColor',t.color,'Wertfarbe'))}${field('Schriftgröße',input('tileFont',t.fontSize,'type="number" min="18" max="20"'))}${field('Nachkommastellen',select('tileDigits',[[0,'Keine'],[1,'Eine'],[2,'Zwei'],[3,'Drei']]))}${field('Deckkraft der Fläche',input('tileOpacity',t.opacity,'type="range" min="0" max="100"'))}${field('Hintergrund',select('tileBackgroundMode',[['auto','Zentraler Kachelhintergrund'],['custom','Eigene Farbe'],['gradient','Eigener Farbverlauf']]))}${field('Hintergrund · Farbe 1',H.field('tileBackground',t.backgroundSurface?.first|| (t.background==='auto'?(window.AutarPieCore.pageAppearance(window.AutarPieUI.appearance,window.AutarPieUI.workspace.pages.find(p=>p.id===window.AutarPieUI.active)).tile.first):t.background),'Hintergrundfarbe 1'))}${field('Hintergrund · Farbe 2',H.field('tileBackgroundSecond',t.backgroundSurface?.second||'#31465a','Hintergrundfarbe 2'))}${field('Verlaufwinkel · °',input('tileBackgroundAngle',t.backgroundSurface?.angle??135,'type="number" min="0" max="360"'))}</div><label class="check-field"><input type="checkbox" id="tileAdaptiveColor"> Kurven- und Instrumentfarben an Hell/Dunkel anpassen</label></details>`;
       const scale=`<details><summary>Skala</summary><div id="tileChartScale">${field('Verlaufsskala',select('tileScaleMode',[['fixed','Feste Skala'],['auto','Automatisch nach bisherigen Werten']]))}<p class="muted" id="tileScaleHint" hidden>Passt sich den Messwerten im gewählten Zeitraum an, mit etwas Platz über dem Maximum. Spannung, Temperatur und Akkustand passen auch die Untergrenze an. Für die bisherigen Tageswerte den Zeitraum „Heute“ wählen.</p></div><div class="form-grid">${field('Minimum',input('tileMin',this.shortInput(C.fixedRange(t,this.a.getSnapshot()).min),'type="number" step="any"'))}${field('Maximum',input('tileMax',this.shortInput(C.fixedRange(t,this.a.getSnapshot()).max),'type="number" step="any"'))}</div><label class="check-field"><input type="checkbox" id="tileMulticolor"> Mehrfarbiges Rundinstrument</label>${field('Skalenfarben',select('tileScaleSource',[['central','Zentrale Skalenfarben & Übergänge'],['custom','Eigene Farben']]))}<div class="form-grid">${field('Mittlere Farbe',H.field('tileColorMid',t.colorMid,'Mittlere Farbe'))}${field('Endfarbe',H.field('tileColorEnd',t.colorEnd,'Endfarbe'))}</div><label class="check-field"><input type="checkbox" id="tileInvert"> Farbverlauf umkehren</label></details>`;
       const arrangement=`<details><summary>Größe & Ebene</summary><div class="form-grid">${field('Breite',input('tileWidth',p.w,'type="range" min="'+(m.resourceDuration?4:2)+'" max="12" step="0.5"'))}${field('Höhe',input('tileHeight',p.h,'type="range" min="'+(m.resourceDuration?6:2)+'" max="18" step="0.5"'))}</div><div class="row"><button class="quiet" id="tileBack">Nach hinten</button><button class="quiet" id="tileFront">Nach vorne</button><button class="quiet" id="duplicateTile">Duplizieren</button></div><p class="muted">Gilt für die ${this.profile==='wide'?'breite':'schmale'} Ansicht. Andere Kacheln behalten ihre Position.</p></details>`;
-      this.a.openModal('Kachel anpassen',`<div class="tile-editor">${fields}${window.AutarPieMetricUI?.fields(t)||''}${period}${appearance}${m.status?'':scale}${arrangement}<p class="form-error" id="tileError" hidden></p><div class="form-actions"><button class="quiet" id="cancelTile">Abbrechen</button><button class="primary" id="saveTile">Speichern</button></div><button class="quiet danger-text remove-tile-separated" id="removeTile">Kachel entfernen</button></div>`);
-      window.AutarPieMetricUI?.bind(t);$('cancelTile').onclick=()=>this.a.closeModal();
+      this.a.openModal('Kachel anpassen',`<div class="tile-editor">${fields}${globalThis.AutarPieMetricUI?.fields(t)||''}${period}${appearance}${m.status?'':scale}${arrangement}<p class="form-error" id="tileError" hidden></p><div class="form-actions"><button class="quiet" id="cancelTile">Abbrechen</button><button class="primary" id="saveTile">Speichern</button></div><button class="quiet danger-text remove-tile-separated" id="removeTile">Kachel entfernen</button></div>`);
+      globalThis.AutarPieMetricUI?.bind(t);$('cancelTile').onclick=()=>this.a.closeModal();
       const values={tileMetric:t.metric,tileType:t.type,tileUnit:t.unit,tilePeriod:t.period.mode,tileAggregate:m.status?'last':t.period.aggregate,tileTimeUnit:t.period.unit,tileDigits:t.digits,tileColorSource:t.colorSource,tileBackgroundMode:t.backgroundSurface?.mode==='gradient'?'gradient':t.backgroundSurface?'custom':t.background==='auto'?'auto':'custom'};
       for(const [id,value] of Object.entries(values))$(id).value=value;
       $('tileAdaptiveColor').checked=t.adaptiveColor!==false;
@@ -447,7 +447,7 @@
           if($('tileMin')){t.scaleMode=$('tileScaleMode').value;if(t.type!=='chart'||t.scaleMode!=='auto'){const min=C.unconvert(Number($('tileMin').value),t.unit,t.metric,this.a.getSnapshot()),max=C.unconvert(Number($('tileMax').value),t.unit,t.metric,this.a.getSnapshot());t.min=t.reverseSign?-max:min;t.max=t.reverseSign?-min:max;if(!C.finite(t.min)||!C.finite(t.max)||t.min>=t.max)throw new Error('Das Skalenmaximum muss größer als das Minimum sein.');}t.scaleSource=$('tileScaleSource').value;t.multicolor=$('tileMulticolor').checked;t.invert=$('tileInvert').checked;t.colorMid=H.read('tileColorMid');t.colorEnd=H.read('tileColorEnd');}
           t.adaptiveColor=$('tileAdaptiveColor').checked;t.colorSource=$('tileColorSource').value;t.color=t.colorSource==='value'?C.metricColor(this.config,t.metric):H.read('tileColor');t.digits=Number($('tileDigits').value);t.fontSize=Number($('tileFont').value);t.opacity=Number($('tileOpacity').value);t.background=$('tileBackgroundMode').value==='auto'?'auto':H.read('tileBackground');
           if($('tileBackgroundMode').value==='auto')delete t.backgroundSurface;else{const angle=Number($('tileBackgroundAngle').value);if(!Number.isFinite(angle)||angle<0||angle>360)throw Error('Der Winkel muss zwischen 0 und 360° liegen.');t.backgroundSurface={mode:$('tileBackgroundMode').value==='gradient'?'gradient':'solid',first:H.read('tileBackground'),second:H.read('tileBackgroundSecond'),angle};}
-          Object.assign(t,window.AutarPieMetricUI?.read(t)||{});t.layouts[this.profile]={...t.layouts[this.profile],w:Number($('tileWidth').value),h:Number($('tileHeight').value)};
+          Object.assign(t,globalThis.AutarPieMetricUI?.read(t)||{});t.layouts[this.profile]={...t.layouts[this.profile],w:Number($('tileWidth').value),h:Number($('tileHeight').value)};
           t.layouts[this.profile].x=Math.min(t.layouts[this.profile].x,12-t.layouts[this.profile].w);
           this.config.tiles=this.config.tiles.map(old=>old.id===id?t:old);
           if(layer!=='keep'){this.config.tiles=this.config.tiles.filter(old=>old.id!==id);if(layer==='front')this.config.tiles.push(t);else this.config.tiles.unshift(t);}

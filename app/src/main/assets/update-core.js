@@ -29,6 +29,7 @@
   const out=copy(current),take=new Set(parts),all=Object.keys(VIEW_PARTS).every(k=>take.has(k));
   if(all)return copy(saved);
   if(take.has('colors')&&saved.appearance)out.appearance=copy(saved.appearance);
+  if(take.has('dashboards')&&saved.viewSettings)out.viewSettings=copy(saved.viewSettings);
   if(take.has('colors')&&saved.ownColors)out.ownColors=copy(saved.ownColors);
   const source=saved.workspace||{pages:[{id:'overview',board:saved.dashboard}],navigation:['overview']};
   if(!out.workspace)out.workspace={version:1,pages:[{id:'overview',board:out.dashboard}],navigation:['overview']};
