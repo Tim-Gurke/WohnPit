@@ -39,8 +39,8 @@ board.tiles=['soc','solarEnergy','consumptionEnergy','energyBalance','mobileSola
    assert.ok(Math.abs(Number((await number(metric).textContent()).replaceAll('.','').replace(',','.'))-expected)<.011,metric+' uses the native summary');
   }
   assert.match(await page.locator('[data-tile="statistics-solarEnergy"] .tile-hint').textContent(),/Letzter Stand/);
-  await page.clock.setFixedTime(new Date((await page.evaluate(()=>Date.now()))+31000));
   await page.evaluate(()=>{for(const reply of statTest.held.splice(0))reply();});
+  await page.clock.setFixedTime(new Date((await page.evaluate(()=>Date.now()))+31000));
   await wait(page,()=>{for(const reply of statTest.held.splice(0))reply();poll();return !reads.initialPending()&&!reads.inflight&&!reads.queue.size;});
   await page.evaluate(()=>solar.render());await wait(page,()=>statTest.learning.length>0);
   assert.equal(await page.evaluate(()=>statTest.learning.some(read=>read.cold)),false);
