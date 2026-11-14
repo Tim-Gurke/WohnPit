@@ -71,7 +71,7 @@ public final class UnifiedSmokeTest extends TestCase {
         Activity launcher=in.startActivitySync(new Intent(target(),MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK).putExtra("chooseRole",true));in.waitForIdleSync();
         in.runOnMainSync(()->{Button button=button(launcher.getWindow().getDecorView(),label);assertNotNull(button);button.performClick();});Activity activity=in.waitForMonitorWithTimeout(monitor,10000);in.removeMonitor(monitor);assertNotNull(activity);in.waitForIdleSync();return activity;
     }
-    private void screenshot(String name)throws Exception{File file=new File(target().getExternalFilesDir(null),name);Bitmap bitmap=getInstrumentation().getUiAutomation().takeScreenshot();try(OutputStream out=new FileOutputStream(file)){assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG,100,out));}bitmap.recycle();}
+    private void screenshot(String name)throws Exception{File file=new File(target().getFilesDir(),name);Bitmap bitmap=getInstrumentation().getUiAutomation().takeScreenshot();try(OutputStream out=new FileOutputStream(file)){assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG,100,out));}bitmap.recycle();}
     public void testThreeRolesAndStandaloneTransport()throws Exception{
         stopped();Context c=target();Activity display=select("Eigenständig",DisplayActivity.class);assertEquals("direct",AppRole.get(c));assertFalse(LanSync.get(c).host());assertFalse(LanSync.get(c).viewer());assertTrue(web(display.getWindow().getDecorView()));screenshot("autarpie-3.0.4-direct.png");
         // Switching is an explicit confirmed action when a role was already set.
