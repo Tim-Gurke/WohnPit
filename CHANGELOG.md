@@ -8,6 +8,10 @@ Das bestehende GitHub-Repository heißt jetzt [`Tim-Gurke/AutarPie`](https://git
 
 ## Veröffentlichte Versionen
 
+### 3.0.6 · Rollerlernen bei Abwesenheit und gemeinsame Kurzwahlfarbe
+
+Energie je erfasster Ladung unabhängig vom ganztägigen BMS-Empfang lernen. Ladehäufigkeit aus vollständig überwachten Ladeweg-Tagen ableiten; unbekannte Häufigkeit mit ausdrücklich gekennzeichneter Wochen- oder eigener Tagesannahme überbrücken. Bestehende Journale wiederverwenden, doppelte/zusammengehörige Fragmente berücksichtigen, unvollständige und externe Ladung ausschließen, Relaisenergie getrennt halten und nach Rückkehr konkrete Ladeplanung einmalig einsetzen. Alle ausgewählten Kurzwahlen einschließlich eigener Dashboards verwenden die gemeinsame App-Akzentfarbe, auch nach Umordnung und bei abweichendem Dashboard-Design. [Installation, Bedienung und Prüfgrenzen](docs/changes-3.0.6.md).
+
 ### 3.0.5 · Vorhandenen Verlauf vollständig fürs Verbrauchslernen abgleichen
 
 Auch bei bereits importierten Lernabschnitten den älteren Rohverlauf einmalig abrufen und neu bewerten. Gespeicherte stündliche Einstrahlung am damaligen Standort und mit damaliger Geometrie wiederverwenden. Ausschlussgründe je Anwesenheitsprofil erhalten, ältere nicht zuordenbare Gründe getrennt zeigen; lokalen Archivumfang sichtbar machen. Erneuten historischen Lernabgleich und Diagnoseexport der gekoppelten Anlage auf Anzeigehandys unter Daten & Sicherung anbieten. Eigene Handydaten, Layouts und bestehende Erkenntnisse erhalten. [Update, Bedienung und Prüfgrenzen](docs/changes-3.0.5.md).

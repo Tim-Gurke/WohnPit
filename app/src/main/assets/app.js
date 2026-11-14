@@ -514,6 +514,7 @@ $('zoomIn').onclick=()=>zoom(.5);$('zoomOut').onclick=()=>zoom(2);$('openScale')
 $('resetChart').onclick=()=>{viewFrom=baseFrom;viewTo=baseTo;manualY=null;loadHistory();};
 ['importCsv','historyImport','settingsImport'].forEach(id=>$(id).onclick=chooseImport);
 ['exportCsv','settingsExport'].forEach(id=>$(id).onclick=chooseExport);
+$('rollerUsageLearning').onclick=()=>solar.special.open();
 $('rebuildLearning').onclick=()=>{if(!native?.requestLearningRebuild){toast('Die Neuauswertung ist in der aktuellen Android-App verfügbar.');return;}$('solarHistoryStatus').textContent='Neuauswertung angefordert. Die bisherige Vorschau bleibt währenddessen sichtbar.';native.requestLearningRebuild();};
 $('exportPlanningDiagnostics').onclick=()=>{if(native?.choosePlanningDiagnostics)native.choosePlanningDiagnostics();else toast('Der Diagnoseexport ist in der Android-App verfügbar.');};
 ['capacitySetting','sampleSetting'].forEach(id=>$(id).oninput=()=>settingsDirty=true);

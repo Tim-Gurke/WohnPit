@@ -28,6 +28,7 @@ jobs:
             NODE_PATH="$RUNNER_TEMP/autarpie-ui/node_modules" node tools/dashboard-appearance-smoke.cjs
             NODE_PATH="$RUNNER_TEMP/autarpie-ui/node_modules" node tools/release-304-smoke.cjs
             NODE_PATH="$RUNNER_TEMP/autarpie-ui/node_modules" node tools/learning-recovery-smoke.cjs
+            NODE_PATH="$RUNNER_TEMP/autarpie-ui/node_modules" node tools/release-306-smoke.cjs
           done
       - uses: actions/upload-artifact@v4
         if: always()
@@ -145,6 +146,7 @@ jobs:
             app/build/reports/lan-proof/RollerObservationProof-results.log
             app/build/reports/lan-proof/LearningRecoveryProof-results.log
             app/build/reports/lan-proof/HistoricalWeatherLearningProof-results.log
+            app/build/reports/lan-proof/RollerUsageLearningProof-results.log
             app/build/reports/lan-proof/results.log
             app/build/reports/lan-proof/presence-results.log
             app/build/reports/lan-proof/viewer-idle-results.log
@@ -192,12 +194,12 @@ jobs:
             adb shell am instrument -w -e class de.wattpit.app.UnifiedSmokeTest de.wattpit.app.test/androidx.test.runner.AndroidJUnitRunner | tee unified-emulator.log
             python3 -c "from pathlib import Path; s=Path('unified-emulator.log').read_text(); assert 'OK (5 tests)' in s and 'FAILURES' not in s"
             mkdir -p docs/images
-            adb exec-out run-as de.wattpit.app cat files/autarpie-3.0.5-central.png > docs/images/autarpie-3.0.5-central.png
-            adb exec-out run-as de.wattpit.app cat files/autarpie-3.0.5-direct.png > docs/images/autarpie-3.0.5-direct.png
+            adb exec-out run-as de.wattpit.app cat files/autarpie-3.0.6-central.png > docs/images/autarpie-3.0.6-central.png
+            adb exec-out run-as de.wattpit.app cat files/autarpie-3.0.6-direct.png > docs/images/autarpie-3.0.6-direct.png
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: AutarPie-3.0.5-Emulator-${{ matrix.api }}
+          name: AutarPie-3.0.6-Emulator-${{ matrix.api }}
           path: |
             unified-emulator.log
-            docs/images/autarpie-3.0.5-*.png
+            docs/images/autarpie-3.0.6-*.png

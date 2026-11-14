@@ -30,15 +30,16 @@ final class EnergyStore {
         if(!repo.prefs.edit().putString(KEY,result.toString()).commit())throw new java.io.IOException();plan=new JSONObject();authority="";goalReached=false;manualOff=false;repo.prefs.edit().putBoolean("outputManualOff",false).putBoolean("outputGoalReached",false).apply();
     }
     static void live(Repository repo,String mac,JSONObject sample)throws JSONException{
-        boolean exclusive;
+        boolean exclusive,learningPath;String path;
         synchronized(EnergyStore.class){
             solar.put(mac,new JSONObject(sample.toString()).put("device",mac));
             repo.prefs.edit().putLong("outputMeasuredAt",sample.optLong("at")).putInt("outputMeasuredState",sample.optInt("state",-1)).putFloat("outputMeasuredCurrent",(float)sample.optDouble("current",0)).apply();
             outputError="";JSONObject configuration=config(repo);
             exclusive=mac.equals(regulator(repo))&&configuration.optString("assignment").equals("scooter")&&configuration.optBoolean("exclusiveScooter")&&!configuration.optString("powerPath").equals("relay");
+            learningPath=mac.equals(regulator(repo))&&configuration.optString("assignment").equals("scooter")&&configuration.optBoolean("exclusiveScooter")&&configuration.optBoolean("monitor",true);path=configuration.optString("powerPath").equals("relay")?"relay":"load-output";
         }
         // SQLite and BMS waits must not hold the shared live-state monitor.
-        try{RollerLedger.get(repo.applicationContext()).loadRaw(RollerLedger.source(repo.prefs),mac,sample,exclusive,RollerStore.get(repo.applicationContext()).mac());}
+        try{RollerLedger.get(repo.applicationContext()).loadRaw(RollerLedger.source(repo.prefs),mac,sample,exclusive,RollerStore.get(repo.applicationContext()).mac(),learningPath,path);}
         catch(Exception failure){error(false,"Lastmesswerte empfangen; Archivspeicherung fehlgeschlagen.");}
     }
     static synchronized void charger(JSONObject value){charger=value;chargerError="";}

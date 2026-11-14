@@ -20,8 +20,8 @@ final class SpecialUses {
                 JSONObject p=rows.getJSONObject(i);String id=p.getString("id"),name=p.getString("name").trim(),mode=p.optString("mode","learn"),kind=p.optString("kind","device");
                 if(!id.matches("[A-Za-z0-9_-]{1,70}")||!ids.add(id)||name.isEmpty()||name.length()>60||!Arrays.asList("learn","manual").contains(mode)||!Arrays.asList("device","roller").contains(kind)||kind.equals("roller")&&!id.equals("roller"))throw new IllegalArgumentException("Bitte Bezeichnung und Art der Sondernutzung prüfen.");
                 JSONObject clean=new JSONObject().put("id",id).put("name",name).put("kind",kind).put("mode",mode).put("enabled",p.optBoolean("enabled",true));
-                for(String key:new String[]{"wh","watts","minutes","hour","whPerKm","km"}){
-                    double value=p.optDouble(key,key.equals("minutes")?30:key.equals("hour")?12:key.equals("whPerKm")?19:0),max=key.equals("hour")?23:key.equals("minutes")?1440:key.equals("km")?2000:100000;
+                for(String key:new String[]{"wh","watts","minutes","hour","whPerKm","km","chargesPerWeek"}){
+                    double value=p.optDouble(key,key.equals("minutes")?30:key.equals("hour")?12:key.equals("whPerKm")?19:0),max=key.equals("hour")?23:key.equals("minutes")?1440:key.equals("km")?2000:key.equals("chargesPerWeek")?70:100000;
                     if(!Double.isFinite(value)||value<0||value>max)throw new IllegalArgumentException("Ungültiger Energie- oder Zeitwert.");clean.put(key,value);
                 }
                 out.put(clean);

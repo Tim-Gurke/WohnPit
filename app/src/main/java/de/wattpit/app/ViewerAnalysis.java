@@ -18,6 +18,7 @@ final class ViewerAnalysis {
     private Consumer<String> progress;
     private JSONObject metadata=new JSONObject();
     private volatile JSONObject rollerObservations=new JSONObject();
+    private String usageRevision="";private long usageAt;
     JSONObject rollerObservations(){return rollerObservations;}
     private long progressAt;
     private String epoch="";
@@ -29,6 +30,7 @@ final class ViewerAnalysis {
         planning=new SolarPlanning(context,repo,value->{},prefix+"-planning.db",ledger);
         // Open with this Context, before any request can switch the selected plant.
         repo.db.getWritableDatabase();planning.getWritableDatabase();ledger.getWritableDatabase();
+        try{rollerObservations=new JSONObject(repo.prefs.getString("analysis.rollerUsage","{}"));}catch(JSONException ignored){}
     }
     private JSONObject get(String method,JSONArray args)throws Exception{
         if(identity!=lan.identity()||!lan.viewer())throw new IOException("Anlage wurde gewechselt.");
@@ -74,7 +76,7 @@ final class ViewerAnalysis {
         }
     }
     private void model(long from,long to)throws Exception{
-        from=from/86400000L*86400000L;to=Math.min((to+86399999)/86400000L*86400000L,(System.currentTimeMillis()/86400000L+1)*86400000L);
+        from=Math.min(from,System.currentTimeMillis()-90L*86400000)/86400000L*86400000L;to=Math.min((to+86399999)/86400000L*86400000L,(System.currentTimeMillis()/86400000L+1)*86400000L);
         for(int retry=0;retry<3;retry++){
             JSONObject m=get("analysisMetadata",new JSONArray().put(from).put(to));
             if(m.optBoolean("changed"))continue;
@@ -108,7 +110,12 @@ final class ViewerAnalysis {
             edit.putString("analysisTimezone",m.getString("timezone")).commit();if(dirtyRollerTo>dirtyRollerFrom)ledger.derive(dirtyRollerFrom,dirtyRollerTo);metadata=m;
             // At most 90 days; the central remains a raw-data collector.
             JSONObject roller=new JSONObject(lan.part("roller")),profile=roller.optJSONObject("profile");
-            if(profile!=null&&!profile.optString("mac").isEmpty()&&(dirtyRollerTo>dirtyRollerFrom||rollerObservations.length()==0))rollerObservations=ledger.observedDays(RollerLedger.source(repo.prefs),profile.optString("mac"),Math.max(0,System.currentTimeMillis()-90L*86400000),System.currentTimeMillis(),m.getString("timezone"));
+            String usageKey=(profile==null?"":profile.optString("mac"))+"|"+roller.optLong("sessionRevision")+"|"+versions.optString("roller_raw")+"|"+versions.optString("load_raw");long usageNow=System.currentTimeMillis();
+            if(profile!=null&&!profile.optString("mac").isEmpty()&&(!usageKey.equals(usageRevision)||usageNow-usageAt>300000||rollerObservations.length()==0)){
+                rollerObservations=ledger.observedDays(RollerLedger.source(repo.prefs),profile.optString("mac"),Math.max(0,usageNow-90L*86400000),usageNow,m.getString("timezone"));
+                rollerObservations.put("learning",ledger.usageLearning(RollerLedger.source(repo.prefs),roller,usageNow,m.getString("timezone")));
+                repo.prefs.edit().putString("analysis.rollerUsage",rollerObservations.toString()).apply();usageRevision=usageKey;usageAt=usageNow;
+            }
             return;
         }
         throw new IOException("Die Berechnungsgrundlagen ändern sich gerade. Bitte erneut versuchen.");

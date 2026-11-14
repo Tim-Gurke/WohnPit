@@ -29,7 +29,7 @@ test('missing days never teach zero use; explicitly confirmed days can',()=>{
  assert.equal(X.learned(p,c,{},'UTC',now).wh,null);c.events.push({profileId:p.id,from:start-2*D,to:start-2*D+H,wh:0});assert.equal(X.learned(p,c,{},'UTC',now).wh,200);
 });
 test('roller history requires observed days and rejects interrupted charge sessions',()=>{
- const p=profile({id:'roller',kind:'roller',mode:'learn'}),c=config(p),r={...roller,journal:[]};
+ const p=profile({id:'roller',kind:'roller',mode:'learn',wh:0}),c=config(p),r={...roller,journal:[]};
  for(let i=1;i<=3;i++){const end=start-i*D+H,day=new Date(end).toISOString().slice(0,10);c.rollerDays??={};c.rollerDays[day]={mac:r.profile.mac,millis:21*H,unassignedMillis:0,wh:300};r.journal.push({started:end-H,ended:end,inputWh:300,observedMillis:3600000,gapMillis:0});}
  assert.equal(X.learned(p,c,r,'UTC',now).wh,300);r.journal[0].gapMillis=H;assert.equal(X.learned(p,c,r,'UTC',now).wh,null);
 });
@@ -50,9 +50,42 @@ test('overnight device energy is assigned to both observed dates, never all to t
  const p=profile({mode:'learn'}),c=config(p);c.events=[{profileId:p.id,from:start-2*D-H,to:start-2*D+H,wh:200},{profileId:p.id,from:start-D,to:start-D+H,wh:100}];assert.equal(X.learned(p,c,{},'UTC',now).wh,100);
 });
 test('unassigned charging and another BMS cannot teach a false zero day',()=>{
- const p=profile({id:'roller',kind:'roller',mode:'learn'}),c=config(p),r={...roller};c.rollerDays={};for(let i=1;i<=3;i++)c.rollerDays[new Date(start-i*D).toISOString().slice(0,10)]={mac:r.profile.mac,millis:21*H,wh:0,unassignedMillis:0};assert.equal(X.learned(p,c,r,'UTC',now).wh,0);c.rollerDays['2026-10-31'].unassignedMillis=120000;assert.equal(X.learned(p,c,r,'UTC',now).wh,null);assert.equal(X.learned(p,c,{...r,profile:{mac:'OTHER'}},'UTC',now).wh,null);
+ const p=profile({id:'roller',kind:'roller',mode:'learn',wh:0}),c=config(p),r={...roller};c.rollerDays={};for(let i=1;i<=3;i++)c.rollerDays[new Date(start-i*D).toISOString().slice(0,10)]={mac:r.profile.mac,millis:21*H,wh:0,unassignedMillis:0};assert.equal(X.learned(p,c,r,'UTC',now).wh,0);c.rollerDays['2026-10-31'].unassignedMillis=120000;assert.equal(X.learned(p,c,r,'UTC',now).wh,null);assert.equal(X.learned(p,c,{...r,profile:{mac:'OTHER'}},'UTC',now).wh,null);
 });
 
 test('explicit known roller days can teach usage even without automatic BMS coverage',()=>{
- const p=profile({id:'roller',kind:'roller',mode:'learn'}),c=config(p);for(let i=1;i<=3;i++)c.events.push({profileId:p.id,from:start-i*D,to:start-i*D+H,wh:200});assert.equal(X.learned(p,c,roller,'UTC',now).wh,200);
+ const p=profile({id:'roller',kind:'roller',mode:'learn',wh:0}),c=config(p);for(let i=1;i<=3;i++)c.events.push({profileId:p.id,from:start-i*D,to:start-i*D+H,wh:200});assert.equal(X.learned(p,c,roller,'UTC',now).wh,200);
+});
+
+const scooterProfile=(more={})=>profile({id:'roller',kind:'roller',mode:'learn',wh:0,...more});
+function chargeData(count=1){return {version:1,mac:roller.profile.mac,timezone:'UTC',charges:Array.from({length:count},(_,i)=>({id:'charge-'+i,mac:roller.profile.mac,from:start-(i+1)*D+H,to:start-(i+1)*D+1.5*H,inputWh:300,coverage:1})),pathDays:{}};}
+test('one short complete charge already teaches energy per charge while frequency stays explicitly unknown',()=>{
+ const p=scooterProfile(),c={...config(p),rollerLearning:chargeData()},v=X.learned(p,c,roller,'UTC',now);assert.equal(v.chargeWh,300);assert.equal(v.charges,1);assert.equal(v.wh,null);assert.equal(v.provisional,true);assert.match(v.reason,/Ladehäufigkeit/);
+});
+test('a weekly assumption uses learned charge energy, remains labelled and survives a BMS absence',()=>{
+ const p=scooterProfile({chargesPerWeek:3.5}),c={...config(p),rollerLearning:chargeData()},offline={...roller,fresh:false};const result=X.build([day(),day(1)],c,offline,R,now),v=result.byDay.get(day().day).rows[0];assert.equal(v.wh,150);assert.equal(v.basis,'assumed-frequency');assert.match(v.learningText,/Planungsannahme/);assert.equal(result.loads.reduce((s,l)=>s+(l.to-l.from)*l.watts/H,0),300);
+});
+test('fully monitored off-days teach frequency without all-day BMS reception',()=>{
+ const p=scooterProfile({chargesPerWeek:7}),data=chargeData(),c={...config(p),rollerLearning:data};for(let i=1;i<=3;i++)data.pathDays[new Date(start-i*D).toISOString().slice(0,10)]={mac:roller.profile.mac,complete:true,dayMillis:D,millis:D,wh:i===1?300:0,charges:i===1?1:0};const v=X.learned(p,c,roller,'UTC',now);assert.equal(v.wh,100);assert.equal(v.frequency,1/3);assert.equal(v.source,'monitored');
+});
+test('a central outage and another scooter never certify missing days as zero use',()=>{
+ const p=scooterProfile(),data=chargeData(),c={...config(p),rollerLearning:data};for(let i=1;i<=3;i++)data.pathDays[new Date(start-i*D).toISOString().slice(0,10)]={mac:roller.profile.mac,complete:i!==1,dayMillis:D,millis:i===1?12*H:D,wh:0,charges:0};assert.equal(X.learned(p,c,roller,'UTC',now).wh,null);data.mac='other';assert.equal(X.learned(p,c,roller,'UTC',now).chargeWh,null);
+});
+test('duplicate charge events never inflate count, energy or assumed frequency',()=>{
+ const p=scooterProfile({chargesPerWeek:7}),data=chargeData(),c={...config(p),rollerLearning:data};data.charges.push({...data.charges[0]});const v=X.learned(p,c,roller,'UTC',now);assert.equal(v.charges,1);assert.equal(v.wh,300);
+});
+test('partial, future and stale charges cannot supply a full-charge estimate',()=>{
+ const p=scooterProfile({chargesPerWeek:7}),data=chargeData(3),c={...config(p),rollerLearning:data};data.charges[0].coverage=.5;data.charges[1].to=now+H;data.charges[2].from=now-100*D;data.charges[2].to=now-99*D;assert.equal(X.learned(p,c,roller,'UTC',now).chargeWh,null);assert.equal(X.learned(p,c,roller,'UTC',now).wh,null);
+});
+test('fresh return data replaces the usual charge assumption exactly once',()=>{
+ const p=scooterProfile({chargesPerWeek:7}),c={...config(p),rollerLearning:chargeData()},r={...roller,live:{soc:80}};const v=X.build([day()],c,r,R,now).byDay.get(day().day).rows[0];const expected=R.plan(r.profile,r.live,now).draw;assert.equal(v.basis,'charge');assert.ok(Math.abs(v.wh-expected)<1e-8);assert.notEqual(v.wh,expected+300);
+});
+test('a retained personal daily estimate can bridge unknown frequency without being labelled learned',()=>{
+ const p=scooterProfile({wh:220}),c={...config(p),rollerLearning:chargeData()};const v=X.build([day()],c,{...roller,fresh:false},R,now).byDay.get(day().day).rows[0];assert.equal(v.wh,220);assert.equal(v.basis,'manual-fallback');
+});
+test('known zero use requires a fully covered calendar day, including the 25-hour DST day',()=>{
+ const p=scooterProfile(),data=chargeData(),c={...config(p),rollerLearning:data};for(let i=1;i<=3;i++)data.pathDays[new Date(start-i*D).toISOString().slice(0,10)]={mac:roller.profile.mac,complete:true,dayMillis:i===1?25*H:D,millis:D,wh:0};assert.equal(X.learned(p,c,roller,'UTC',now).wh,null);data.pathDays['2026-10-31'].millis=25*H;assert.equal(X.learned(p,c,roller,'UTC',now).wh,0);
+});
+test('weekly frequency is validated and retained through settings normalization',()=>{
+ const p=scooterProfile({chargesPerWeek:3.5});assert.equal(X.normalize(config(p)).profiles[0].chargesPerWeek,3.5);for(const n of [-1,NaN,71])assert.throws(()=>X.normalize(config({...p,chargesPerWeek:n})));
 });

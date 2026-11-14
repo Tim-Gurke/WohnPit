@@ -1,12 +1,18 @@
 # AutarPie einrichten und benutzen
 
-**Stand 3.0.5:** [Historischen Messverlauf fürs Verbrauchslernen abgleichen, Ausschlüsse erklären und Anzeige-Diagnose exportieren](changes-3.0.5.md). Zentrale zuerst, anschließend alle Anzeigen auf 3.0.5 aktualisieren.
+**Stand 3.0.6:** [Rollerlernen bei Abwesenheit, gekennzeichnete Ladehäufigkeit und gemeinsame Kurzwahlfarbe](changes-3.0.6.md). Zuerst die Zentrale, danach alle Anzeigen auf 3.0.6 aktualisieren.
 
 ## Rollen und Wiederanlauf
 
 Die **Zentrale** erhält Bluetooth-Verbindungen, Messdaten, Wettergrundlagen und den lokalen Anlagenverbund. Ihre native Oberfläche zeigt Betriebszustände und direkte Bedienaktionen. Die **Anzeige** berechnet und zeichnet aus den Grundlagen einer gekoppelten Zentrale. **Eigenständig** kombiniert Erfassung, Berechnung und Cockpit auf einem Handy.
 
 Unter Einstellungen → Zentrale & Verbindungen → Aufzeichnung, Archiv & Autostart lässt sich der Wiederanlauf einschalten. AutarPie nach Installation einmal öffnen und die Android-Freigaben erteilen. Eine ausgeschaltete Aufzeichnung wird durch Autostart nicht eingeschaltet. Ein geplanter täglicher kompletter Handy-Neustart wird weiterhin außerhalb der App eingerichtet; AutarPie übernimmt danach den Wiederanlauf, soweit Android ihn freigibt.
+
+## Rollerbedarf aus Ladungen und Ladeweg lernen
+
+E-Scooter → **Verbrauch lernen** zeigt Energie je ausreichend erfasster Ladung und die Grundlage der üblichen Häufigkeit getrennt. Der Roller benötigt dafür keinen ganztägigen BMS-Empfang. Bei unbekannter Häufigkeit unter Bearbeiten eine vorläufige Zahl von Ladungen pro Woche eingeben; 0 lässt sie offen. Geeignete bisherige Tages-/Kilometerschätzungen bleiben als eigene Annahme nutzbar. Mindestens drei vollständig beobachtete abgeschlossene Ladeweg-Tage können die tatsächliche Häufigkeit beziehungsweise den Tagesdurchschnitt liefern.
+
+Dazu den tatsächlich ausschließlich für den Roller verwendeten Ladeweg unter Lastausgang → Einrichten entsprechend zuordnen und aktiv auslesen. Bestätigte Aus-Zeiten können auch bei abwesendem Roller ausgewertet werden; eine Funklücke oder eine abgeschaltete Zentrale ist keine bestätigte Nullnutzung. Bei Rückkehr ersetzen frische BMS-Werte den pauschalen Ansatz einer konkret geplanten Ladung. [Ausführliche Bedienung und Grenzen](changes-3.0.6.md).
 
 ## Verbrauchslernen aus dem gespeicherten Verlauf
 
