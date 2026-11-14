@@ -48,7 +48,7 @@ public final class DisplayActivity extends Activity {
         super.onCreate(savedInstanceState);
         if(savedInstanceState!=null)pendingSettingsExport=savedInstanceState.getString("pendingSettingsExport");
         repository = Repository.get(this);
-        try{UiPreset.install(this,repository.prefs);DashboardPreset.install(repository.prefs,DashboardPreset.read(this));}catch(Exception e){repository.message(Repository.safeError(e));}
+        try{UiPreset.install(this,repository.prefs);if(!repository.prefs.contains("dashboard-v1"))DashboardPreset.install(repository.prefs,DashboardPreset.read(this));}catch(Exception e){repository.message(Repository.safeError(e));}
         lan=LanSync.get(this);
         solarPlanning=new SolarPlanning(this,repository,value->call("onSolarPlanData",value));
         if(!lan.viewer())PresenceStore.get(this).tick();
