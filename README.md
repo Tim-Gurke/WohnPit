@@ -1,10 +1,10 @@
-# AutarPie 3.0.3
+# AutarPie 3.0.4
 
 ![AutarPie Ressourcen-Kreislauf](app/src/main/assets/brand.svg)
 
 **Das lokale Cockpit für autarkes Leben.** Solar und Stromverteilung, Wohnwagenakku, E-Scooter, Modellbau, Gas und Wasser in einer gemeinsamen App. AutarPie führt **Watt’n’Pit und WohnPit** weiter.
 
-**[AutarPie 3.0.3 als APK herunterladen](https://github.com/Tim-Gurke/AutarPie/releases/download/v3.0.3/AutarPie-v3.0.3.apk)** · [Einrichtung und Bedienung](docs/AUTARPIE-3.md) · [Update und Prüfgrenzen](docs/changes-3.0.3.md) · [Vollständige Versionshistorie](CHANGELOG.md)
+**[AutarPie 3.0.4 als APK herunterladen](https://github.com/Tim-Gurke/AutarPie/releases/download/v3.0.4/AutarPie-v3.0.4.apk)** · [Einrichtung und Bedienung](docs/AUTARPIE-3.md) · [Update und Prüfgrenzen](docs/changes-3.0.4.md) · [Vollständige Versionshistorie](CHANGELOG.md)
 
 Android 8 oder neuer; das Cockpit benötigt einen aktuellen Android-System-WebView. Kein Konto, keine Werbung. Mess- und Lerndaten bleiben auf den eigenen Geräten. Der optionale Wetterabruf verwendet Open-Meteo. Der Anlagenverbund überträgt Daten verschlüsselt im lokalen WLAN.
 
@@ -12,13 +12,13 @@ Android 8 oder neuer; das Cockpit benötigt einen aktuellen Android-System-WebVi
 
 | Dunkel | Hell |
 | --- | --- |
-| ![AutarPie Cockpit mit neutralen Beispieldaten](docs/images/autarpie-3.0.3-dark.svg) | ![AutarPie Cockpit in heller Darstellung mit denselben Beispieldaten](docs/images/autarpie-3.0.3-light.svg) |
+| ![AutarPie Cockpit mit neutralen Beispieldaten](docs/images/autarpie-3.0.4-dark.svg) | ![AutarPie Cockpit in heller Darstellung mit denselben Beispieldaten](docs/images/autarpie-3.0.4-light.svg) |
 
 Die Aufnahmen zeigen die tatsächliche geprüfte Oberfläche mit erfundenen Messwerten. Kacheln und Bereichsfarben sind einstellbar; vorhandene eigene Anordnungen werden nicht pauschal ersetzt.
 
 | Einstellungsbereiche | Native Zentrale |
 | --- | --- |
-| ![AutarPie Einstellungsbereiche](docs/images/autarpie-3.0.3-settings.svg) | ![Schlanke native AutarPie-Zentrale](docs/images/autarpie-3.0.3-central.svg) |
+| ![AutarPie Einstellungsbereiche](docs/images/autarpie-3.0.4-settings.svg) | ![Schlanke native AutarPie-Zentrale](docs/images/autarpie-3.0.4-central.svg) |
 
 ## Ein Cockpit, mehrere Anwendungen
 
@@ -53,28 +53,12 @@ Die **optionale Rollerautomatik ist zunächst aus**. Ladeziel, Wohnwagenreserve,
 
 Der 608PD erhält eine private Verbindung aus der eigenen Bluetooth-Aufzeichnung. Unterstützt sind nachgewiesene Livefelder und Beenden von Laden/Powerbank-Betrieb. App-Start ist zunächst auf das beobachtete **3S-LiPo-Profil 4,21 V/Zelle / 0,50 A** mit ausdrücklicher Profilbestätigung begrenzt. Powerbank und andere Profile am Gerät starten. Nicht belegte Temperatur-/USB-/CC-CV-Felder werden nicht erfunden.
 
-## Hotfix 3.0.3
+## Update 3.0.4
 
-Farben bleiben beim Seitenwechsel der richtigen Seite zugeordnet. „Verlauf“ übernimmt ohne eigenes Design die gemeinsamen Vorgaben; sein Hintergrund hängt nicht mehr davon ab, ob zuvor Übersicht, Solar oder ein eigenes Dashboard geöffnet war. „Farben dieses Dashboards“ bearbeitet die sichtbare Seite. Speichern, Abbrechen und ein fehlgeschlagener Speicherversuch verändern keine anderen Dashboards oder deren Kacheln. Eigene Verlaufsfarben gelten auch für seine Diagramme.
+Lerndaten bleiben bei unvollständiger Neuberechnung erhalten und werden bis zur Klärung sichtbar getrennt gehalten. Die Zentrale zeichnet auch BMS-Beobachtungen ohne Ladung auf, damit die Anzeigen Roller-Nutzungstage lernen können. Der letzte bekannte Rollerstand bleibt mit Messzeit sichtbar, wenn das BMS außer Reichweite ist. Die Wetterrückschau zeigt zusätzlich den Regler-Solarertrag und den gespeicherten Abend-Akkustand.
 
-**Über die vorhandene App aktualisieren.** Die Zentralen-Korrektur aus 3.0.2 ist enthalten. Bei einer Zentrale mit 3.0.1 oder älter zuerst die Zentrale aktualisieren; eine Zentrale mit 3.0.2 bleibt mit den neuen Anzeigehandys kompatibel. [Hotfix und Prüfgrenzen 3.0.3](docs/changes-3.0.3.md) · [Zentralen-Hotfix 3.0.2](docs/changes-3.0.2.md) · [Umfang 3.0.1](docs/changes-3.0.1.md).
+Die Gas-Temperaturkorrektur kann nach dem ersten geeigneten vollständigen Flaschenabschnitt vorläufig beginnen und wird später persönlich genauer. Neue AutarPie-Installationen erhalten die vereinbarte Darstellung; bestehende Layouts bleiben erhalten. Roller und Modellbau haben eigene Symbol-Kurzwahlen.
 
-## Update von WohnPit
+**Der direkte Ladeweg bleibt aktiv.** Relaisbetrieb erst nach dem tatsächlichen Umbau unter Lastausgang → Einrichten → Strompfad manuell auswählen und speichern. Der bisher gemessene Wirkungsgrad kann als Referenz übernommen werden; der Wohnwagenanteil bleibt ohne separate Eingangsmessung im Relaisbetrieb geschätzt.
 
-1. Vollständige private Sicherung anlegen.
-2. **Zuerst die Zentrale, danach die Anzeigehandys auf 3.0.3** aktualisieren.
-3. Die APK über die vorhandene gemeinsame App installieren, **nicht deinstallieren**.
-
-Name und Symbol ändern sich; Paket `de.wattpit.app`, Original-Updatesignatur, gespeicherte Daten, Kopplungen und ScootPit-Schnittstelle bleiben erhalten. Das bestehende Repository heißt seit dem 13.11.2026 [`Tim-Gurke/AutarPie`](https://github.com/Tim-Gurke/AutarPie). Die Umbenennung erfordert keine Neuinstallation. Ein bereits abgeschlossener Umzug aus der alten separaten WohnPit-Zentrale muss nicht wiederholt werden.
-
-Nur beim bisherigen separaten Paket `de.wohnpit.app` ist die alte [Umzugsanleitung](docs/ZUSAMMENFUEHRUNG.md) relevant. Das notwendige signierte Hilfsprogramm bleibt als `WohnPit-Uebernahme-v0.0.5.apk` im aktuellen Release verfügbar. Private Umzugs- und Signierdateien werden niemals veröffentlicht.
-
-## Gas, Wasser, Datenschutz und Prüfungen
-
-Beschaffungen und Flaschenwechsel bilden den Lernverbrauch. Eine reine Inhaltskorrektur korrigiert Vorrat/Reichweite und gilt nicht als neuer Verbrauch. Kanister- und Flaschengrößen sind einstellbar. [Gas und Wasser im Detail](docs/GAS-WASSER.md).
-
-Geprüft werden Berechnungen, Daten-/Konfigurationsübernahme, echte TCP-/SQLite-Verbundabläufe, Browserbedienung und Android-Oberfläche. Reale Funkverbindungen, Autostart am vorhandenen G5 sowie Schalt- und Ladevorgänge mit den konkreten Geräten müssen vor Ort bestätigt werden; Softwareprüfungen ersetzen diese nicht. [Prüfumfang und Grenzen](docs/changes-3.0.3.md).
-
-Die App übernimmt keine Geräte-Firmwareupdates. Solche Updates und übrige Geräteparameter bleiben in der jeweiligen Hersteller-App. Geräteschlüssel bleiben auf dem erfassenden Gerät; der lokale Verbund verwendet einen privaten Verbindungscode.
-
-© 2026 Tim Weißbach und Mitwirkende.
+**Über die vorhandene App aktualisieren: zuerst die Zentrale, danach alle Anzeigen auf 3.0.4.** Auf Android 10/11 (etwa G5 mit Android 11) einmal Standort → **Immer zulassen** für die Bluetooth-Suche nach Neustarts freigeben; Standortdienst eingeschaltet lassen. [Änderungen, Anleitung und Prüfgrenzen 3.0.4](docs/changes-3.0.4.md) · [Farben-Hotfix 3.0.3](docs/changes-3.0.3.md) · [Zentralen-Hotfix 3.0.2](docs/changes-3.0.2.md).
