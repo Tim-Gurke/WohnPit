@@ -28,6 +28,8 @@ sources.append(root/'tools/AutarPieConfigurationProof.java')
 sources.append(root/'tools/CentralConcurrencyProof.java')
 sources.append(root/'tools/LearningRetentionProof.java')
 sources.append(root/'tools/RollerObservationProof.java')
+sources.append(root/'tools/LearningRecoveryProof.java')
+sources.append(root/'tools/HistoricalWeatherLearningProof.java')
 subprocess.run(['java','com.sun.tools.javac.Main','-cp',native_cp,'-d',str(classes),*map(str,sources)],check=True)
 classpath=os.pathsep.join(map(str,[classes,a.android_jar.resolve(),a.sqlite_jar.resolve(),a.slf4j_jar.resolve(),*a.android_jar.resolve().parent.glob('zxing-*.jar')]))
 r=subprocess.run(['java','-cp',classpath,'de.wattpit.app.LanSyncProof',str(out/'devices')],capture_output=True,text=True,timeout=90)
@@ -64,6 +66,6 @@ print(r10.stdout+r10.stderr,end='');(out/'autarpie-config-results.log').write_te
 r11=subprocess.run(['java','-cp',classpath,'de.wattpit.app.CentralConcurrencyProof',str(out/'central-concurrency')],capture_output=True,text=True,timeout=20)
 print(r11.stdout+r11.stderr,end='');(out/'central-concurrency-results.log').write_text(r11.stdout+r11.stderr);r11.check_returncode()
 
-for name in ['LearningRetentionProof','RollerObservationProof']:
+for name in ['LearningRetentionProof','RollerObservationProof','LearningRecoveryProof','HistoricalWeatherLearningProof']:
     proof=subprocess.run(['java','-Xmx512m','-cp',classpath,'de.wattpit.app.'+name,str(out/name)],capture_output=True,text=True,timeout=120)
     print(proof.stdout+proof.stderr,end='');(out/(name+'-results.log')).write_text(proof.stdout+proof.stderr);proof.check_returncode()

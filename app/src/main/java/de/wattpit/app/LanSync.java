@@ -249,6 +249,8 @@ final class LanSync {
     }
     JSONObject analysisKnowledge(Consumer<String> progress)throws Exception{analysisPending=true;try{JSONObject result=analysis().knowledge(progress);analysisAt=result.getJSONObject("analysis").optLong("at");return result;}finally{analysisPending=false;}}
     JSONObject analysisDiagnostics()throws Exception{return analysis().diagnostics();}
+    void rebuildLearningHistory()throws Exception{analysis().rebuildHistory();}
+    void exportAnalysisDiagnostics(java.io.OutputStream output)throws Exception{Object owner=identity();analysis().exportDiagnostics(output);if(owner!=identity())throw new IOException("Anlage wurde gewechselt. Bitte Diagnose erneut exportieren.");}
     JSONObject queryInput(String method,JSONArray args)throws Exception{
         if(!viewer())throw new IllegalStateException();JSONObject active=config;JSONObject result=rpc(active,method,args);if(active!=config)throw new IOException("Anlage wurde gewechselt.");return result;
     }

@@ -8,6 +8,10 @@ Das bestehende GitHub-Repository heißt jetzt [`Tim-Gurke/AutarPie`](https://git
 
 ## Veröffentlichte Versionen
 
+### 3.0.5 · Vorhandenen Verlauf vollständig fürs Verbrauchslernen abgleichen
+
+Auch bei bereits importierten Lernabschnitten den älteren Rohverlauf einmalig abrufen und neu bewerten. Gespeicherte stündliche Einstrahlung am damaligen Standort und mit damaliger Geometrie wiederverwenden. Ausschlussgründe je Anwesenheitsprofil erhalten, ältere nicht zuordenbare Gründe getrennt zeigen; lokalen Archivumfang sichtbar machen. Erneuten historischen Lernabgleich und Diagnoseexport der gekoppelten Anlage auf Anzeigehandys unter Daten & Sicherung anbieten. Eigene Handydaten, Layouts und bestehende Erkenntnisse erhalten. [Update, Bedienung und Prüfgrenzen](docs/changes-3.0.5.md).
+
 ### 3.0.4 · Lerndaten erhalten, frühere Wetterkorrektur und manueller Relaisbetrieb
 
 Geänderte Messdaten löschen nicht mehr unwiederbringlich frühere Lernabschnitte: betroffene Blöcke gezielt neu bewerten, nicht neu berechenbare Erkenntnisse erhalten und sichtbar aufschieben, Datengrundlage im offenen Dialog aktualisieren. Beobachtete Roller-Nutzungstage auch bei zentraler Erfassung auf den Anzeigen auswerten. Letzten BMS-Datenstand bei fehlender Reichweite mit Zeitpunkt erhalten; Steuerung weiterhin nur mit frischen Daten. Relaisbetrieb ausdrücklich manuell wählbar, direkter Ladeweg bleibt Standard; historischen Wirkungsgrad als Referenz übernehmen, Spulenmessung und geschätzten Ladebedarf unterscheiden. Vorläufige Gas-Temperaturkorrektur nach erstem geeigneten Flaschenabschnitt, spätere persönliche Modellprüfung. Symbol-Kurzwahlen, neue Darstellungsvorgabe für neue AutarPie-Installationen, Solarertrag und gemessener Abend-Akkustand in der Wetterrückschau. Android-10/11-Hintergrundberechtigung und BLE-Neustart verbessern den gespeicherten Autostart. [Installation, Bedienung und Prüfgrenzen](docs/changes-3.0.4.md).

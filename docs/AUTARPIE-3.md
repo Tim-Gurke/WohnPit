@@ -1,12 +1,20 @@
 # AutarPie einrichten und benutzen
 
-**Stand 3.0.4:** [Lernkorrektur, G5-Hintergrundfreigabe, manueller Relaisbetrieb, früheres Gas-Wettermodell und Wetterrückschau](changes-3.0.4.md). Zentrale zuerst, anschließend alle Anzeigen auf 3.0.4 aktualisieren.
+**Stand 3.0.5:** [Historischen Messverlauf fürs Verbrauchslernen abgleichen, Ausschlüsse erklären und Anzeige-Diagnose exportieren](changes-3.0.5.md). Zentrale zuerst, anschließend alle Anzeigen auf 3.0.5 aktualisieren.
 
 ## Rollen und Wiederanlauf
 
 Die **Zentrale** erhält Bluetooth-Verbindungen, Messdaten, Wettergrundlagen und den lokalen Anlagenverbund. Ihre native Oberfläche zeigt Betriebszustände und direkte Bedienaktionen. Die **Anzeige** berechnet und zeichnet aus den Grundlagen einer gekoppelten Zentrale. **Eigenständig** kombiniert Erfassung, Berechnung und Cockpit auf einem Handy.
 
 Unter Einstellungen → Zentrale & Verbindungen → Aufzeichnung, Archiv & Autostart lässt sich der Wiederanlauf einschalten. AutarPie nach Installation einmal öffnen und die Android-Freigaben erteilen. Eine ausgeschaltete Aufzeichnung wird durch Autostart nicht eingeschaltet. Ein geplanter täglicher kompletter Handy-Neustart wird weiterhin außerhalb der App eingerichtet; AutarPie übernimmt danach den Wiederanlauf, soweit Android ihn freigibt.
+
+## Verbrauchslernen aus dem gespeicherten Verlauf
+
+Nach dem Update gleicht die Anzeige einmalig auch ältere vorhandene Messdaten ab, selbst wenn schon einige gelernte Abschnitte importiert waren. Dazu mit der Zentrale verbinden und die Anzeige bis zum Ende des Abgleichs geöffnet lassen. Vorhandene Rohdaten bleiben erhalten; der Abgleich läuft auf der Anzeige. Ein unverändert übertragener Datenblock muss beim nächsten Abgleich nicht erneut geladen werden.
+
+Solarvorschau → Datengrundlage unterscheidet ausgewertete Stunden, gespeicherten Messzeitraum, andere Anwesenheitsprofile und unbekannte Anwesenheit. Neu bewertete Ausschlüsse werden dem jeweiligen Profil zugeordnet, ältere nicht zuordenbare Gründe getrennt angezeigt. Ein großer Messzeitraum belegt noch keine lückenlosen oder vollständig geeigneten Lernstunden. Fehlende Grundlagen bleiben unbekannt; archivierte Einstrahlung gehört immer zum damaligen Standort und zur damaligen Aufstellung.
+
+Einstellungen → Daten & Sicherung → Verbrauchslernen und Diagnose bietet **Gespeicherten Verlauf neu auswerten**. Dies fordert den historischen Abgleich erneut an. Eine Anzeige benötigt dafür die erreichbare Zentrale. **Diagnose speichern** exportiert dagegen den bereits lokal verfügbaren Analyse- und Messstand der ausgewählten Anlage, auch wenn die Zentrale gerade offline ist. Der Export kennzeichnet diesen gespeicherten Stand und vermischt ihn nicht mit unabhängigen Daten des Anzeigehandys. [Details und Prüfgrenzen](changes-3.0.5.md).
 
 ## Bereiche, Kurzwahlen und eigene Dashboards
 

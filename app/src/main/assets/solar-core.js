@@ -84,11 +84,16 @@
   function usageRows(observations,mode){return (observations||[]).map(o=>{
     if(!o.usageByPresence)return mode==='away'?null:o;
     const keys=mode==='away'?['away']:['home','legacy'],pieces=keys.map(k=>o.usageByPresence[k]).filter(Boolean);if(!pieces.length)return null;
-    const u={};for(const p of pieces)for(const [k,v] of Object.entries(p))if(finite(v))u[k]=k==='latest'?Math.max(u[k]||0,v):(u[k]||0)+v;
+    const u={};for(const p of pieces)for(const [k,v] of Object.entries(p)){if(finite(v))u[k]=k==='latest'?Math.max(u[k]||0,v):(u[k]||0)+v;else if(k==='rejected'&&v&&typeof v==='object')for(const [reason,millis] of Object.entries(v))if(finite(millis)&&millis>0){u.rejected??={};u.rejected[reason]=(u.rejected[reason]||0)+millis;}}
     return {...o,usage:u};
   }).filter(Boolean);}
   function consumption(plan,observations,day,now=Date.now(),mode='home'){
     const retainedHours=(observations||[]).filter(o=>o.rebuildPending).reduce((sum,o)=>sum+(Number.isFinite(o.usage?.duration)?o.usage.duration:Math.max(0,o.to-o.from))/HOUR,0);
+    const unassignedRejected={};let unknownPresenceHours=0,otherProfileHours=0;
+    for(const o of observations||[]){if(o.rebuildPending||!finite(o.from)||!finite(o.to)||o.to>now||o.to<learningSince(now))continue;const by=o.usageByPresence;
+      if(by){unknownPresenceHours+=(by.unknown?.duration||0)/HOUR;for(const [name,u] of Object.entries(by))if((mode==='away'?['home','legacy']:['away']).includes(name))otherProfileHours+=(u.duration||0)/HOUR;}
+      if(by&&!o.presenceRejections)for(const [reason,millis] of Object.entries(o.usage?.rejected||{}))if(finite(millis)&&millis>0)unassignedRejected[reason]=(unassignedRejected[reason]||0)+millis/HOUR;
+    }
     observations=usageRows((observations||[]).filter(o=>!o.rebuildPending),mode);
     const weights=seasonWeights(day);
     if(plan.usageMode==='manual'&&mode==='home'){
@@ -142,7 +147,7 @@
     });
     const days=usedDays.size,provisional=days<5||slotStats.some(x=>x.provisional);
     const pendingSlots=slotStats.filter(x=>x.pending).map(x=>x.slot);
-    return {wh:parts.some(x=>x===null)?null:parts.reduce((a,b)=>a+b,0),parts,days,manual:false,provisional,extrapolated,pendingSlots,retainedHours,sampleHours:hours,estimatedHours,slotStats,usedHours:slotStats.reduce((s,x)=>s+x.hours,0),usedEstimatedHours:slotStats.reduce((s,x)=>s+x.estimatedHours,0),uncertainty:Math.max(...slotStats.map(x=>x.uncertainty))};
+    return {wh:parts.some(x=>x===null)?null:parts.reduce((a,b)=>a+b,0),parts,days,manual:false,provisional,extrapolated,pendingSlots,retainedHours,unassignedRejected,unknownPresenceHours,otherProfileHours,sampleHours:hours,estimatedHours,slotStats,usedHours:slotStats.reduce((s,x)=>s+x.hours,0),usedEstimatedHours:slotStats.reduce((s,x)=>s+x.estimatedHours,0),uncertainty:Math.max(...slotStats.map(x=>x.uncertainty))};
   }
   function sunshineCode(day){
     if(finite(day.hours)&&finite(day.sunrise)&&finite(day.sunset)&&day.sunset>day.sunrise){const share=clamp(day.hours/((day.sunset-day.sunrise)/HOUR),0,1);return share>=.75?0:share>=.2?2:3;}

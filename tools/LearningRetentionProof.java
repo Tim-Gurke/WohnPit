@@ -59,7 +59,7 @@ public final class LearningRetentionProof {
     public static void main(String[] args){try{Class.forName("org.sqlite.JDBC");TimeZone.setDefault(TimeZone.getTimeZone("UTC"));Path root=Path.of(args[0]);
         scenario(root.resolve("complete-inputs"),"Complete original inputs",true,false,false,false);
         scenario(root.resolve("imported-knowledge"),"Imported knowledge without original samples",false,false,false,true);
-        scenario(root.resolve("changed-site"),"Historical knowledge after a site change",true,true,false,true);
+        scenario(root.resolve("changed-site"),"Measured historical knowledge after a site change",true,true,false,false);
         scenario(root.resolve("weather-pending"),"Weather cache still for previous configuration",true,false,true,true);
         System.exit(0);
     }catch(Throwable failure){failure.printStackTrace();System.exit(1);}}

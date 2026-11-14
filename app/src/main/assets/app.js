@@ -514,6 +514,7 @@ $('zoomIn').onclick=()=>zoom(.5);$('zoomOut').onclick=()=>zoom(2);$('openScale')
 $('resetChart').onclick=()=>{viewFrom=baseFrom;viewTo=baseTo;manualY=null;loadHistory();};
 ['importCsv','historyImport','settingsImport'].forEach(id=>$(id).onclick=chooseImport);
 ['exportCsv','settingsExport'].forEach(id=>$(id).onclick=chooseExport);
+$('rebuildLearning').onclick=()=>{if(!native?.requestLearningRebuild){toast('Die Neuauswertung ist in der aktuellen Android-App verfügbar.');return;}$('solarHistoryStatus').textContent='Neuauswertung angefordert. Die bisherige Vorschau bleibt währenddessen sichtbar.';native.requestLearningRebuild();};
 $('exportPlanningDiagnostics').onclick=()=>{if(native?.choosePlanningDiagnostics)native.choosePlanningDiagnostics();else toast('Der Diagnoseexport ist in der Android-App verfügbar.');};
 ['capacitySetting','sampleSetting'].forEach(id=>$(id).oninput=()=>settingsDirty=true);
 $('saveSettings').onclick=async()=>{const settings={capacity:Number($('capacitySetting').value),sampleSeconds:Number($('sampleSetting').value)};if(!settings.capacity||settings.capacity<=0||settings.capacity>10000){toast('Bitte eine Kapazität zwischen 1 und 10.000 Ah eingeben.');return;}const error=deviceNative?.isLanViewer?.()?await controls.send('settings',[JSON.stringify(settings)],settingsRevision):native?await native.settings(JSON.stringify(settings)):'';if(error){toast(error);return;}Object.assign(snapshot.settings,settings);settingsDirty=false;renderSettings();toast('Einstellungen gespeichert.');renderOverview();};

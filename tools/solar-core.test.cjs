@@ -1,6 +1,21 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const C=require('../app/src/main/assets/solar-core.js'),E=require('../app/src/main/assets/equipment.js');
 const H=C.HOUR,D=C.DAY,now=Date.parse('2026-10-23T12:00:00Z');
+test('presence-specific rejection reasons survive merging without moving them to the other profile',()=>{
+ const from=now-D,usage={wh:10,duration:H,estimatedDuration:0,latest:from+H};
+ const row={from,to:from+11*H,day:'2026-10-22',slot:0,learningVersion:2,presenceRejections:true,usage:{...usage,rejected:{measurementGap:8*H,weather:H}},usageByPresence:{home:{...usage,rejected:{measurementGap:8*H}},away:{wh:0,duration:0,estimatedDuration:0,latest:from+H,rejected:{weather:H}}}};
+ const home=C.consumption({usageMode:'auto'},[row],'2026-10-23',now),away=C.consumption({usageMode:'auto'},[row],'2026-10-23',now,'away');
+ assert.equal(home.usedHours,1);assert.deepEqual(home.slotStats[0].rejected,{measurementGap:8});assert.deepEqual(away.slotStats[0].rejected,{weather:1});assert.deepEqual(home.unassignedRejected,{});
+});
+test('legacy unassigned rejections remain explicit even when that date has no selected-profile usage',()=>{
+ const from=now-D,row={from,to:from+11*H,day:'2026-10-22',slot:0,learningVersion:2,usage:{wh:0,duration:0,rejected:{measurementGap:10*H}},usageByPresence:{unknown:{wh:10,duration:H,estimatedDuration:0,latest:from+H}}};
+ const u=C.consumption({usageMode:'auto'},[row],'2026-10-23',now);assert.equal(u.usedHours,0);assert.equal(u.unknownPresenceHours,1);assert.deepEqual(u.unassignedRejected,{measurementGap:10});assert.deepEqual(u.slotStats[0].rejected,{});
+});
+test('away behaviour stays in its own learned profile and is explained in the home profile',()=>{
+ const from=now-D,row={from,to:from+11*H,day:'2026-10-22',slot:0,learningVersion:2,presenceRejections:true,usageByPresence:{home:{wh:10,duration:H,estimatedDuration:0,latest:from+H},away:{wh:2,duration:2*H,estimatedDuration:0,latest:from+3*H}}};
+ const home=C.consumption({usageMode:'auto'},[row],'2026-10-23',now),away=C.consumption({usageMode:'auto'},[row],'2026-10-23',now,'away');
+ assert.equal(home.usedHours,1);assert.equal(home.otherProfileHours,2);assert.equal(away.usedHours,2);assert.equal(away.otherProfileHours,1);
+});
 test('learning coverage reports actual hours per daypart instead of equating partial days with full days',()=>{
  const p={usageMode:'auto'},start=Date.parse('2026-10-22T00:00:00Z');
  const rows=[{day:'2026-10-22',slot:0,learningVersion:2,usage:{wh:20,duration:2*H,estimatedDuration:0,latest:start+2*H}},{day:'2026-10-22',slot:2,learningVersion:2,usage:{wh:30,duration:H,estimatedDuration:H,latest:start+20*H}}];

@@ -29,7 +29,7 @@
       $('lanStatus').textContent=status;$('lanSummary').textContent=active?`${s.name} · ${status}`:'Ein Hauptgerät zeichnet auf. Weitere Handys zeigen denselben Datenstand im WLAN.';
       $('lanBanner').classList.toggle('lan-offline',viewer&&!s.connected);
       $('lanBanner').closest('.cockpit-tile')?.classList.toggle('lan-offline',viewer&&!s.connected);
-      const ids=['settingsImport','historyImport','importCsv','settingsExport','exportCsv','exportPlanningDiagnostics'];
+      const ids=['settingsImport','historyImport','importCsv','settingsExport','exportCsv'];
       for(const id of ids){const el=$(id);if(el){el.disabled=viewer;el.title=viewer?'Verlaufsdateien am Hauptgerät verwalten':'';}}
       if($('lanHostStatus'))$('lanHostStatus').textContent=status;
       if($('lanBackgroundPresence'))$('lanBackgroundPresence').checked=!!s.backgroundPresence;

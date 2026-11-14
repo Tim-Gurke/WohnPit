@@ -52,6 +52,44 @@ final class MobileSolarDisplay {
         }finally{db.endTransaction();}
     }}
     static final class Model {final List<ModelInterval> extra=new ArrayList<>(),mobile=new ArrayList<>();long missingPriorMillis,abnormalMillis,limitedMillis;}
+    /** Original hourly weather for the saved site/geometry, independent of today's rolling cache. */
+    static final class LearningInputs {
+        final Map<String,NavigableMap<Long,Hour>> series=new HashMap<>();
+        Double estimate(JSONObject snapshot,long from,long to)throws Exception{
+            if(snapshot==null)return null;String site=place(snapshot.optJSONObject("place"));
+            JSONObject setup=snapshot.getJSONObject("setup").getJSONObject("groups");JSONArray groups=snapshot.getJSONObject("equipment").getJSONArray("groups");double wh=0;
+            for(int i=0;i<groups.length();i++){
+                JSONObject g=groups.getJSONObject(i),p=setup.optJSONObject(g.getString("id"));if(p==null)return null;
+                if(!p.optBoolean("active")||g.optString("measurement").equals("solar"))continue;
+                NavigableMap<Long,Hour> values=series.get(site+"\n"+SolarPlanning.geometry(g,p));if(values==null)return null;
+                long cursor=from;while(cursor<to){Map.Entry<Long,Hour> entry=values.ceilingEntry(cursor+1);if(entry==null||cursor<entry.getKey()-HOUR)return null;
+                    long end=Math.min(to,entry.getKey());Hour h=entry.getValue();JSONArray shade=p.optJSONArray("shade");if(shade==null||shade.isNull(h.slot))return null;
+                    int level=shade.optInt(h.slot,-1);if(level<0||level>3)return null;
+                    double factor=SolarEquipment.yieldFactor(g.optString("controller"),g.optString("controllerType","auto"),g.optString("yieldMode"),g.isNull("yieldFactor")?null:g.optDouble("yieldFactor"));
+                    boolean dark=h.night||h.rise>0&&h.set>h.rise&&(end<=h.rise||cursor>=h.set);
+                    wh+=(dark?0:g.getDouble("count")*g.getDouble("watts")*h.value/1000*factor*new double[]{1,.8,.55,.25}[level])*(end-cursor)/HOUR;cursor=end;
+                }
+            }return Double.isFinite(wh)&&wh>=0?wh:null;
+        }
+        Boolean night(JSONObject snapshot,long from,long to){
+            if(snapshot==null)return null;String prefix=place(snapshot.optJSONObject("place"))+"\n";
+            for(Map.Entry<String,NavigableMap<Long,Hour>> row:series.entrySet())if(row.getKey().startsWith(prefix)){
+                long cursor=from;boolean dark=true,complete=true;while(cursor<to){Map.Entry<Long,Hour> e=row.getValue().ceilingEntry(cursor+1);if(e==null||cursor<e.getKey()-HOUR){complete=false;break;}
+                    Hour h=e.getValue();if(h.rise<=0||h.set<=h.rise){complete=false;break;}long end=Math.min(to,e.getKey());dark&=end<=h.rise||cursor>=h.set;cursor=end;
+                }if(complete)return dark;
+            }return null;
+        }
+        JSONArray days(JSONObject location,String timezone)throws Exception{
+            Map<String,JSONObject> days=new TreeMap<>();String prefix=place(location)+"\n";ZoneId zone;try{zone=ZoneId.of(timezone);}catch(Exception e){return new JSONArray();}
+            for(Map.Entry<String,NavigableMap<Long,Hour>> row:series.entrySet())if(row.getKey().startsWith(prefix))for(Hour h:row.getValue().values())if(h.rise>0&&h.set>h.rise){String day=Instant.ofEpochMilli(h.rise).atZone(zone).toLocalDate().toString();days.put(day,new JSONObject().put("day",day).put("sunrise",h.rise).put("sunset",h.set));}
+            return new JSONArray(days.values());
+        }
+    }
+    LearningInputs learningInputs(long from,long to)throws Exception{
+        LearningInputs result=new LearningInputs();try(Cursor c=planning.getReadableDatabase().rawQuery("SELECT place,geometry,end,value,slot,night,sunrise,sunset FROM model_weather WHERE end>? AND end<=? ORDER BY end",new String[]{""+from,""+(to+HOUR)})){
+            while(c.moveToNext())result.series.computeIfAbsent(c.getString(0)+"\n"+c.getString(1),key->new TreeMap<>()).put(c.getLong(2),new Hour(c.getDouble(3),c.getInt(4),c.getInt(5)==1,c.getLong(6),c.getLong(7)));
+        }return result;
+    }
     private static boolean hasExtra(JSONObject snapshot)throws Exception{
         JSONArray groups=snapshot.getJSONObject("equipment").getJSONArray("groups");for(int i=0;i<groups.length();i++)if(!groups.getJSONObject(i).optString("measurement").equals("solar"))return true;return false;
     }

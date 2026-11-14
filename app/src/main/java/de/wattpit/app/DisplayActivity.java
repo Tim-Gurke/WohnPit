@@ -1,5 +1,7 @@
 package de.wattpit.app;
 
+import java.util.function.Consumer;
+
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -42,6 +44,7 @@ public final class DisplayActivity extends Activity {
     private long stoppedAt;
     private boolean entered,foreground,checkingArchive;
     private static final int PERMISSIONS = 11, BLUETOOTH = 12, IMPORT = 20, EXPORT = 21, IMPORT_SETTINGS = 22, EXPORT_SETTINGS = 23, EXPORT_DIAGNOSTICS = 25, IMPORT_CHARGER = 26;
+    private Object diagnosticOwner;private boolean diagnosticViewer;
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override public void onCreate(Bundle savedInstanceState) {
@@ -247,6 +250,8 @@ public final class DisplayActivity extends Activity {
         if(requestCode==EXPORT_DIAGNOSTICS)files.execute(()->{
             try(OutputStream output=getContentResolver().openOutputStream(uri,"wt")){
                 if(output==null)throw new IOException();
+                if(diagnosticOwner!=lan.identity()||diagnosticViewer!=lan.viewer())throw new IOException("Betriebsart oder Anlage wurde gewechselt. Bitte Diagnose erneut exportieren.");
+                if(diagnosticViewer){lan.exportAnalysisDiagnostics(output);repository.message("Mess- und Lerndiagnose dieser Anzeige gespeichert.");return;}
                 JSONObject diagnostic=solarPlanning.diagnosticSnapshot().get(2,TimeUnit.MINUTES);
                 diagnostic.put("roller",RollerStore.get(DisplayActivity.this).snapshot());
                 try(ZipOutputStream zip=new ZipOutputStream(output)){
@@ -551,9 +556,21 @@ public final class DisplayActivity extends Activity {
                     .setType("text/csv").putExtra(Intent.EXTRA_TITLE,"AutarPie-Verlauf.csv"),EXPORT));
         }
         @JavascriptInterface public void choosePlanningDiagnostics(){
-            if(lan.viewer())return;
+            diagnosticOwner=lan.identity();diagnosticViewer=lan.viewer();
             runOnUiThread(()->startActivityForResult(new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
                     .setType("application/zip").putExtra(Intent.EXTRA_TITLE,"AutarPie-Diagnose-"+BuildConfig.VERSION_NAME+".zip"),EXPORT_DIAGNOSTICS));
+        }
+        @JavascriptInterface public void requestLearningRebuild(){
+            if(!analysisBusy.compareAndSet(false,true)){try{call("onSolarLearningProgress",new JSONObject().put("message","Eine Auswertung läuft bereits. Bitte anschließend den historischen Neuabgleich erneut anfordern."));}catch(Exception ignored){}return;}Object owner=lan.identity();boolean viewer=lan.viewer();
+            historyReads.execute(()->{try{
+                if(owner!=lan.identity()||viewer!=lan.viewer())return;
+                if(viewer)lan.rebuildLearningHistory();else solarPlanning.rebuildHistory();
+                Consumer<String> progress=text->{try{call("onSolarLearningProgress",new JSONObject().put("message",text));}catch(Exception ignored){}};
+                progress.accept("Gespeicherter Verlauf wird neu ausgewertet …");
+                JSONObject result=viewer?lan.analysisKnowledge(progress):solarPlanning.calculateKnowledge();
+                if(owner==lan.identity()&&viewer==lan.viewer())call("onSolarPlanData",result);
+            }catch(Exception e){try{call("onSolarPlanData",new JSONObject().put("error",Repository.safeError(e)));}catch(Exception ignored){}}
+            finally{analysisBusy.set(false);}});
         }
         @JavascriptInterface public void importCsv(String mapping, String kind) {
             if(lan.viewer())return;

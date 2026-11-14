@@ -81,7 +81,7 @@ final class ViewerAnalysis {
             if(m.getInt("algorithm")!=SolarPlanning.ALGORITHM)throw new IOException("Bitte Hauptgerät und Anzeige auf dieselbe AutarPie-Version aktualisieren.");
             JSONObject versions=m.getJSONObject("tables");boolean changed=false;long dirtyRollerFrom=Long.MAX_VALUE,dirtyRollerTo=0;
             for(String table:AnalysisExchange.ALL){
-                if(!versions.has(table))throw new IOException("Bitte Zentrale und Anzeigen auf AutarPie 3.0.4 aktualisieren.");
+                if(!versions.has(table))throw new IOException("Bitte Zentrale und Anzeigen auf dieselbe AutarPie-Version aktualisieren.");
                 String version=versions.getString(table),scope=(table.equals("model_weather")||table.equals("device_settings")||table.equals("input_intervals")||table.equals("roller_raw")||table.equals("load_raw"))?":"+from+":"+to:"";
                 String key="analysis.table."+table+scope;boolean incremental=AnalysisExchange.incremental(table);
                 if(version.equals(repo.prefs.getString(key,"")))continue;
@@ -154,13 +154,15 @@ final class ViewerAnalysis {
         }finally{this.progress=null;}
     }
     synchronized JSONObject knowledge(Consumer<String> progress)throws Exception{
-        this.progress=progress;try{
+        this.progress=progress;downloadedRows=downloadedBlocks=0;try{
             requireProtocol();long now=System.currentTimeMillis(),since=now-7L*86400000,previous=repo.prefs.getLong("analysis.learningRevision",0);
             JSONObject changes=get("analysisChanges",new JSONArray().put(previous));
             if(!changes.getString("epoch").equals(repo.prefs.getString("analysis.epoch","")))reset(changes.getString("epoch"));
             model(support(since),now);if(metadata.optLong("measurementAt")>0)now=metadata.getLong("measurementAt");since=planning.learningSince(now);
             long correction=changes.optLong("changedFrom");if(previous>0&&correction>0)since=Math.min(since,correction);
-            long first=metadata.optLong("firstMeasurement");if(previous==0&&!planning.hasObservations()&&first>0)since=Math.min(since,first);
+            // An imported partial learning ledger is not proof that its historical raw inputs arrived.
+            long first=metadata.optLong("firstMeasurement");boolean recovering=planning.needsHistoricalRecovery();
+            if((recovering||previous==0&&!planning.hasObservations())&&first>0){since=Math.min(since,first);note("Vorhandenen Messverlauf vollständig für das Lernen abgleichen …");}
             since=Math.max(LearningWindow.since(now),since);
             // Completed local days and model priors need the preceding day across DST boundaries.
             since=Math.max(LearningWindow.since(now),since-86400000);
@@ -171,9 +173,21 @@ final class ViewerAnalysis {
             raw(support(since),now);
             planning.analysisPresence(presence==null?metadata.getJSONArray("presenceHistory"):presence,metadata.getJSONObject("presence"),since,now);if(previous>0){if(changes.has("ranges"))planning.invalidateLearning(changes.getJSONArray("ranges"));else planning.invalidateLearning(correction);}
             note("Verbrauch und Solarvorschau werden auf diesem Handy berechnet …");JSONObject result=planning.calculateKnowledge();
-            stamp(result);repo.prefs.edit().putLong("analysis.learningRevision",changes.getLong("revision")).commit();return result;
+            if(result.has("error"))throw new IOException(result.getString("error"));
+            stamp(result);if(recovering&&!result.optBoolean("historyRecoveryPending"))planning.completeHistoricalRecovery(since,now);
+            repo.prefs.edit().putLong("analysis.learningRevision",changes.getLong("revision")).commit();return result;
         }finally{this.progress=null;}
     }
     synchronized JSONObject diagnostics()throws Exception{return new JSONObject().put("downloadedRows",downloadedRows).put("downloadedBlocks",downloadedBlocks).put("epoch",epoch).put("revision",rawRevision);}
+    synchronized void rebuildHistory()throws Exception{planning.rebuildHistory();}
+    synchronized void exportDiagnostics(java.io.OutputStream output)throws Exception{
+        JSONObject diagnostic=planning.diagnosticSnapshot().get(2,java.util.concurrent.TimeUnit.MINUTES);
+        diagnostic.put("analysis",new JSONObject().put("plant",plant).put("epoch",epoch).put("revision",rawRevision).put("inputMetadata",metadata).put("cached",true));
+        JSONObject roller=new JSONObject(lan.part("roller"));diagnostic.remove("rollerHandover");diagnostic.put("roller",roller);
+        try(java.util.zip.ZipOutputStream zip=new java.util.zip.ZipOutputStream(output)){
+            zip.putNextEntry(new java.util.zip.ZipEntry("diagnose.json"));zip.write(diagnostic.toString(2).getBytes(java.nio.charset.StandardCharsets.UTF_8));zip.closeEntry();
+            zip.putNextEntry(new java.util.zip.ZipEntry("verlauf.csv"));repo.db.exportTo(zip);zip.closeEntry();
+        }
+    }
     void close(){planning.shutdown();}
 }
