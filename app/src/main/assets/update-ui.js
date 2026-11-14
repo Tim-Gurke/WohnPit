@@ -91,11 +91,16 @@
   if(!$('apWeatherToday')){const b=document.createElement('button');b.id='apWeatherToday';b.className='quiet';b.textContent='Heute';b.onclick=()=>{const t=container.querySelector('[data-solar-day="0"]');if(t)container.scrollTo({left:todayPosition(container,t),behavior:'smooth'});};$('weatherPeriod').after(b);}
   container.dataset.backlook='true';delete container.dataset.positioned;if(offset!==undefined)container.dataset.restoreOffset=String(offset);solar.layoutPreview();requestAnimationFrame(()=>solar.layoutPreview());renderTrendButton();
  }
- let pastDay=null;
+ let pastDay=null,pastRequestId=-1;const pastRequests=new Map(),pastCache=new Map(),originalSunsetSoc=window.onSolarSunsetSoc;
+ window.onSolarSunsetSoc=result=>{const pending=pastRequests.get(result.id);if(!pending){originalSunsetSoc?.(result);return;}pastRequests.delete(result.id);pending.done=true;pending.point=result.point;pending.error=result.error;refreshPast();};
  const pastValue=(v,unit)=>C.finite(v)?v.toLocaleString('de-DE',{maximumFractionDigits:1})+' '+unit:'—';
  function pastValues(d){
   const row=(app.snapshot.solarDaily||[]).find(r=>r.day===d.day),yieldWh=row?.['Yield(Wh)'];let point=null,pending=false;
-  if(C.finite(d.sunset)&&app.read){try{const result=JSON.parse(app.read('history',[d.sunset-15*60000,d.sunset+15*60000,'soc','all',app.snapshot.historyRevision||0],'weather-past-'+d.day));pending=!!result.pending;const candidates=(result.points||[]).filter(p=>C.finite(p.v)&&p.v>=0&&p.v<=100&&C.finite(p.t)&&Math.abs(p.t-d.sunset)<=15*60000);candidates.sort((a,b)=>Math.abs(a.t-d.sunset)-Math.abs(b.t-d.sunset));point=candidates[0]||null;}catch(_){}}
+  if(C.finite(d.sunset)&&app.native?.requestSunsetSoc){
+   const key=d.sunset+':'+(app.snapshot.devices||[]).filter(v=>v.kind==='shunt').map(v=>v.mac).join('|'),revision=app.snapshot.historyRevision,now=Date.now();let cached=pastCache.get(key);
+   if(!cached||cached.done&&cached.revision!==revision&&now-cached.requested>=60000){cached={id:pastRequestId--,revision,requested:now,done:false};pastCache.set(key,cached);pastRequests.set(cached.id,cached);app.native.requestSunsetSoc(d.sunset,cached.id);}
+   pending=!cached.done;const actual=cached.point;if(cached.done&&C.finite(actual?.soc)&&actual.soc>=0&&actual.soc<=100&&C.finite(actual.t)&&Math.abs(actual.t-d.sunset)<=15*60000)point={...actual,v:actual.soc};
+  }
   return {yieldWh,point,pending};
  }
  function showPastDay(d){const v=pastValues(d);app.openModal('Wetterrückschau',`<h3>${esc(new Date(d.day+'T12:00:00').toLocaleDateString('de-DE'))}</h3><p>${pastValue(d.hours,'Sonnenstunden')}</p><p>Solarertrag · Regler-Tagesarchiv: <strong>${pastValue(v.yieldWh,'Wh')}</strong></p><p>Wohnwagenakku bei Sonnenuntergang: <strong>${pastValue(v.point?.v,'%')}</strong>${v.point?' · gemessen um '+esc(new Date(v.point.t).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})):v.pending?' · Messwert wird geladen':' · kein gespeicherter Wert innerhalb von 15 Minuten zum Sonnenuntergang'}</p><p class="muted">Wetter: archivierte beziehungsweise modellbasierte Daten von Open-Meteo. Solar: gespeicherter Tageswert des Reglers. Akku: gespeicherter SmartShunt-Messwert; fehlende Messungen bleiben offen. Ungemessenes mobiles Solar ist im Reglerertrag nicht enthalten.</p>`);}
