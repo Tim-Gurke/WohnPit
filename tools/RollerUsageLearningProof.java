@@ -49,6 +49,7 @@ public final class RollerUsageLearningProof {
         try{viewer.join(LearningRecoveryProof.invitation(host));viewer.analysisKnowledge(null);JSONObject remote=new JSONObject(viewer.part("specialUses")).getJSONObject("rollerLearning");check(remote.getJSONArray("charges").length()==3&&completed(remote)==3,"the real encrypted viewer path derives the same short-charge learning from replicated raw inputs");
             viewer.analysisKnowledge(null);check(new JSONObject(viewer.part("specialUses")).getJSONObject("rollerLearning").getJSONArray("charges").length()==3,"another viewer refresh never adds duplicate charge events");
             Files.writeString(root.resolve("result.json"),new JSONObject().put("profile",profile).put("rollerLearning",remote).put("now",now).toString());
+            ViewerAnalysis copy=LearningRecoveryProof.replica(viewer);java.lang.reflect.Method reset=ViewerAnalysis.class.getDeclaredMethod("reset",String.class);reset.setAccessible(true);synchronized(copy){reset.invoke(copy,"replacement-epoch");check(copy.rollerObservations().length()==0,"a replaced source archive clears the old derived scooter cache before resynchronizing");}
         }finally{LanSyncProof.close(viewer);LanSyncProof.close(host);}
         System.exit(0);
     }catch(Throwable e){e.printStackTrace();System.exit(1);}}

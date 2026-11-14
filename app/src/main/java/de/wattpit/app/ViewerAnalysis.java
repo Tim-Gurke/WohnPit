@@ -39,7 +39,7 @@ final class ViewerAnalysis {
     }
     private void note(String value){long now=System.currentTimeMillis();if(progress!=null&&now-progressAt>=300){progressAt=now;progress.accept(value);}}
     private void reset(String next)throws Exception{
-        HistoryExchange.reset(repo.db);
+        HistoryExchange.reset(repo.db);rollerObservations=new JSONObject();usageRevision="";usageAt=0;
         for(String table:AnalysisExchange.ALL)AnalysisExchange.database(table,repo,planning,ledger,true).delete(table,"1=1",null);
         SharedPreferences.Editor edit=repo.prefs.edit();for(String key:repo.prefs.getAll().keySet())edit.remove(key);edit.putString("analysis.epoch",next).commit();epoch=next;
     }
