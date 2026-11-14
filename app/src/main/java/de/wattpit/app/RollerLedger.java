@@ -44,6 +44,10 @@ final class RollerLedger extends SQLiteOpenHelper {
     synchronized void derive(long from,long to)throws JSONException{
         try(Cursor c=getReadableDatabase().rawQuery("SELECT source,mac,payload FROM roller_raw WHERE end>? AND start<? ORDER BY start",new String[]{""+from,""+to})){while(c.moveToNext()){JSONArray values=new JSONArray(c.getString(2));for(int i=0;i<values.length();i++){JSONArray v=values.getJSONArray(i);if(!assigned(v))continue;long a=v.getLong(0),b=v.getLong(1);if(b<=from||a>=to)continue;double p=v.getDouble(2),q=v.getDouble(3),idle=v.getDouble(4),eff=v.getDouble(5);double input=(de.wattpit.app.core.RollerEnergy.inputWatts(Math.max(0,p),idle,eff)+de.wattpit.app.core.RollerEnergy.inputWatts(Math.max(0,q),idle,eff))*.5*(b-a)/3600000.0;add(c.getString(0),c.getString(1),v.getLong(6),a,b,input);}}}
     }
+    synchronized JSONObject lastReading(String plant,String mac)throws JSONException{
+        try(Cursor c=getReadableDatabase().rawQuery("SELECT payload FROM roller_raw WHERE source=? AND mac=? AND instr(payload,?)>0 ORDER BY end DESC LIMIT 1",new String[]{plant,mac,"\"at\":"})){if(c.moveToFirst()){JSONArray rows=new JSONArray(c.getString(0));for(int i=rows.length()-1;i>=0;i--){JSONArray v=rows.getJSONArray(i);JSONObject reading=v.optJSONObject(8);if(reading!=null&&reading.optLong("at")>0)return new JSONObject(reading.toString()).put("power",v.getDouble(3)).put("source","Gespeicherte BMS-Aufzeichnung");}}}
+        return new JSONObject();
+    }
     private static boolean assigned(JSONArray sample){return sample.length()<9||sample.optJSONObject(8)==null||sample.optJSONObject(8).optBoolean("chargeAssigned",true);}
     /** A fresh derivation from raw intervals is idempotent across repeated syncs. */
     synchronized JSONObject observedDays(String plant,String mac,long from,long to,String timezone)throws JSONException{

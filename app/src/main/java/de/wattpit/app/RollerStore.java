@@ -26,6 +26,12 @@ final class RollerStore {
         ledger=RollerLedger.get(c);central=c.getSharedPreferences("wohnpit-role",Context.MODE_PRIVATE).getString("role","").equals("central");
         prefs=c.getSharedPreferences("wattpit-roller",Context.MODE_PRIVATE);plantPrefs=c.getSharedPreferences("wattpit",Context.MODE_PRIVATE);
         try{lastKnown=new JSONObject(prefs.getString("lastReading","{}"));profile=checked(new JSONObject(prefs.getString("profile","{}")));JSONObject s=new JSONObject(prefs.getString("session","{}"));
+            if(!prefs.getBoolean("lastReadingMigrationDone",false)&&lastKnown.optLong("at")<=0&&!profile.optString("mac").isEmpty()){
+                lastKnown=ledger.lastReading(RollerLedger.source(plantPrefs),profile.optString("mac"));
+                if(lastKnown.optLong("at")<=0&&!s.isNull("endSoc")&&s.optLong("endSocAt")>0){double soc=s.optDouble("endSoc",Double.NaN);if(Double.isFinite(soc)&&soc>=0&&soc<=100)lastKnown=new JSONObject().put("at",s.getLong("endSocAt")).put("soc",soc).put("source","Gespeichertes Ladejournal");}
+                if(lastKnown.optLong("at")>0)prefs.edit().putString("lastReading",lastKnown.toString()).apply();
+            }
+            prefs.edit().putBoolean("lastReadingMigrationDone",true).apply();
             startSoc=s.isNull("startSoc")?null:s.has("startSoc")?s.optDouble("startSoc"):null;endSoc=s.isNull("endSoc")?null:s.has("endSoc")?s.optDouble("endSoc"):null;startSocAt=s.optLong("startSocAt");endSocAt=s.optLong("endSocAt");endReason=s.optString("endReason");session.started=s.optLong("started");session.ended=s.optLong("ended");session.observedMillis=s.optLong("observedMillis");session.gapMillis=s.optLong("gapMillis");session.batteryWh=s.optDouble("batteryWh",0);session.inputWh=s.optDouble("inputWh",0);automatic=s.optBoolean("automatic");detector.suppressed=prefs.getBoolean("autoSuppressed",false);revision=prefs.getLong("sessionRevision",0);lastCommand=prefs.getString("lastCommand","");
             // A process restart ends the session rather than inventing missing energy.
             if(s.optBoolean("active")){endReason="App-Neustart · Aufzeichnung unterbrochen";session.active=true;session.lastAt=s.optLong("savedAt",session.started);session.stop(automatic?session.lastAt:System.currentTimeMillis());revision++;saveSession();archiveSession();}

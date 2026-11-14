@@ -26,7 +26,7 @@ Im Zentralbetrieb fehlte zudem die Zählung beobachteter Roller-Nutzungstage. Di
 
 ## Roller außerhalb der Reichweite
 
-Die letzten BMS-Messwerte bleiben mit Zeitpunkt und **Letzter Datenstand · Roller nicht erreichbar** in der Übersicht und im Rollerbereich sichtbar. Dies umfasst vorhandene Akkudaten und den daraus geschätzten Speicherinhalt beziehungsweise die Reichweite. Die Anzeige schreibt keine Werte fort. Nach Neustart steht der zuletzt gespeicherte Stand zur Verfügung; im laufenden Betrieb bleibt der zuletzt empfangene Stand erhalten.
+Die letzten BMS-Messwerte bleiben mit Zeitpunkt und **Letzter Datenstand · Roller nicht erreichbar** in der Übersicht und im Rollerbereich sichtbar. Dies umfasst vorhandene Akkudaten und den daraus geschätzten Speicherinhalt beziehungsweise die Reichweite. Die Anzeige schreibt keine Werte fort. Beim Update werden vorhandene BMS-Felder aus dem bisherigen Messarchiv übernommen; ersatzweise kann der zuletzt gespeicherte Ladejournal-Akkustand erscheinen. Fehlen solche Aufzeichnungen, ist einmaliger erneuter Empfang nötig. Nach Neustart steht der zuletzt gespeicherte Stand zur Verfügung; im laufenden Betrieb bleibt der zuletzt empfangene Stand erhalten.
 
 Aktuelle Ladeleistung, Restladezeit, Wirkungsgrad und Ladefreigabe benötigen weiterhin geeignete frische Messungen. Formeln erhalten aus einem veralteten BMS-Stand keine aktuelle Messquelle. Geänderte Roller-Adresse entfernt den Cache des vorherigen Geräts.
 
