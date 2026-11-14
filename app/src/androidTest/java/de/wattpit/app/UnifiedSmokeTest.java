@@ -57,6 +57,13 @@ public final class UnifiedSmokeTest extends TestCase {
         c.getSharedPreferences("wattpit-lan",0).edit().putString("deviceId","example-generated-id").commit();assertEquals("",AppRole.infer(c));
         c.getSharedPreferences("wattpit-lan",0).edit().putString("config","{\"role\":\"viewer\"}").commit();assertEquals("viewer",AppRole.infer(c));
     }
+    public void testNewDefaultsAndExistingLayouts()throws Exception{
+        Context c=target();android.content.SharedPreferences fresh=c.getSharedPreferences("test-ui-preset-304",0);fresh.edit().clear().commit();
+        UiPreset.install(c,fresh);assertEquals(75,fresh.getInt("display-scale-v1",0));assertEquals(21,new org.json.JSONObject(fresh.getString("dashboard-v1","{}")).getJSONArray("tiles").length());
+        assertFalse(fresh.contains("devices"));assertFalse(fresh.contains("weatherPlace"));assertFalse(fresh.contains("equipment-v1"));assertFalse(fresh.contains("recording"));
+        fresh.edit().putString("dashboard-v1","custom-layout").commit();UiPreset.install(c,fresh);assertEquals("custom-layout",fresh.getString("dashboard-v1",""));
+        fresh.edit().clear().putString("dashboard-v1","existing-layout").putInt("display-scale-v1",110).commit();UiPreset.install(c,fresh);assertEquals("existing-layout",fresh.getString("dashboard-v1",""));assertEquals(110,fresh.getInt("display-scale-v1",0));fresh.edit().clear().commit();
+    }
     private Button button(View view,String text){if(view instanceof Button&&((Button)view).getText().toString().startsWith(text))return (Button)view;if(view instanceof ViewGroup){ViewGroup group=(ViewGroup)view;for(int i=0;i<group.getChildCount();i++){Button found=button(group.getChildAt(i),text);if(found!=null)return found;}}return null;}
     private boolean web(View view){if(view instanceof WebView)return true;if(view instanceof ViewGroup){ViewGroup group=(ViewGroup)view;for(int i=0;i<group.getChildCount();i++)if(web(group.getChildAt(i)))return true;}return false;}
     private Activity select(String label,Class<? extends Activity> type)throws Exception{
@@ -66,9 +73,9 @@ public final class UnifiedSmokeTest extends TestCase {
     }
     private void screenshot(String name)throws Exception{File file=new File(target().getExternalFilesDir(null),name);Bitmap bitmap=getInstrumentation().getUiAutomation().takeScreenshot();try(OutputStream out=new FileOutputStream(file)){assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG,100,out));}bitmap.recycle();}
     public void testThreeRolesAndStandaloneTransport()throws Exception{
-        stopped();Context c=target();Activity display=select("Eigenständig",DisplayActivity.class);assertEquals("direct",AppRole.get(c));assertFalse(LanSync.get(c).host());assertFalse(LanSync.get(c).viewer());assertTrue(web(display.getWindow().getDecorView()));screenshot("autarpie-3.0.3-direct.png");
+        stopped();Context c=target();Activity display=select("Eigenständig",DisplayActivity.class);assertEquals("direct",AppRole.get(c));assertFalse(LanSync.get(c).host());assertFalse(LanSync.get(c).viewer());assertTrue(web(display.getWindow().getDecorView()));screenshot("autarpie-3.0.4-direct.png");
         // Switching is an explicit confirmed action when a role was already set.
-        c.getSharedPreferences(AppRole.PREFS,0).edit().remove(AppRole.KEY).commit();Activity central=select("Zentrale",CentralActivity.class);assertEquals("central",AppRole.get(c));assertTrue(LanSync.get(c).host());assertFalse(web(central.getWindow().getDecorView()));screenshot("autarpie-3.0.3-central.png");String host= c.getSharedPreferences("wattpit-lan",0).getString("config","");
+        c.getSharedPreferences(AppRole.PREFS,0).edit().remove(AppRole.KEY).commit();Activity central=select("Zentrale",CentralActivity.class);assertEquals("central",AppRole.get(c));assertTrue(LanSync.get(c).host());assertFalse(web(central.getWindow().getDecorView()));screenshot("autarpie-3.0.4-central.png");String host= c.getSharedPreferences("wattpit-lan",0).getString("config","");
         c.getSharedPreferences(AppRole.PREFS,0).edit().remove(AppRole.KEY).commit();Activity viewer=select("Anzeigehandy",DisplayActivity.class);assertEquals("viewer",AppRole.get(c));assertTrue(AppRole.viewerOnly(c));assertFalse(LanSync.get(c).host());assertTrue(web(viewer.getWindow().getDecorView()));
         c.startService(new Intent(c,MonitorService.class));Thread.sleep(500);assertFalse(Repository.get(c).running);assertFalse(Repository.get(c).prefs.getBoolean("recording",true));
         AppRole.save(c,"central");assertEquals(host,c.getSharedPreferences("wattpit-lan",0).getString("config",""));AppRole.save(c,"direct");assertFalse(LanSync.get(c).host());assertFalse(LanSync.get(c).viewer());

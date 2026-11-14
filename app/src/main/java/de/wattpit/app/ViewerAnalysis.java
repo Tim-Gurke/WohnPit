@@ -17,6 +17,8 @@ final class ViewerAnalysis {
     private final String plant;
     private Consumer<String> progress;
     private JSONObject metadata=new JSONObject();
+    private volatile JSONObject rollerObservations=new JSONObject();
+    JSONObject rollerObservations(){return rollerObservations;}
     private long progressAt;
     private String epoch="";
     private long rawRevision,downloadedRows,downloadedBlocks;
@@ -79,7 +81,7 @@ final class ViewerAnalysis {
             if(m.getInt("algorithm")!=SolarPlanning.ALGORITHM)throw new IOException("Bitte Hauptgerät und Anzeige auf dieselbe AutarPie-Version aktualisieren.");
             JSONObject versions=m.getJSONObject("tables");boolean changed=false;long dirtyRollerFrom=Long.MAX_VALUE,dirtyRollerTo=0;
             for(String table:AnalysisExchange.ALL){
-                if(!versions.has(table))throw new IOException("Bitte Zentrale und Anzeigen auf AutarPie 3.0.1 aktualisieren.");
+                if(!versions.has(table))throw new IOException("Bitte Zentrale und Anzeigen auf AutarPie 3.0.4 aktualisieren.");
                 String version=versions.getString(table),scope=(table.equals("model_weather")||table.equals("device_settings")||table.equals("input_intervals")||table.equals("roller_raw")||table.equals("load_raw"))?":"+from+":"+to:"";
                 String key="analysis.table."+table+scope;boolean incremental=AnalysisExchange.incremental(table);
                 if(version.equals(repo.prefs.getString(key,"")))continue;
@@ -103,7 +105,11 @@ final class ViewerAnalysis {
                 JSONObject markers=m.getJSONObject("markers");for(Iterator<String> it=markers.keys();it.hasNext();){String key=it.next();Object value=markers.get(key);if(value instanceof Number){if(key.startsWith("planningEnergyVersion."))edit.putInt(key,((Number)value).intValue());else edit.putLong(key,((Number)value).longValue());}else edit.putString(key,value.toString());}
                 edit.putBoolean("analysis.seeded",true);
             }
-            edit.putString("analysisTimezone",m.getString("timezone")).commit();if(dirtyRollerTo>dirtyRollerFrom)ledger.derive(dirtyRollerFrom,dirtyRollerTo);metadata=m;return;
+            edit.putString("analysisTimezone",m.getString("timezone")).commit();if(dirtyRollerTo>dirtyRollerFrom)ledger.derive(dirtyRollerFrom,dirtyRollerTo);metadata=m;
+            // At most 90 days; the central remains a raw-data collector.
+            JSONObject roller=new JSONObject(lan.part("roller")),profile=roller.optJSONObject("profile");
+            if(profile!=null&&!profile.optString("mac").isEmpty()&&(dirtyRollerTo>dirtyRollerFrom||rollerObservations.length()==0))rollerObservations=ledger.observedDays(RollerLedger.source(repo.prefs),profile.optString("mac"),Math.max(0,System.currentTimeMillis()-90L*86400000),System.currentTimeMillis(),m.getString("timezone"));
+            return;
         }
         throw new IOException("Die Berechnungsgrundlagen ändern sich gerade. Bitte erneut versuchen.");
     }
@@ -163,7 +169,7 @@ final class ViewerAnalysis {
             JSONArray presence=null;if(now-support(since)>376L*86400000){for(long a=support(since);a<now;a+=360L*86400000){model(a,Math.min(now,a+360L*86400000));if(presence==null)presence=metadata.getJSONArray("presenceHistory");}}
             else model(support(since),now);
             raw(support(since),now);
-            planning.analysisPresence(presence==null?metadata.getJSONArray("presenceHistory"):presence,metadata.getJSONObject("presence"),since,now);if(previous>0)planning.invalidateLearning(correction);
+            planning.analysisPresence(presence==null?metadata.getJSONArray("presenceHistory"):presence,metadata.getJSONObject("presence"),since,now);if(previous>0){if(changes.has("ranges"))planning.invalidateLearning(changes.getJSONArray("ranges"));else planning.invalidateLearning(correction);}
             note("Verbrauch und Solarvorschau werden auf diesem Handy berechnet …");JSONObject result=planning.calculateKnowledge();
             stamp(result);repo.prefs.edit().putLong("analysis.learningRevision",changes.getLong("revision")).commit();return result;
         }finally{this.progress=null;}

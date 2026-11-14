@@ -24,7 +24,8 @@ public final class MonitorService extends Service {
     private final ScheduledExecutorService worker = Executors.newSingleThreadScheduledExecutor();
     private final Handler main = new Handler(Looper.getMainLooper());
     private ScheduledFuture<?> archiveCheck;
-    private long lastLiveRead;
+    private long lastLiveRead,lastAdvertisementAt,lastScanAt;
+    private boolean startFailed;
     private int liveRegulatorIndex;
     private final SharedPreferences.OnSharedPreferenceChangeListener archivePreference=(prefs,key)->{
         if("archiveIntervalMinutes".equals(key)&&repository.running)scheduleArchive(1000);
@@ -38,6 +39,7 @@ public final class MonitorService extends Service {
             if (result.getScanRecord() == null || worker.isShutdown()) return;
             byte[] data = result.getScanRecord().getManufacturerSpecificData(0x02e1);
             if (data == null) return;
+            lastAdvertisementAt=System.currentTimeMillis();
             try {
                 String mac = result.getDevice().getAddress();
                 String name = result.getScanRecord().getDeviceName();
@@ -69,12 +71,13 @@ public final class MonitorService extends Service {
         if(AppRole.viewerOnly(this)||LanSync.get(this).viewer()){stopSelf();return START_NOT_STICKY;}
         if(intent!=null&&"ARCHIVE_SCAN".equals(intent.getAction())){if(repository.running){restartScan();getSystemService(NotificationManager.class).notify(NOTIFICATION,notification());return START_STICKY;}stopSelf();return START_NOT_STICKY;}
         if (intent != null && "STOP".equals(intent.getAction())) { repository.prefs.edit().putBoolean("recording",false).apply(); stopSelf(); return START_NOT_STICKY; }
-        if (!hasPermissions()) { repository.status = "Bluetooth-Berechtigung fehlt"; stopSelf(); return START_NOT_STICKY; }
+        if(intent!=null&&"AUTOSTART".equals(intent.getAction())&&!BackgroundBleAccess.granted(this)){startFailed=true;repository.status="Autostart wartet: Standortberechtigung Immer zulassen erforderlich.";repository.prefs.edit().putString("autostartError",repository.status).apply();stopSelf();return START_NOT_STICKY;}
+        if (!hasPermissions()) { startFailed=true;repository.status = "Bluetooth-Berechtigung fehlt"; stopSelf(); return START_NOT_STICKY; }
         try {
             if (Build.VERSION.SDK_INT >= 31) startForeground(NOTIFICATION,notification(),ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE);
             else if (Build.VERSION.SDK_INT >= 29) startForeground(NOTIFICATION,notification(),ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
             else startForeground(NOTIFICATION,notification());
-        } catch (SecurityException e) { repository.status = "Aufzeichnung konnte nicht gestartet werden. App öffnen und Berechtigungen prüfen."; stopSelf(); return START_NOT_STICKY; }
+        } catch (SecurityException e) { startFailed=true;repository.status = "Aufzeichnung konnte nicht gestartet werden. App öffnen und Berechtigungen prüfen."; stopSelf(); return START_NOT_STICKY; }
         SuppliesWeather.refresh(repository,false);
         boolean first = !repository.running;
         repository.running = true;
@@ -90,6 +93,7 @@ public final class MonitorService extends Service {
             PresenceStore.get(this).tick();
             SuppliesWeather.refresh(repository,false);
             if (!scanning) startScan();
+            else if(System.currentTimeMillis()-Math.max(lastAdvertisementAt,lastScanAt)>120000)restartScan();
             getSystemService(NotificationManager.class).notify(NOTIFICATION,notification());
         }),30,30,TimeUnit.SECONDS);
         }
@@ -139,7 +143,7 @@ public final class MonitorService extends Service {
         ScanSettings settings = new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_POWER).setReportDelay(0).build();
         try {
             scanner.startScan(Collections.singletonList(filter),settings,callback);
-            scanning = true; repository.status = "Bluetooth-Empfang aktiv";
+            scanning = true; lastScanAt=System.currentTimeMillis(); repository.status = "Bluetooth-Empfang aktiv";
         } catch (SecurityException e) { repository.status = "Bluetooth-Berechtigung fehlt"; }
         catch (IllegalStateException e) { repository.status = "Bluetooth ist noch nicht bereit"; }
     }
@@ -162,7 +166,7 @@ public final class MonitorService extends Service {
         EnergyStore.shutdown(this);repository.running = false;
         CentralLog.add(this,"Aufzeichnung","Aufzeichnung pausiert");
         if(roller!=null)roller.stop();ChargerBle.get(this).stop();
-        repository.status = "Aufzeichnung pausiert";
+        if(!startFailed)repository.status = "Aufzeichnung pausiert";
         if (scanner != null && scanning && hasPermissions()) {
             try { scanner.stopScan(callback); } catch (SecurityException | IllegalStateException ignored) { }
         }

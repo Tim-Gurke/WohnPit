@@ -38,8 +38,10 @@ final class HistoryExchange {
     static JSONObject changes(HistoryDb history,long after)throws Exception{
         SQLiteDatabase db=history.getReadableDatabase();long first=0,revision=0;String epoch="";
         try(Cursor c=db.rawQuery("SELECT epoch,revision FROM analysis_meta",null)){if(c.moveToFirst()){epoch=c.getString(0);revision=c.getLong(1);}}
-        try(Cursor c=db.rawQuery("SELECT MIN(block) FROM analysis_blocks WHERE revision>? AND block>=?",new String[]{""+after,""+(LearningWindow.since(System.currentTimeMillis())/BLOCK)})){if(c.moveToFirst()&&!c.isNull(0))first=c.getLong(0)*BLOCK;}
-        return new JSONObject().put("epoch",epoch).put("revision",revision).put("changedFrom",first);
+        JSONArray ranges=new JSONArray();long a=-1,b=-1;
+        try(Cursor c=db.rawQuery("SELECT block FROM analysis_blocks WHERE revision>? AND block>=? ORDER BY block",new String[]{""+after,""+(LearningWindow.since(System.currentTimeMillis())/BLOCK)})){while(c.moveToNext()){long start=c.getLong(0)*BLOCK;if(first==0)first=start;if(a>=0&&start!=b){ranges.put(new JSONArray().put(a).put(b));a=-1;}if(a<0)a=start;b=start+BLOCK;}}
+        if(a>=0)ranges.put(new JSONArray().put(a).put(b));
+        return new JSONObject().put("epoch",epoch).put("revision",revision).put("changedFrom",first).put("ranges",ranges);
     }
     static JSONObject page(HistoryDb history,long block,long expected,long after)throws Exception{
         if(block<0||block>(System.currentTimeMillis()+86400000)/BLOCK||expected<0||after<0)throw new IllegalArgumentException("Ungültiger Datenblock.");

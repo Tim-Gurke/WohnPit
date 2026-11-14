@@ -266,3 +266,8 @@ test('prospective hourly forecasts permit valid partial yield comparisons withou
  const learned=C.calibration(obs,forecasts,key,'',now)[1];assert.equal(learned.days,3);assert.ok(Math.abs(learned.factor-1.15)<1e-8);
  for(const f of forecasts)delete f.intervals;assert.equal(C.calibration(obs,forecasts,key,'',now)[1].basis,'model','old forecasts never receive an invented retrospective hourly shape');
 });
+test('pending rebuilt knowledge is preserved separately and never counted as verified forecast evidence',()=>{
+ const t=now-D,observations=[{day:'2026-10-22',from:t,to:t+5*H,slot:1,rebuildPending:true,learningVersion:2,usage:{duration:5*H,wh:500,estimatedDuration:0,latest:t+5*H}}];
+ const u=C.consumption({usageMode:'auto'},observations,'2026-10-23',now);assert.equal(u.usedHours,0);assert.equal(u.retainedHours,5);assert.equal(u.wh,null);
+ const ready=C.consumption({usageMode:'auto'},observations.map(o=>({...o,rebuildPending:false})),'2026-10-23',now);assert.equal(ready.usedHours,5);assert.equal(ready.retainedHours,0);
+});

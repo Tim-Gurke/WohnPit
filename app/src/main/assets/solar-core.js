@@ -61,6 +61,7 @@
     for(let slot=0;slot<3;slot++){
       const local=[],weightedLocal=[],portable=[],reference=[],days=new Set(),portableDays=new Set(),referenceDays=new Set();
       for(const o of observations){
+        if(o.rebuildPending)continue;
         const actualKey=o.solarKey||o.key,f=predictions.get(actualKey+':'+o.from+':'+o.to);let eligible=o.learningVersion===2?o.solarEligible&&finite(o.solarCoverage)&&o.solarCoverage>=.98:o.mobileFree&&[o.coverage,o.solarCoverage,o.bulkCoverage].every(x=>finite(x)&&x>=.98),actual=o.solar,expected=f?.wh;
         if(!eligible&&f&&Array.isArray(f.intervals)){
           let covered=0,measured=0,predicted=0;for(const p of o.yieldParts||[]){if(p.key!==actualKey||!finite(p.solar)||p.solar<0||!finite(p.from)||!finite(p.to)||p.from<o.from||p.to>o.to||p.to<=p.from)continue;let span=0,potential=0;for(const h of f.intervals){if(!finite(h.wh)||h.wh<0||!finite(h.from)||!finite(h.to)||h.to<=h.from)continue;const overlap=Math.max(0,Math.min(p.to,h.to)-Math.max(p.from,h.from));span+=overlap;potential+=h.wh*overlap/(h.to-h.from);}if(span===p.to-p.from){covered+=span;measured+=p.solar;predicted+=potential;}}
@@ -87,7 +88,8 @@
     return {...o,usage:u};
   }).filter(Boolean);}
   function consumption(plan,observations,day,now=Date.now(),mode='home'){
-    observations=usageRows(observations,mode);
+    const retainedHours=(observations||[]).filter(o=>o.rebuildPending).reduce((sum,o)=>sum+(Number.isFinite(o.usage?.duration)?o.usage.duration:Math.max(0,o.to-o.from))/HOUR,0);
+    observations=usageRows((observations||[]).filter(o=>!o.rebuildPending),mode);
     const weights=seasonWeights(day);
     if(plan.usageMode==='manual'&&mode==='home'){
       const available=plan.manual.map((x,i)=>finite(x)?weights[i]:0),total=available.reduce((a,b)=>a+b,0);
@@ -140,7 +142,7 @@
     });
     const days=usedDays.size,provisional=days<5||slotStats.some(x=>x.provisional);
     const pendingSlots=slotStats.filter(x=>x.pending).map(x=>x.slot);
-    return {wh:parts.some(x=>x===null)?null:parts.reduce((a,b)=>a+b,0),parts,days,manual:false,provisional,extrapolated,pendingSlots,sampleHours:hours,estimatedHours,slotStats,usedHours:slotStats.reduce((s,x)=>s+x.hours,0),usedEstimatedHours:slotStats.reduce((s,x)=>s+x.estimatedHours,0),uncertainty:Math.max(...slotStats.map(x=>x.uncertainty))};
+    return {wh:parts.some(x=>x===null)?null:parts.reduce((a,b)=>a+b,0),parts,days,manual:false,provisional,extrapolated,pendingSlots,retainedHours,sampleHours:hours,estimatedHours,slotStats,usedHours:slotStats.reduce((s,x)=>s+x.hours,0),usedEstimatedHours:slotStats.reduce((s,x)=>s+x.estimatedHours,0),uncertainty:Math.max(...slotStats.map(x=>x.uncertainty))};
   }
   function sunshineCode(day){
     if(finite(day.hours)&&finite(day.sunrise)&&finite(day.sunset)&&day.sunset>day.sunrise){const share=clamp(day.hours/((day.sunset-day.sunrise)/HOUR),0,1);return share>=.75?0:share>=.2?2:3;}

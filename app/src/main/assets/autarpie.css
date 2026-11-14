@@ -16,3 +16,5 @@ body{background:var(--ap-app-background);background-attachment:fixed;letter-spac
 .cockpit-tile.type-weather{padding-left:5px;padding-right:5px}
 
 #rollerPanel{--mint:var(--ap-scooter)}#apChargerPanel .ap-energy-values strong{color:var(--ap-model)}
+
+.cached-reading .tile-hint{color:var(--ap-system);font-weight:600}.cached-reading .tile-number{opacity:.8}

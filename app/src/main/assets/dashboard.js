@@ -298,6 +298,8 @@
         if(m.energy&&C.finite(value)&&data?.summary?.coverage<.995)hint='Teilsumme · '+hint;
         if(data?.updateRequired)hint='Bitte auch das Hauptgerät auf 1.6.10 oder neuer aktualisieren';
         const coverage=m.energy?Math.floor((data?.summary?.coverage||0)*100)+' % des Zeitraums abgedeckt'+(data?.summary?.interpolatedMillis>0?' · davon '+(data.summary.interpolatedMillis/60000).toLocaleString('de-DE',{maximumFractionDigits:1})+' min kurz interpoliert':''):'';
+        const cachedRoller=m.kind==='roller'&&!snapshot.roller?.fresh&&snapshot.roller?.lastKnown?.at;el.classList.toggle('cached-reading',!!cachedRoller);
+        if(cachedRoller)hint='Letzter Datenstand · '+new Date(snapshot.roller.lastKnown.at).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+' · Roller nicht erreichbar';
         const hintElement=el.querySelector('.tile-hint');hintElement.textContent=t.metric==='consumptionEnergy'&&C.finite(value)&&value<0?'Zusätzliche Einspeisung · '+hint:hint;hintElement.title=[hint,window?.note||'',coverage,m.hint||''].filter(Boolean).join(' ');hintElement.classList.toggle('period-sunrise',t.period.mode==='sunrise');
         el.classList.toggle('no-value',!C.finite(value));
       }

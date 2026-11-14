@@ -8,6 +8,10 @@ Das bestehende GitHub-Repository heißt jetzt [`Tim-Gurke/AutarPie`](https://git
 
 ## Veröffentlichte Versionen
 
+### 3.0.4 · Lerndaten erhalten, frühere Wetterkorrektur und manueller Relaisbetrieb
+
+Geänderte Messdaten löschen nicht mehr unwiederbringlich frühere Lernabschnitte: betroffene Blöcke gezielt neu bewerten, nicht neu berechenbare Erkenntnisse erhalten und sichtbar aufschieben, Datengrundlage im offenen Dialog aktualisieren. Beobachtete Roller-Nutzungstage auch bei zentraler Erfassung auf den Anzeigen auswerten. Letzten BMS-Datenstand bei fehlender Reichweite mit Zeitpunkt erhalten; Steuerung weiterhin nur mit frischen Daten. Relaisbetrieb ausdrücklich manuell wählbar, direkter Ladeweg bleibt Standard; historischen Wirkungsgrad als Referenz übernehmen, Spulenmessung und geschätzten Ladebedarf unterscheiden. Vorläufige Gas-Temperaturkorrektur nach erstem geeigneten Flaschenabschnitt, spätere persönliche Modellprüfung. Symbol-Kurzwahlen, neue Darstellungsvorgabe für neue AutarPie-Installationen, Solarertrag und gemessener Abend-Akkustand in der Wetterrückschau. Android-10/11-Hintergrundberechtigung und BLE-Neustart verbessern den gespeicherten Autostart. [Installation, Bedienung und Prüfgrenzen](docs/changes-3.0.4.md).
+
 ### 3.0.3 · Dashboardfarben eindeutig zuordnen
 
 Der Verlauf verwendet sein eigenes Design oder die gemeinsamen Vorgaben, unabhängig von der zuvor geöffneten Seite. Der Farbeditor bearbeitet die sichtbare Seite; Speichern und „auf alle Kacheln anwenden“ verändern weder das zuletzt geöffnete andere Dashboard noch seine Kachelanordnung. Diagramme verwenden die wirksamen Seitenfarben. Fehlgeschlagenes Speichern lässt sich für dieselbe Seite wiederholen. Mit tatsächlichen Seitenwechseln, Speicherung, Neustart und Hoch-/Queransicht gegen Rückfälle geprüft. Zentralen-Hotfix 3.0.2 bleibt enthalten. [Update und Prüfgrenzen](docs/changes-3.0.3.md).

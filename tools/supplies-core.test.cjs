@@ -15,9 +15,9 @@ test('incomplete weather coverage is not silently filled',()=>{assert.equal(C.we
 test('location changes prevent training gas/weather relationships across the change',()=>{const events=[event('0001','gas','swap',now-4*D,11),event('0002','water','supply',now-3*D,20,{site:{key:'other'}}),event('0003','gas','swap',now-2*D,11)];assert.equal(C.intervals(events,'gas',now,{}).rows[0].features,null);});
 test('temperature dependence requires enough varied, cross-validated cycles',()=>{
  const rows=Array.from({length:9},(_,i)=>{const heat=[2,12,7,17,4,14,9,19,6][i];return {days:3,amount:(.2+.08*heat)*3,rate:.2+.08*heat,features:{heat,windHeat:heat*.5}};});
- assert.equal(C.weatherModel(rows.slice(0,5)),null);const model=C.weatherModel(rows);assert.ok(model);assert.ok(Math.abs(model.coefficients[0]-.2)<.03);assert.ok(Math.abs(model.coefficients[1]-.08)<.005);
+ assert.equal(C.weatherModel(rows.slice(0,1)).provisional,true);assert.equal(C.weatherModel(rows.slice(0,5)).provisional,undefined);const model=C.weatherModel(rows);assert.ok(model);assert.ok(Math.abs(model.coefficients[0]-.2)<.03);assert.ok(Math.abs(model.coefficients[1]-.08)<.005);
 });
-test('constant weather cannot identify a temperature model',()=>{const rows=Array.from({length:10},()=>({days:3,amount:3,rate:1,features:{heat:10,windHeat:5}}));assert.equal(C.weatherModel(rows),null);});
+test('constant weather retains a provisional heating assumption instead of claiming personal coefficients',()=>{const rows=Array.from({length:10},()=>({days:3,amount:3,rate:1,features:{heat:10,windHeat:5}}));assert.equal(C.weatherModel(rows).provisional,true);});
 test('future and duplicate journal entries are handled explicitly',()=>{assert.throws(()=>C.normalize({events:[event('0001','water','supply',now,20),event('0001','water','supply',now,20)]}));assert.equal(C.build({events:[event('0001','gas','swap',now+D,11)]},now).gas.lastAt,null);});
 test('old intervals age out without deleting the source journal',()=>{const source={events:[event('0001','water','supply',now-405*D,20),event('0002','water','supply',now-402*D,20)]};assert.equal(C.build(source,now).water.daily,null);assert.equal(source.events.length,2);});
 test('new dashboard metrics work without Bluetooth readings and preserve existing layouts',()=>{const dashboard=require('../app/src/main/assets/dashboard-core.js'),tile=dashboard.tile('waterRange'),snapshot={settings:{capacity:100},suppliesAnalysis:{water:{remainingHours:41}}};assert.equal(dashboard.displayValue(tile,null,null,null,snapshot),41);assert.equal(dashboard.format(41,tile),'1 Tag 17 Stunden');assert.equal(dashboard.normalize({version:1,tiles:[{...tile,layouts:{compact:{x:2,y:5,w:4,h:4},wide:{x:8,y:1,w:3,h:3}}}],blockOrder:['tiles','history','record']}).tiles[0].layouts.compact.x,2);});
@@ -41,16 +41,16 @@ function weatherFixture(count=9,{wind=false,constantHeat=false,constantRate=fals
  for(let d=0;d<15;d++)forecast.push({from:now+d*D,to:now+(d+1)*D,site:site.key,source:'forecast',heat:20,windHeat:10});
  return {events,weather:{updated:now,siteKey:site.key,history,forecast}};
 }
-test('loaded history alone reports learning progress rather than active weather correction',()=>{
- const p=C.build(weatherFixture(5),now).gas;
- assert.equal(p.weatherStatus.state,'learning');assert.equal(p.weatherStatus.weatherIntervals,5);assert.equal(p.weatherStatus.intervals,5);assert.match(p.weatherStatus.detail,/5 von mindestens 6/);assert.equal(p.weatherCorrected,false);
+test('the first complete bottle with matching weather allows provisional correction',()=>{
+ const p=C.build(weatherFixture(1),now).gas;
+ assert.equal(p.weatherStatus.state,'active');assert.equal(p.weatherStatus.weatherIntervals,1);assert.equal(p.weatherStatus.intervals,1);assert.equal(p.model.provisional,true);assert.match(p.weatherStatus.detail,/Noch kein persönlich gelernter/);assert.equal(p.weatherCorrected,true);
  const none=C.build({},now).gas;assert.equal(none.weatherStatus.state,'no-intervals');
  const missing=weatherFixture(6);missing.weather.history=[];const incomplete=C.build(missing,now).gas;
  assert.equal(incomplete.weatherStatus.weatherIntervals,0);assert.match(incomplete.weatherStatus.detail,/6 Abschnitte.*Wetterzuordnung/);
 });
 test('weather readiness explains similar temperatures and rejected weather models',()=>{
- assert.equal(C.build(weatherFixture(9,{constantHeat:true}),now).gas.weatherStatus.state,'similar-weather');
- assert.equal(C.build(weatherFixture(9,{constantRate:true}),now).gas.weatherStatus.state,'not-improved');
+ assert.equal(C.build(weatherFixture(9,{constantHeat:true}),now).gas.model.provisional,true);
+ assert.equal(C.build(weatherFixture(9,{constantRate:true}),now).gas.model.provisional,true);
 });
 test('active temperature and wind status follows the model that actually changes the forecasts',()=>{
  const p=C.build(weatherFixture(6),now).gas;assert.equal(p.weatherStatus.state,'active');assert.equal(p.weatherStatus.model,'temperature');assert.equal(p.forecastWeatherCorrected,true);assert.equal(p.rangeWeatherCorrected,true);assert.notEqual(p.needs[3],p.daily*3);
@@ -111,4 +111,11 @@ test('all demand tiles and instrument scales convert with the current container 
  }
  snapshot.suppliesAnalysis.gas.containerSize=5;assert.equal(dashboard.convert(25,'Flaschen','gasNeed14',snapshot),5);
  assert.deepEqual(dashboard.CATALOG.gasStock.units,['kg']);assert.deepEqual(dashboard.CATALOG.waterStock.units,['L']);
+});
+test('provisional temperature correction is bounded and responds in the correct direction after one cycle',()=>{
+ const f=weatherFixture(1);for(const row of f.weather.history){row.heat=10;row.windHeat=5;}
+ const warm=structuredClone(f),cold=structuredClone(f);for(const r of warm.weather.forecast)r.heat=0;for(const r of cold.weather.forecast)r.heat=100;
+ const w=C.build(warm,now).gas,c=C.build(cold,now).gas;assert.equal(w.model.provisional,true);assert.ok(w.needs[3]<w.daily*3);assert.ok(c.needs[3]>c.daily*3);
+ assert.ok(w.needs[3]>=w.daily*3*.65-1e-8);assert.ok(c.needs[3]<=c.daily*3*1.6+1e-8);assert.equal(w.model.wind,false);
+ const incomplete=structuredClone(f);incomplete.weather.history=[];assert.equal(C.build(incomplete,now).gas.model,null);
 });

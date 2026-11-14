@@ -1,5 +1,7 @@
 # AutarPie einrichten und benutzen
 
+**Stand 3.0.4:** [Lernkorrektur, G5-Hintergrundfreigabe, manueller Relaisbetrieb, früheres Gas-Wettermodell und Wetterrückschau](changes-3.0.4.md). Zentrale zuerst, anschließend alle Anzeigen auf 3.0.4 aktualisieren.
+
 ## Rollen und Wiederanlauf
 
 Die **Zentrale** erhält Bluetooth-Verbindungen, Messdaten, Wettergrundlagen und den lokalen Anlagenverbund. Ihre native Oberfläche zeigt Betriebszustände und direkte Bedienaktionen. Die **Anzeige** berechnet und zeichnet aus den Grundlagen einer gekoppelten Zentrale. **Eigenständig** kombiniert Erfassung, Berechnung und Cockpit auf einem Handy.

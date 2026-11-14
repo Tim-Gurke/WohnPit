@@ -19,6 +19,7 @@ function repaintReads(){
   roller?.refreshJournal?.();
 }
 const reads=deviceNative&&window.WattReadBridge?new window.WattReadBridge(deviceNative,method=>{
+  window.dispatchEvent(new CustomEvent('autarpie-history-ready',{detail:{method}}));
   if(method==='dailyEnergy'){if(page==='history')renderDaily();return;}
   readsDirty=true;clearTimeout(readRepaint);readRepaint=setTimeout(repaintReads,80);
 }):null;
@@ -32,6 +33,8 @@ const historyRead=(method,args,scope)=>reads?reads.read(method,args,scope):devic
 const refreshNote=data=>data?.progress|| (data?.stale?(data.pending?'Letzter Stand · neue Daten werden geladen …':data.refreshError?'Letzter Stand · Aktualisierung fehlgeschlagen. Neuer Versuch folgt.':'Letzter Stand'):data?.pending?'Daten werden im Hintergrund geladen …':data?.error?data.error:'');
 const dataTime=()=>lifecycle?.busy?lifecycle.startedAt||Date.now():Date.now();
 const icons = {
+  scooter:"<path d=\"M21 4h-3.5l2 11.05\"/><path d=\"M6.95 17h5.142c.523 0 .95-.406 1.063-.916a6.5 6.5 0 0 1 5.345-5.009\"/><circle cx=\"19.5\" cy=\"17.5\" r=\"2.5\"/><circle cx=\"4.5\" cy=\"17.5\" r=\"2.5\"/>",
+  controller:"<line x1=\"6\" x2=\"10\" y1=\"11\" y2=\"11\"/><line x1=\"8\" x2=\"8\" y1=\"9\" y2=\"13\"/><line x1=\"15\" x2=\"15.01\" y1=\"12\" y2=\"12\"/><line x1=\"18\" x2=\"18.01\" y1=\"10\" y2=\"10\"/><path d=\"M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z\"/>",
   sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.4 1.4m11.2 11.2L19 19M5 19l1.4-1.4M17.6 6.4 19 5"/>',
   moon:'<path d="M20 14a8.2 8.2 0 0 1-10-10A8.5 8.5 0 1 0 20 14Z"/>',
   battery:'<rect x="3" y="6" width="17" height="12" rx="3"/><path d="M22 10v4M7 12h9m-4-4v8"/>',
@@ -123,7 +126,7 @@ function reading(kind) {
     : {kind,t:Date.now(),voltage:13.04,current:10.5,solar:138,yieldWh:760,state:3,error:0,load:0};
   const config = snapshot.devices.find(d => d.kind === kind);
   if (!config || !snapshot.running) return null;
-  const data = config.error?null:snapshot.readings.find(r => r.device === config.mac),fresh=data&&Date.now()-data.t<45000;
+  const data = config.error?null:snapshot.readings.find(r => r.device === config.mac),fresh=data&&Date.now()>=data.t&&Date.now()-data.t<45000;
   const output=snapshot.energy?.output,activeFresh=kind==='solar'&&output&&Date.now()>=output.at&&Date.now()-output.at<45000;
   if(activeFresh){const value=fresh?{...data}:{kind,t:output.at};if(typeof output.pvVoltage==='number')value.pvVoltage=output.pvVoltage;if(typeof output.current==='number')value.load=output.current;return value;}
   return fresh?data:null;
@@ -132,9 +135,10 @@ function renderOverview() {
   const shunt = reading('shunt'), solar = reading('solar');
   $('todayLabel').textContent = new Date().toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'}).toUpperCase();
   $('welcome').hidden = snapshot.devices.length > 0 || demo;
-  const status = $('liveStatus'), any = shunt || solar;
-  status.className = 'status-chip' + (demo ? ' warning' : any ? ' live' : snapshot.running ? ' warning' : '');
-  status.querySelector('span').textContent = demo ? 'Demo' : any ? 'Live' : snapshot.running ? 'Warte auf Geräte' : 'Pausiert';
+  const relevant={shunt:shunt&&Number.isFinite(shunt.power)&&Number.isFinite(shunt.soc),solar:solar&&Number.isFinite(solar.solar)},expected=snapshot.devices.filter(d=>d.kind==='shunt'||d.kind==='solar'),received=expected.filter(d=>relevant[d.kind]).length;
+  const status = $('liveStatus'), any = received>0, complete=expected.length>0&&received===expected.length;
+  status.className = 'status-chip' + (demo ? ' warning' : complete ? ' live' : any ? ' warning' : snapshot.running ? ' warning' : '');
+  status.querySelector('span').textContent = demo ? 'Demo' : complete ? 'Live' : any ? 'Teilweise live' : snapshot.running ? 'Warte auf Geräte' : 'Pausiert';
   const direction = shunt?.current == null ? 'Noch kein Livewert' : shunt.current > .03 ? 'Wohnwagenakku wird geladen' : shunt.current < -.03 ? 'Wohnwagenakku wird entladen' : 'Bilanz ausgeglichen';
   $('batteryState').innerHTML = `<i class="dot ${shunt?.alarm ? 'orange' : 'mint'}"></i>${shunt?.alarm ? `Shunt-Alarm 0x${shunt.alarm.toString(16).toUpperCase()}` : direction}`;
   $('lastSeen').textContent = shunt ? (demo ? 'Beispieldaten' : `Stand ${clock(shunt.t)}`) : 'Kein Empfang';

@@ -52,44 +52,50 @@
   }
   const predict=(coefficients,features)=>coefficients.reduce((sum,c,i)=>sum+c*[1,features.heat,features.windHeat][i],0);
   function weatherModel(rows){
-    const usable=rows.filter(r=>r.features);if(usable.length<6||Math.max(...usable.map(r=>r.features.heat))-Math.min(...usable.map(r=>r.features.heat))<3)return null;
+    const usable=rows.filter(r=>r.features&&finite(r.days)&&r.days>0&&finite(r.amount)&&r.amount>0);if(!usable.length)return null;
+    const days=usable.reduce((sum,r)=>sum+r.days,0),daily=usable.reduce((sum,r)=>sum+r.amount,0)/days,heat=usable.reduce((sum,r)=>sum+r.days*r.features.heat,0)/days;
+    // A cautious heating prior, anchored to the observed bottle use. One cycle
+    // cannot identify personal heating/cooking coefficients or any wind effect.
+    const slope=daily*.5/(heat+5),provisional={coefficients:[daily-slope*heat,slope],intervals:usable.length,wind:false,provisional:true};
+    if(usable.length<3||Math.max(...usable.map(r=>r.features.heat))-Math.min(...usable.map(r=>r.features.heat))<3)return provisional;
     let best=null;for(const dimensions of [2,3]){
       if(dimensions===3&&usable.length<9)continue;let baseError=0,modelError=0;
       for(let i=0;i<usable.length;i++){const training=usable.filter((_,j)=>j!==i),baseline=training.reduce((s,r)=>s+r.amount,0)/training.reduce((s,r)=>s+r.days,0),estimated=predict(fit(training,dimensions),usable[i].features);baseError+=usable[i].days*(usable[i].rate-baseline)**2;modelError+=usable[i].days*(usable[i].rate-estimated)**2;}
       if(baseError>1e-8&&modelError<baseError*.85&&(!best||modelError<best.error*.95))best={coefficients:fit(usable,dimensions),error:modelError,intervals:usable.length,wind:dimensions===3};
-    }return best;
+    }return best||provisional;
   }
+  const correctedRate=(profile,features)=>Math.min(profile.daily*(profile.model.provisional?1.6:5),Math.max(profile.daily*(profile.model.provisional?.65:.15),predict(profile.model.coefficients,features)));
   const freshForecast=(weather,now)=>weather.enabled!==false&&finite(weather.updated)&&now-weather.updated<30*HOUR;
   const forecastRows=weather=>(weather.forecast||[]).filter(r=>r.source==='forecast');
   function rateAt(profile,weather,from,to,currentSite,now){
     const features=weatherFeatures(forecastRows(weather),from,to,currentSite);
-    if(profile.model&&features&&freshForecast(weather,now))return {rate:Math.min(profile.daily*5,Math.max(profile.daily*.15,predict(profile.model.coefficients,features))),weather:true};
+    if(profile.model&&features&&freshForecast(weather,now))return {rate:correctedRate(profile,features),weather:true};
     return {rate:profile.daily,weather:false};
   }
   function consumption(profile,weather,from,to,site,future=false){
     if(!finite(profile.daily)||profile.daily<=0||to<from)return null;let result=0,cursor=from;
     const rows=future?forecastRows(weather):historyRows(weather);let corrected=0;
     while(cursor<to){const end=Math.min(to,cursor+DAY),features=weatherFeatures(rows,cursor,end,site);let rate=profile.daily;
-      if(profile.model&&features&&(!future||freshForecast(weather,from))){rate=Math.min(profile.daily*5,Math.max(profile.daily*.15,predict(profile.model.coefficients,features)));corrected+=end-cursor;}
+      if(profile.model&&features&&(!future||freshForecast(weather,from))){rate=correctedRate(profile,features);corrected+=end-cursor;}
       result+=rate*(end-cursor)/DAY;cursor=end;
     }return {amount:result,weather:corrected>0,coverage:(to>from?corrected/(to-from):0)};
   }
   function weatherStatus(profile,rows,weather,site,now){
     const usable=rows.filter(r=>r.features),count=usable.length,model=profile.model;
-    const status={intervals:rows.length,weatherIntervals:count,temperatureMinimum:6,windMinimum:9,model:model?(model.wind?'temperature-wind':'temperature'):null};
+    const status={intervals:rows.length,weatherIntervals:count,temperatureMinimum:1,windMinimum:9,provisional:!!model?.provisional,model:model?(model.provisional?'temperature-provisional':model.wind?'temperature-wind':'temperature'):null};
     const baseline='Der übliche Tagesbedarf bleibt der Durchschnitt deiner abgeschlossenen Flaschenabschnitte.';
     let state,title,detail;
     if(!model){
       title='Wetterkorrektur noch nicht aktiv';
       if(!rows.length){state='no-intervals';detail='Noch kein vollständiger Flaschenabschnitt. Zwei Wechsel mit leerer vorheriger Flasche liefern den ersten Abschnitt.';}
-      else if(count<6){state='learning';detail=count+' von mindestens 6 geeigneten Abschnitten für Temperatur; Wind wird frühestens ab 9 geprüft.';if(count<rows.length)detail+=' Für '+(rows.length-count)+' Abschnitte fehlt eine ausreichende Wetterzuordnung zum selben Ort.';}
+      else if(!count){state='learning';detail='Für die erste vorläufige Temperaturkorrektur braucht ein vollständiger Flaschenabschnitt passende historische Wetterdaten; Wind wird später gesondert geprüft.';if(count<rows.length)detail+=' Für '+(rows.length-count)+' Abschnitte fehlt eine ausreichende Wetterzuordnung zum selben Ort.';}
       else if(Math.max(...usable.map(r=>r.features.heat))-Math.min(...usable.map(r=>r.features.heat))<3){state='similar-weather';detail='Genügend Abschnitte, aber noch zu ähnliche Temperaturen für ein verlässliches Wettermodell.';}
       else{state='not-improved';detail='Das Wettermodell erklärt deine bisherigen Verbräuche noch nicht zuverlässig besser als der Durchschnitt.';}
       detail+=' Bis dahin wird aus den Flaschenwechseln geschätzt.';
     }else if(profile.forecastWeatherCorrected||profile.rangeWeatherCorrected){
-      state='active';title='Wetterkorrektur aktiv · Temperatur'+(model.wind?' und Wind':'');detail='Bedarf und Reichweite verwenden das gelernte Modell, soweit passende Vorhersagetage vorliegen. Danach gilt der übliche Tagesbedarf.';
+      state='active';title=model.provisional?'Wetterkorrektur vorläufig aktiv · Temperatur':'Wetterkorrektur aktiv · Temperatur'+(model.wind?' und Wind':'');detail=model.provisional?'Vorsichtige Modellannahme anhand von '+count+' vollständigen Flaschenabschnitten mit Wetterdaten. Noch kein persönlich gelernter Temperatureinfluss: die Korrektur bleibt auf −35 % bis +60 % des üblichen Tagesbedarfs begrenzt. Weitere unterschiedliche Wetterabschnitte verbessern das persönliche Modell.':'Bedarf und Reichweite verwenden das gelernte Modell, soweit passende Vorhersagetage vorliegen. Danach gilt der übliche Tagesbedarf.';
     }else{
-      title='Wettermodell gelernt · Prognose ohne Wetterkorrektur';
+      title=(model.provisional?'Vorläufiges Wettermodell':'Wettermodell gelernt')+' · Prognose ohne Wetterkorrektur';
       if(weather.enabled===false){state='disabled';detail='Wettervorhersagen sind ausgeschaltet.';}
       else if(!site){state='missing-site';detail='Der aktuelle Wetterort fehlt.';}
       else if(!freshForecast(weather,now)){state='stale';detail='Eine aktuelle Wettervorhersage fehlt. Bitte Wetter ergänzen.';}
@@ -111,14 +117,14 @@
       if(finite(daily)&&daily>0){
         for(const horizon of [3,7,14]){const need=consumption(profile,weather,now,now+horizon*DAY,site,true);profile.needs[horizon]=need.amount;profile.forecastWeatherCorrected=profile.forecastWeatherCorrected||need.weather;}
         if(profile.stock!==null){let remaining=profile.stock,hours=0;while(remaining>0&&hours<24*1096){const rate=rateAt(profile,weather,now+hours*HOUR,now+(hours+1)*HOUR,site,now);if(rate.rate<=0)break;profile.rangeWeatherCorrected=profile.rangeWeatherCorrected||rate.weather;const used=rate.rate/24;if(remaining<=used){hours+=remaining/used;remaining=0;break;}remaining-=used;hours++;}if(remaining<=0){profile.remainingHours=Math.round(hours*1e6)/1e6;profile.emptyAt=now+hours*HOUR;}
-          const deviation=Math.max(rows.length<3?.5:.25,Math.min(.8,Math.sqrt(mean(rows.map(r=>(r.rate-daily)**2))||0)/daily));if(finite(profile.remainingHours))profile.rangeHours=[profile.remainingHours/(1+deviation),profile.remainingHours/Math.max(.2,1-deviation)];
+          const deviation=Math.max((rows.length<3||model?.provisional)?.5:.25,Math.min(.8,Math.sqrt(mean(rows.map(r=>(r.rate-daily)**2))||0)/daily));if(finite(profile.remainingHours))profile.rangeHours=[profile.remainingHours/(1+deviation),profile.remainingHours/Math.max(.2,1-deviation)];
         }
       }
       profile.weatherCorrected=profile.historyWeatherCorrected||profile.forecastWeatherCorrected||profile.rangeWeatherCorrected;
       if(kind==='gas')profile.weatherStatus=weatherStatus(profile,rows,weather,site,now);
       profile.basis=rows.length===0?'Noch kein vollständiger Nutzungsabschnitt':rows.length<3?'Vorläufig · '+rows.length+' Abschnitt'+(rows.length===1?'':'e'):rows.length+' Nutzungsabschnitte';
       if(kind==='water'&&rows.length)profile.basis+=' · aus Beschaffungen geschätzt';
-      if(kind==='gas'&&model)profile.basis+=' · Temperatur'+(model.wind?' und Wind':'')+' gelernt';
+      if(kind==='gas'&&model)profile.basis+=model.provisional?' · Temperatur vorläufig berücksichtigt':' · Temperatur'+(model.wind?' und Wind':'')+' gelernt';
       profile.hint=profile.basis+(profile.stock===null?' · Vorrat unbekannt':'');result[kind]=profile;
     }return result;
   }

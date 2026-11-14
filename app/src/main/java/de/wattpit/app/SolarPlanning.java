@@ -15,7 +15,7 @@ import de.wattpit.app.core.SolarEquipment;
 
 /** Forecast history is separate from measurements. All history work runs off the UI/bridge thread. */
 final class SolarPlanning extends SQLiteOpenHelper {
-    static final int ALGORITHM=1720;
+    static final int ALGORITHM=1721;
     private final RollerLedger rollerLedger;
     private final Context context;
     private JSONArray rollerInputs=new JSONArray(),presenceHistory=new JSONArray();
@@ -31,6 +31,7 @@ final class SolarPlanning extends SQLiteOpenHelper {
     private volatile JSONArray suppliedPresence;
     private volatile JSONObject suppliedPresenceState;
     private volatile long forcedSince=Long.MAX_VALUE;
+    private volatile JSONArray invalidationRanges;
     private volatile long analysisUntil,invalidateSince=Long.MAX_VALUE;
     private volatile JSONObject lastKnowledge=new JSONObject();
     private volatile String lastFailure="";
@@ -68,9 +69,11 @@ final class SolarPlanning extends SQLiteOpenHelper {
     boolean hasObservations(){try(Cursor c=getReadableDatabase().rawQuery("SELECT 1 FROM observations WHERE source=? LIMIT 1",new String[]{RollerLedger.source(repository.prefs)})){return c.moveToFirst();}}
     void analysisPresence(JSONArray rows,JSONObject state,long since,long until){suppliedPresence=rows;suppliedPresenceState=state;forcedSince=Math.min(forcedSince,since);analysisUntil=until;}
     void invalidateLearning(long since){if(since>0)invalidateSince=Math.min(invalidateSince,since);}
+    void invalidateLearning(JSONArray ranges){invalidationRanges=ranges;}
     long learningSince(long now)throws Exception{
         long since=now-7L*86400000;String source=source(devices());
         try(Cursor c=getReadableDatabase().rawQuery("SELECT MAX(end) FROM observations WHERE source=? AND end<=?",new String[]{source,""+now})){if(c.moveToFirst()&&!c.isNull(0))since=Math.max(since,c.getLong(0)-2L*86400000);else{long first=repository.db.stats().optLong("from");if(first>0)since=Math.min(since,first);}}
+        try(Cursor c=getReadableDatabase().rawQuery("SELECT MIN(start) FROM observations WHERE source=? AND instr(payload,?)>0",new String[]{source,"\"rebuildPending\":true"})){if(c.moveToFirst()&&!c.isNull(0))since=Math.min(since,c.getLong(0));}
         return Math.max(LearningWindow.since(now),Math.min(since,forcedSince));
     }
     void captureNative(){if(analysis)return;try{
@@ -372,13 +375,20 @@ final class SolarPlanning extends SQLiteOpenHelper {
             rollerInputs=rollerLedger.read(source,since,now);
             for(int i=0;i<rollerInputs.length();i++){JSONObject input=rollerInputs.getJSONObject(i);changes.add(input.getLong("from"));changes.add(input.getLong("to"));}
             JSONArray observations=weather.optInt("version")>=4&&!signature.equals(weather.optString("signature"))?new JSONArray():repository.db.planningObservations(since,now,observationWeather,devices[0],devices[1],changes);
-            db.beginTransaction();try{if(analysis&&invalidateSince!=Long.MAX_VALUE)db.delete("observations","source=? AND end>? AND start<?",new String[]{source,""+invalidateSince,""+now});for(int i=0;i<observations.length();i++){
+            db.beginTransaction();try{
+                // Keep the last evidence until a complete replacement exists. Changed inputs
+                // suspend its use in forecasts instead of deleting irreplaceable knowledge.
+                if(analysis&&invalidationRanges!=null){for(int k=0;k<invalidationRanges.length();k++){JSONArray range=invalidationRanges.getJSONArray(k);retainForRebuild(db,source,range.getLong(0),range.getLong(1));}}
+                else if(analysis&&invalidateSince!=Long.MAX_VALUE)retainForRebuild(db,source,invalidateSince,now);
+                for(int i=0;i<observations.length();i++){
                 JSONObject row=observations.getJSONObject(i);long from=row.getLong("from"),to=row.getLong("to");
                 // A shorter rolling weather cache cannot erase an older valid
                 // observation before its missing historical weather is restored.
-                if(!dated.contains(row.getString("day"))&&!rollerCharging(specialUses,from,to))try(Cursor c=db.rawQuery("SELECT 1 FROM observations WHERE source=? AND start=? AND end=?",new String[]{source,""+from,""+to})){if(c.moveToFirst())continue;}
+                if(!dated.contains(row.getString("day"))&&!rollerCharging(specialUses,from,to))try(Cursor c=db.rawQuery("SELECT payload FROM observations WHERE source=? AND start=? AND end=?",new String[]{source,""+from,""+to})){if(c.moveToFirst()&&!new JSONObject(c.getString(0)).optBoolean("rebuildPending"))continue;}
                 if(!annotate(row,contexts,profiles,weather,currentKey,solarKey,now,specialUses,confirmations.entries))continue;
                 if(row.getJSONObject("usage").optLong("duration")==0&&row.optDouble("solarCoverage",0)<=0)continue;
+                // Replacing a fully rebuilt interval also retires differently split old rows.
+                db.delete("observations","source=? AND start>=? AND end<=? AND instr(payload,?)>0",new String[]{source,""+from,""+to,"\"rebuildPending\":true"});
                 ContentValues v=new ContentValues();v.put("start",from);v.put("end",to);v.put("source",source);v.put("payload",row.toString());db.insertWithOnConflict("observations",null,v,SQLiteDatabase.CONFLICT_REPLACE);
             }db.delete("observations","end<?",new String[]{""+(LearningWindow.since(now))});db.delete("contexts","at<? AND at NOT IN (SELECT MAX(at) FROM contexts WHERE at<? GROUP BY source)",new String[]{""+(LearningWindow.since(now)-10L*86400000),""+(LearningWindow.since(now)-10L*86400000)});db.setTransactionSuccessful();}finally{db.endTransaction();}
             if(observations.length()>0)repository.prefs.edit().putInt("planningEnergyVersion."+source,ALGORITHM).putLong("planningRollerInputEnd."+source,inputRange[1]).putString("planningArchiveTimeRevision."+source,timeRevision).putString("planningSpecialUsage."+source,specialUses.toString()).apply();
@@ -391,7 +401,12 @@ final class SolarPlanning extends SQLiteOpenHelper {
             JSONArray notices=new JSONArray();for(PlanningConfirmation.Entry e:confirmations.entries)notices.put(e.notice());
             result.put("source",source).put("observations",samples).put("forecasts",forecasts).put("confirmedSetups",notices).put("presence",suppliedPresenceState==null?PresenceStore.get(context).snapshot():suppliedPresenceState).put("updated",now);
         }catch(Exception e){try{result.put("error","Lerndaten gerade nicht verfügbar. Die Solarvorschau bleibt nutzbar.");}catch(JSONException ignored){}}
-        finally{busy.set(false);lastFailure=result.optString("error","");if(!closed&&result.length()>0){if(!result.has("error")){lastKnowledge=result;forcedSince=invalidateSince=Long.MAX_VALUE;if(!analysis)sharedKnowledge=result.toString();}callback.accept(result);}if(!closed&&requestedAgain.getAndSet(false))request();}});
+        finally{busy.set(false);lastFailure=result.optString("error","");if(!closed&&result.length()>0){if(!result.has("error")){lastKnowledge=result;forcedSince=invalidateSince=Long.MAX_VALUE;invalidationRanges=null;if(!analysis)sharedKnowledge=result.toString();}callback.accept(result);}if(!closed&&requestedAgain.getAndSet(false))request();}});
+    }
+    private static void retainForRebuild(SQLiteDatabase db,String source,long from,long to)throws JSONException{
+        java.util.List<JSONObject> rows=new java.util.ArrayList<>();
+        try(Cursor c=db.rawQuery("SELECT payload FROM observations WHERE source=? AND end>? AND start<?",new String[]{source,""+from,""+to})){while(c.moveToNext())rows.add(new JSONObject(c.getString(0)));}
+        for(JSONObject row:rows){row.put("rebuildPending",true);ContentValues values=new ContentValues();values.put("payload",row.toString());db.update("observations",values,"source=? AND start=? AND end=?",new String[]{source,""+row.getLong("from"),""+row.getLong("to")});}
     }
     Future<JSONObject> diagnosticSnapshot(){return worker.submit(()->{
         long now=System.currentTimeMillis();String[] selected=devices();String currentSource=source(selected);SQLiteDatabase db=getReadableDatabase();

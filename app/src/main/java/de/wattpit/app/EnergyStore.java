@@ -15,7 +15,7 @@ final class EnergyStore {
     private static long queuedAt,commandVersion;
     private static boolean goalReached,manualOff,initialized;
     static synchronized JSONObject config(Repository repo)throws JSONException{
-        if(!initialized){manualOff=repo.prefs.getBoolean("outputManualOff",false);goalReached=repo.prefs.getBoolean("outputGoalReached",false);initialized=true;}JSONObject c=new JSONObject(repo.prefs.getString(KEY,"{}"));if(!c.has("assignment"))c.put("assignment","unassigned");if(!c.has("monitor"))c.put("monitor",true);if(!c.has("rules"))c.put("rules",new JSONObject().put("enabled",false));return c;
+        if(!initialized){manualOff=repo.prefs.getBoolean("outputManualOff",false);goalReached=repo.prefs.getBoolean("outputGoalReached",false);initialized=true;}JSONObject c=new JSONObject(repo.prefs.getString(KEY,"{}"));if(!c.has("powerPath"))c.put("powerPath","direct");if(!c.has("assignment"))c.put("assignment","unassigned");if(!c.has("monitor"))c.put("monitor",true);if(!c.has("rules"))c.put("rules",new JSONObject().put("enabled",false));return c;
     }
     static synchronized void configure(Repository repo,String json)throws Exception{
         if(json.length()>10000)throw new IllegalArgumentException("Die Ausgangskonfiguration ist zu groß.");JSONObject c=new JSONObject(json);String assignment=c.getString("assignment");if(!Arrays.asList("unassigned","scooter","model","other").contains(assignment))throw new IllegalArgumentException("Ungültige Zuordnung.");
@@ -24,8 +24,9 @@ final class EnergyStore {
         if(clean.getDouble("target")<1||clean.getDouble("target")>100||clean.getDouble("reserve")>100||clean.getDouble("houseTarget")>100||clean.getDouble("delaySeconds")>3600||clean.getDouble("efficiency")<=0||clean.getDouble("efficiency")>1||clean.getDouble("powerW")<=0||clean.getDouble("stopW")>=clean.getDouble("startW"))throw new IllegalArgumentException("Bitte gültige Ladeziele und getrennte Start-/Stoppschwellen wählen.");
         String mode=r.getString("mode");if(!Arrays.asList("live","forecast","both").contains(mode))throw new IllegalArgumentException("Ungültige Überschussart.");clean.put("mode",mode).put("enabled",r.getBoolean("enabled"));
         String regulator=c.optString("regulator","");if(!regulator.isEmpty()){boolean found=false;JSONArray devices=repo.configs();for(int i=0;i<devices.length();i++){JSONObject d=devices.getJSONObject(i);if(d.optString("kind").equals("solar")&&d.optString("mac").equals(regulator))found=true;}if(!found)throw new IllegalArgumentException("Der gewählte Solarregler ist nicht eingerichtet.");}
-        JSONObject result=new JSONObject().put("regulator",regulator).put("assignment",assignment).put("monitor",c.getBoolean("monitor")).put("exclusiveScooter",c.optBoolean("exclusiveScooter",false)).put("rules",clean);
-        if(assignment.equals("scooter")){RollerStore roller=RollerStore.get(repo.applicationContext());JSONObject profile=roller.snapshot().getJSONObject("profile");profile.put("chargePath","load-output").put("idleWatts",0).put("conversionEfficiency",clean.getDouble("efficiency")).put("chargeWatts",clean.getDouble("powerW")*clean.getDouble("efficiency")).put("targetPercent",clean.getDouble("target"));if(clean.optBoolean("enabled"))profile.put("autoSpecialUse",true).put("planCharge",true);roller.configure(profile.toString());}
+        String powerPath=c.optString("powerPath",config(repo).optString("powerPath","direct"));if(!Arrays.asList("direct","relay").contains(powerPath))throw new IllegalArgumentException("Unbekannter Strompfad.");
+        JSONObject result=new JSONObject().put("powerPath",powerPath).put("regulator",regulator).put("assignment",assignment).put("monitor",c.getBoolean("monitor")).put("exclusiveScooter",c.optBoolean("exclusiveScooter",false)).put("rules",clean);
+        if(assignment.equals("scooter")){RollerStore roller=RollerStore.get(repo.applicationContext());JSONObject profile=roller.snapshot().getJSONObject("profile");profile.put("chargePath",powerPath.equals("relay")?"relay":"load-output").put("idleWatts",0).put("conversionEfficiency",clean.getDouble("efficiency")).put("chargeWatts",clean.getDouble("powerW")*clean.getDouble("efficiency")).put("targetPercent",clean.getDouble("target"));if(clean.optBoolean("enabled"))profile.put("autoSpecialUse",true).put("planCharge",true);roller.configure(profile.toString());}
         if(!repo.prefs.edit().putString(KEY,result.toString()).commit())throw new java.io.IOException();plan=new JSONObject();authority="";goalReached=false;manualOff=false;repo.prefs.edit().putBoolean("outputManualOff",false).putBoolean("outputGoalReached",false).apply();
     }
     static void live(Repository repo,String mac,JSONObject sample)throws JSONException{
@@ -34,7 +35,7 @@ final class EnergyStore {
             solar.put(mac,new JSONObject(sample.toString()).put("device",mac));
             repo.prefs.edit().putLong("outputMeasuredAt",sample.optLong("at")).putInt("outputMeasuredState",sample.optInt("state",-1)).putFloat("outputMeasuredCurrent",(float)sample.optDouble("current",0)).apply();
             outputError="";JSONObject configuration=config(repo);
-            exclusive=mac.equals(regulator(repo))&&configuration.optString("assignment").equals("scooter")&&configuration.optBoolean("exclusiveScooter");
+            exclusive=mac.equals(regulator(repo))&&configuration.optString("assignment").equals("scooter")&&configuration.optBoolean("exclusiveScooter")&&!configuration.optString("powerPath").equals("relay");
         }
         // SQLite and BMS waits must not hold the shared live-state monitor.
         try{RollerLedger.get(repo.applicationContext()).loadRaw(RollerLedger.source(repo.prefs),mac,sample,exclusive,RollerStore.get(repo.applicationContext()).mac());}
@@ -90,7 +91,7 @@ final class EnergyStore {
             else if(soc>=r.optDouble("target",85)){stop=true;goalReached=true;repo.prefs.edit().putBoolean("outputGoalReached",true).apply();reason="Ladeziel erreicht";}
             else if(house<=r.optDouble("reserve",35)){stop=true;reason="Wohnwagenreserve schützen";}
             else if(plan.optLong("expires")<=now||!plan.optBoolean("allow")){stop=true;reason="Kein gültiger freigegebener Ladeplan";}
-            else if(now-autoStarted>60000&&(out.optDouble("current",0)<.1||l.optDouble("current",0)<.1)){stop=true;manualOff=true;repo.prefs.edit().putBoolean("outputManualOff",true).apply();reason="Keine Ladung bestätigt; Anschluss prüfen und Automatik neu freigeben";}
+            else if(now-autoStarted>60000&&(!cfg.optString("powerPath").equals("relay")&&out.optDouble("current",0)<.1||l.optDouble("current",0)<.1)){stop=true;manualOff=true;repo.prefs.edit().putBoolean("outputManualOff",true).apply();reason="Keine Ladung bestätigt; Anschluss prüfen und Automatik neu freigeben";}
         }
         if(stop){if(!repo.archiveBusy&&!repo.liveBusy&&now-lastCommand>10000){command(context,false,true);outputError=reason;}return;}
         if(!active&&requested==null&&plan.optBoolean("allow")&&plan.optLong("expires")>now&&r.optBoolean("enabled")&&!manualOff&&!goalReached&&now-lastCommand>15000){

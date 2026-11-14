@@ -46,13 +46,13 @@ public final class CentralActivity extends Activity {
     private final Runnable refresh=new Runnable(){@Override public void run(){if(!foreground)return;update();main.postDelayed(this,3000);}};
 
     @Override public void onCreate(Bundle state){
-        super.onCreate(state);repository=Repository.get(this);lan=LanSync.get(this);
+        super.onCreate(state);repository=Repository.get(this);try{UiPreset.install(this,repository.prefs);}catch(Exception ignored){}lan=LanSync.get(this);
         if(state!=null){pendingStart=state.getBoolean("pendingStart");pendingArchive=state.getString("pendingArchive");}
         try{if(!lan.host()&&!lan.viewer())lan.create("AutarPie");}catch(Exception e){notice(Repository.safeError(e));}
         repository.prefs.registerOnSharedPreferenceChangeListener(appearanceChanged);colors();build();
     }
     @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);out.putBoolean("pendingStart",pendingStart);out.putString("pendingArchive",pendingArchive);}
-    @Override protected void onStart(){super.onStart();foreground=true;SuppliesWeather.refresh(repository,false);main.post(refresh);if(repository.prefs.getBoolean("recording",false)&&permissions())startReady();}
+    @Override protected void onStart(){super.onStart();foreground=true;BackgroundBleAccess.offer(this);SuppliesWeather.refresh(repository,false);main.post(refresh);if(repository.prefs.getBoolean("recording",false)&&permissions())startReady();}
     @Override protected void onStop(){foreground=false;main.removeCallbacks(refresh);super.onStop();}
     @Override protected void onDestroy(){repository.prefs.unregisterOnSharedPreferenceChangeListener(appearanceChanged);main.removeCallbacksAndMessages(null);files.shutdown();super.onDestroy();}
     private void colors(){BG=0xff0b1523;CARD=0xff142236;TEXT=0xffe7eff8;MUTED=0xffa0b1c5;try{appearance=new JSONObject(repository.prefs.getString(AutarPieConfig.APPEARANCE,"{}"));String theme=appearance.optString("theme",repository.prefs.getString("theme","dark"));boolean light=theme.equals("light")||theme.equals("system")&&(getResources().getConfiguration().uiMode&android.content.res.Configuration.UI_MODE_NIGHT_MASK)==android.content.res.Configuration.UI_MODE_NIGHT_NO;if(light){BG=0xffeef3f8;CARD=0xffffffff;TEXT=0xff182d42;MUTED=0xff50677e;}ACCENT=Color.parseColor(appearance.optString("accent","#80b7ed"));}catch(Exception ignored){}}

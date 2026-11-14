@@ -48,7 +48,7 @@ public final class DisplayActivity extends Activity {
         super.onCreate(savedInstanceState);
         if(savedInstanceState!=null)pendingSettingsExport=savedInstanceState.getString("pendingSettingsExport");
         repository = Repository.get(this);
-        try{DashboardPreset.install(repository.prefs,DashboardPreset.read(this));}catch(Exception e){repository.message(Repository.safeError(e));}
+        try{UiPreset.install(this,repository.prefs);DashboardPreset.install(repository.prefs,DashboardPreset.read(this));}catch(Exception e){repository.message(Repository.safeError(e));}
         lan=LanSync.get(this);
         solarPlanning=new SolarPlanning(this,repository,value->call("onSolarPlanData",value));
         if(!lan.viewer())PresenceStore.get(this).tick();
@@ -94,6 +94,7 @@ public final class DisplayActivity extends Activity {
     @Override protected void onStart(){
         super.onStart();
         foreground=true;
+        if(!AppRole.viewerOnly(this)&&!lan.viewer())BackgroundBleAccess.offer(this);
         web.onResume();web.resumeTimers();solarPlanning.displayActive(true);
         try{call("onDisplayActive",new JSONObject().put("active",true));}catch(JSONException ignored){}
         for(java.util.Map.Entry<String,JSONObject> pending:new java.util.HashMap<>(deferredCalls).entrySet())call(pending.getKey(),pending.getValue());deferredCalls.clear();
@@ -429,7 +430,8 @@ public final class DisplayActivity extends Activity {
         @JavascriptInterface public void migrationBackup(){runOnUiThread(()->startActivity(new Intent(DisplayActivity.this,MigrationActivity.class).putExtra("export",true)));}
         @JavascriptInterface public void migrationImport(){runOnUiThread(()->startActivity(new Intent(DisplayActivity.this,MigrationActivity.class)));}
         @JavascriptInterface public String appRole(){return AppRole.get(DisplayActivity.this);}
-        @JavascriptInterface public String dashboardPreset(){try{return DashboardPreset.read(DisplayActivity.this);}catch(Exception e){return "null";}}
+        @JavascriptInterface public String uiDefaults(){try{return repository.prefs.getBoolean(UiPreset.MARKER,false)?UiPreset.read(DisplayActivity.this).toString():"{}";}catch(Exception e){return "{}";}}
+        @JavascriptInterface public String dashboardPreset(){try{return UiPreset.read(DisplayActivity.this).getJSONObject("dashboard").toString();}catch(Exception e){return "null";}}
         @JavascriptInterface public String dashboard() { return repository.prefs.getString("dashboard-v1","{}"); }
         @JavascriptInterface public String workspace(){return repository.prefs.getString(AutarPieConfig.WORKSPACE,"{}");}
         @JavascriptInterface public String appearance(){return repository.prefs.getString(AutarPieConfig.APPEARANCE,"{}");}

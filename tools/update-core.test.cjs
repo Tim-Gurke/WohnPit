@@ -64,3 +64,23 @@ test('missing selected regulators remain unknown and percentage results are not 
  assert.equal(D.convert(80,'%',tile.metric,s),80);assert.equal(M.read(tile,s,null,null,source=>({value:source.metric==='rollerPower'?96:120,at:s.now}),s.now).value,80);
  assert.equal(D.format(null,D.tile('loadState')),'—');
 });
+test('saved BMS readings remain visible while disconnected and do not create live charge data',()=>{
+ const s=snapshot(),saved=structuredClone(s.roller.live);s.roller={...s.roller,fresh:false,live:{},lastKnown:saved};
+ assert.equal(D.liveValue('rollerSoc',null,null,s),saved.soc);assert.equal(D.liveValue('rollerStored',null,null,s),saved.remainingAh*s.roller.profile.nominalVoltage);
+ assert.equal(M.read({metric:'rollerChargeTime'},s,null,null,()=>null).value,null);
+ assert.equal(M.read({metric:'rollerEfficiency'},s,null,null,()=>null).value,null);
+ const r=M.read({metric:'rollerRange'},s,null,null,()=>null);assert.ok(r.value>0);assert.equal(r.stale,true);assert.match(r.reason,/Letzter BMS-Datenstand/);
+ assert.equal(M.read({metric:'formula',formula:{expression:'A*2',variables:{A:{metric:'rollerRange'}}}},s,null,null,()=>null).value,null);
+ const R=require('../app/src/main/assets/roller-core.js');assert.deepEqual(R.loads({...s.roller,profile:{...s.roller.profile,planCharge:true}},Date.now()),[]);
+});
+test('relay mode uses the retained reference and never treats coil power as measured efficiency',()=>{
+ const s=snapshot();s.energy.config.powerPath='relay';s.roller.profile.chargePath='relay';s.roller.profile.conversionEfficiency=.9;s.energy.output.current=.03;
+ const input=M.read({metric:'rollerInputPower'},s,null,null,()=>null);assert.equal(input.estimated,true);assert.ok(Math.abs(input.value-s.roller.live.power/.9)<1e-9);
+ assert.equal(M.read({metric:'rollerEfficiency'},s,null,null,()=>null).value,null);assert.match(M.read({metric:'rollerEfficiency'},s,null,null,()=>null).reason,/Relaisbetrieb/);
+});
+test('the shipped default is presentation only and covers every standard dashboard',()=>{
+ const p=require('../app/src/main/assets/ui-preset.json');assert.deepEqual(Object.keys(p).sort(),['appearance','dashboard','ownColors','settings','version','viewSettings','workspace'].sort());
+ assert.equal(p.dashboard.tiles.length,21);assert.equal(p.viewSettings.displayScale,75);assert.equal(A.normalize(p.workspace,p.dashboard).pages.length,8);
+ assert.doesNotMatch(JSON.stringify(p),/([0-9A-F]{2}:){5}[0-9A-F]{2}/i);
+ for(const page of p.workspace.pages){const clean=D.normalize(page.board);for(const tile of clean.tiles)assert.equal(tile.device,'');}
+});
