@@ -1,24 +1,20 @@
-# AutarPie 3.0.4
+# AutarPie 3.0.5
 
 ![AutarPie Ressourcen-Kreislauf](app/src/main/assets/brand.svg)
 
 **Das lokale Cockpit für autarkes Leben.** Solar und Stromverteilung, Wohnwagenakku, E-Scooter, Modellbau, Gas und Wasser in einer gemeinsamen App. AutarPie führt **Watt’n’Pit und WohnPit** weiter.
 
-**[AutarPie 3.0.4 als APK herunterladen](https://github.com/Tim-Gurke/AutarPie/releases/download/v3.0.4/AutarPie-v3.0.4.apk)** · [Einrichtung und Bedienung](docs/AUTARPIE-3.md) · [Update und Prüfgrenzen](docs/changes-3.0.4.md) · [Vollständige Versionshistorie](CHANGELOG.md)
+**[AutarPie 3.0.5 als APK herunterladen](https://github.com/Tim-Gurke/AutarPie/releases/download/v3.0.5/AutarPie-v3.0.5.apk)** · [Einrichtung und Bedienung](docs/AUTARPIE-3.md) · [Update und Prüfgrenzen](docs/changes-3.0.5.md) · [Vollständige Versionshistorie](CHANGELOG.md)
 
 Android 8 oder neuer; das Cockpit benötigt einen aktuellen Android-System-WebView. Kein Konto, keine Werbung. Mess- und Lerndaten bleiben auf den eigenen Geräten. Der optionale Wetterabruf verwendet Open-Meteo. Der Anlagenverbund überträgt Daten verschlüsselt im lokalen WLAN.
 
-## Das Cockpit
+## Ansichten
 
-| Dunkel | Hell |
+| Verbrauchslernen und Diagnose | Native Zentrale |
 | --- | --- |
-| ![AutarPie Cockpit mit neutralen Beispieldaten](docs/images/autarpie-3.0.4-dark.svg) | ![AutarPie Cockpit in heller Darstellung mit denselben Beispieldaten](docs/images/autarpie-3.0.4-light.svg) |
+| ![AutarPie 3.0.5: Verbrauchslernen und Diagnose unter Daten und Sicherung](docs/images/autarpie-3.0.5-settings.svg) | ![AutarPie 3.0.5: schlanke native Zentrale](docs/images/autarpie-3.0.5-central.svg) |
 
-Die Aufnahmen zeigen die tatsächliche geprüfte Oberfläche mit erfundenen Messwerten. Kacheln und Bereichsfarben sind einstellbar; vorhandene eigene Anordnungen werden nicht pauschal ersetzt.
-
-| Einstellungsbereiche | Native Zentrale |
-| --- | --- |
-| ![AutarPie Einstellungsbereiche](docs/images/autarpie-3.0.4-settings.svg) | ![Schlanke native AutarPie-Zentrale](docs/images/autarpie-3.0.4-central.svg) |
+Die Aufnahmen zeigen die tatsächliche geprüfte Oberfläche mit neutralen Beispieldaten. Kacheln, Bereichsfarben sowie Hell-/Dunkelansicht sind einstellbar; eigene Anordnungen bleiben erhalten.
 
 ## Ein Cockpit, mehrere Anwendungen
 
@@ -53,12 +49,10 @@ Die **optionale Rollerautomatik ist zunächst aus**. Ladeziel, Wohnwagenreserve,
 
 Der 608PD erhält eine private Verbindung aus der eigenen Bluetooth-Aufzeichnung. Unterstützt sind nachgewiesene Livefelder und Beenden von Laden/Powerbank-Betrieb. App-Start ist zunächst auf das beobachtete **3S-LiPo-Profil 4,21 V/Zelle / 0,50 A** mit ausdrücklicher Profilbestätigung begrenzt. Powerbank und andere Profile am Gerät starten. Nicht belegte Temperatur-/USB-/CC-CV-Felder werden nicht erfunden.
 
-## Update 3.0.4
+## Update 3.0.5
 
-Lerndaten bleiben bei unvollständiger Neuberechnung erhalten und werden bis zur Klärung sichtbar getrennt gehalten. Die Zentrale zeichnet auch BMS-Beobachtungen ohne Ladung auf, damit die Anzeigen Roller-Nutzungstage lernen können. Der letzte bekannte Rollerstand bleibt mit Messzeit sichtbar, wenn das BMS außer Reichweite ist. Die Wetterrückschau zeigt zusätzlich den Regler-Solarertrag und den gespeicherten Abend-Akkustand.
+Die Anzeige gleicht den älteren Rohverlauf jetzt auch bei bereits vorhandenen importierten Lernabschnitten einmalig ab. Gespeicherte stündliche Einstrahlung für den damaligen Standort und die damalige Aufstellung fließt wieder in geeignete historische Abschnitte ein. Die Datengrundlage zeigt den lokalen Archivumfang, andere Anwesenheitsprofile und erhaltene Ausschlussgründe. Fehlende Grundlagen bleiben unbekannt; aus gespeicherter Laufzeit werden nicht pauschal Lernstunden.
 
-Die Gas-Temperaturkorrektur kann nach dem ersten geeigneten vollständigen Flaschenabschnitt vorläufig beginnen und wird später persönlich genauer. Neue AutarPie-Installationen erhalten die vereinbarte Darstellung; bestehende Layouts bleiben erhalten. Roller und Modellbau haben eigene Symbol-Kurzwahlen.
+Unter **Einstellungen → Daten & Sicherung → Verbrauchslernen und Diagnose** den historischen Abgleich erneut anfordern oder den lokal vorhandenen Mess- und Lernstand exportieren. Der Diagnoseexport funktioniert auch auf Anzeigehandys bei momentan nicht erreichbarer Zentrale und enthält die tatsächlich ausgewählte Anlage. Unabhängige Daten des Anzeigehandys bleiben getrennt.
 
-**Der direkte Ladeweg bleibt aktiv.** Relaisbetrieb erst nach dem tatsächlichen Umbau unter Lastausgang → Einrichten → Strompfad manuell auswählen und speichern. Der bisher gemessene Wirkungsgrad kann als Referenz übernommen werden; der Wohnwagenanteil bleibt ohne separate Eingangsmessung im Relaisbetrieb geschätzt.
-
-**Über die vorhandene App aktualisieren: zuerst die Zentrale, danach alle Anzeigen auf 3.0.4.** Auf Android 10/11 (etwa G5 mit Android 11) einmal Standort → **Immer zulassen** für die Bluetooth-Suche nach Neustarts freigeben; Standortdienst eingeschaltet lassen. [Änderungen, Anleitung und Prüfgrenzen 3.0.4](docs/changes-3.0.4.md) · [Farben-Hotfix 3.0.3](docs/changes-3.0.3.md) · [Zentralen-Hotfix 3.0.2](docs/changes-3.0.2.md).
+**Über die vorhandene App aktualisieren: zuerst die Zentrale, danach alle Anzeigen auf 3.0.5.** Anschließend die Anzeige mit der Zentrale verbunden lassen, bis der erste historische Abgleich fertig ist. Keine Neuinstallation und kein Zurücksetzen nötig. Die ursprüngliche Updatesignatur bleibt erhalten. [Änderungen, Bedienung und Prüfgrenzen 3.0.5](docs/changes-3.0.5.md) · [Roller, manueller Relaisbetrieb und G5-Hintergrundfreigabe 3.0.4](docs/changes-3.0.4.md) · [Vollständige Historie](CHANGELOG.md).
