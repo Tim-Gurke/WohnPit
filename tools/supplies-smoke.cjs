@@ -24,7 +24,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),path
   assert.match(await page.locator('#supplies-gas .supply-range').textContent(),/1 Tag 17 Stunden/);assert.match(await page.locator('#supplies-water').textContent(),/12 L verbleibend/);
   assert.equal(await page.locator('.bottom-nav [data-page="supplies"] svg path').count(),2);assert.equal(await page.locator('.supply-symbol svg').count(),2);
   assert.match(await page.locator('#supplies-gas .supply-weather').textContent(),/Wetterkorrektur noch nicht aktiv/);
-  assert.match(await page.locator('#supplies-gas .supply-weather').textContent(),/0 von mindestens 6/);
+  assert.match(await page.locator('#supplies-gas .supply-weather').textContent(),/0 von 2 abgeschlossenen Abschnitten/);
   assert.equal(await page.evaluate(()=>document.body.scrollWidth>innerWidth),false);
   const out=process.env.WATTPIT_SUPPLIES_SCREENSHOTS||path.resolve(__dirname,'../docs/images');fs.mkdirSync(out,{recursive:true});
   const originalJournal=await page.evaluate(()=>JSON.stringify(window.suppliesFixture.events));

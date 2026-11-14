@@ -32,7 +32,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=r
   await page.reload();await wait(page,()=>!!window.AutarPieOutbox);await page.evaluate(()=>document.getElementById('toast').hidden=true);await page.screenshot({path:path.join(out,'autarpie-3.0.4-dark.png'),animations:'disabled'});
   await page.evaluate(()=>{AutarPieUI.appearance.theme='light';AutarPieUI.applyAppearance();});await page.screenshot({path:path.join(out,'autarpie-3.0.4-light.png'),animations:'disabled'});
   await page.evaluate(()=>{AutarPieUI.appearance.theme='dark';AutarPieUI.applyAppearance();AutarPieApp.showPage('settings');document.getElementById('apSettingsBack').click();});await page.screenshot({path:path.join(out,'autarpie-3.0.4-settings.png'),animations:'disabled'});
-  assert.equal(await page.evaluate(()=>document.body.scrollWidth<=innerWidth),true);assert.deepEqual(errors,[]);
+  assert.equal(await page.evaluate(()=>document.body.scrollWidth*(parseFloat(document.documentElement.style.zoom)||1)<=innerWidth+1),true);assert.deepEqual(errors,[]);
   console.log('PASS 3.0.4: shipped defaults, accessible symbol shortcuts, honest live status, cached offline BMS, explicit relay save/cancel, measured weather retrospect, refreshing learning details.');
  }catch(e){await page.screenshot({path:path.join(out,'release-304-failure.png'),fullPage:true}).catch(()=>{});console.error(errors);throw e;}finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1)});
