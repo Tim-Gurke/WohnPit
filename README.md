@@ -1,20 +1,20 @@
-# AutarPie 3.0.5
+# AutarPie 3.0.6
 
 ![AutarPie Ressourcen-Kreislauf](app/src/main/assets/brand.svg)
 
 **Das lokale Cockpit für autarkes Leben.** Solar und Stromverteilung, Wohnwagenakku, E-Scooter, Modellbau, Gas und Wasser in einer gemeinsamen App. AutarPie führt **Watt’n’Pit und WohnPit** weiter.
 
-**[AutarPie 3.0.5 als APK herunterladen](https://github.com/Tim-Gurke/AutarPie/releases/download/v3.0.5/AutarPie-v3.0.5.apk)** · [Einrichtung und Bedienung](docs/AUTARPIE-3.md) · [Update und Prüfgrenzen](docs/changes-3.0.5.md) · [Vollständige Versionshistorie](CHANGELOG.md)
+**[AutarPie 3.0.6 als APK herunterladen](https://github.com/Tim-Gurke/AutarPie/releases/download/v3.0.6/AutarPie-v3.0.6.apk)** · [Einrichtung und Bedienung](docs/AUTARPIE-3.md) · [Update und Prüfgrenzen](docs/changes-3.0.6.md) · [Vollständige Versionshistorie](CHANGELOG.md)
 
 Android 8 oder neuer; das Cockpit benötigt einen aktuellen Android-System-WebView. Kein Konto, keine Werbung. Mess- und Lerndaten bleiben auf den eigenen Geräten. Der optionale Wetterabruf verwendet Open-Meteo. Der Anlagenverbund überträgt Daten verschlüsselt im lokalen WLAN.
 
 ## Ansichten
 
-| Verbrauchslernen und Diagnose | Native Zentrale |
+| Rollerbedarf lernen | Gemeinsame Kurzwahl-Akzentfarbe |
 | --- | --- |
-| ![AutarPie 3.0.5: Verbrauchslernen und Diagnose unter Daten und Sicherung](docs/images/autarpie-3.0.5-settings.svg) | ![AutarPie 3.0.5: schlanke native Zentrale](docs/images/autarpie-3.0.5-central.svg) |
+| ![AutarPie 3.0.6: Ladeenergie und vorläufige Ladehäufigkeit bei abwesendem Roller](docs/images/autarpie-3.0.6-settings.svg) | ![AutarPie 3.0.6: ausgewählte Roller-Kurzwahl in der App-Akzentfarbe](docs/images/autarpie-3.0.6-dark.svg) |
 
-Die Aufnahmen zeigen die tatsächliche geprüfte Oberfläche mit neutralen Beispieldaten. Kacheln, Bereichsfarben sowie Hell-/Dunkelansicht sind einstellbar; eigene Anordnungen bleiben erhalten.
+Die Aufnahmen zeigen die geprüfte Oberfläche mit neutralen Beispieldaten und einem ausdrücklich als gespeichert gekennzeichneten BMS-Stand. Eigene Farben und Layouts bleiben erhalten. [Native Zentrale in 3.0.6](docs/images/autarpie-3.0.6-central.svg).
 
 ## Ein Cockpit, mehrere Anwendungen
 
@@ -49,10 +49,10 @@ Die **optionale Rollerautomatik ist zunächst aus**. Ladeziel, Wohnwagenreserve,
 
 Der 608PD erhält eine private Verbindung aus der eigenen Bluetooth-Aufzeichnung. Unterstützt sind nachgewiesene Livefelder und Beenden von Laden/Powerbank-Betrieb. App-Start ist zunächst auf das beobachtete **3S-LiPo-Profil 4,21 V/Zelle / 0,50 A** mit ausdrücklicher Profilbestätigung begrenzt. Powerbank und andere Profile am Gerät starten. Nicht belegte Temperatur-/USB-/CC-CV-Felder werden nicht erfunden.
 
-## Update 3.0.5
+## Update 3.0.6
 
-Die Anzeige gleicht den älteren Rohverlauf jetzt auch bei bereits vorhandenen importierten Lernabschnitten einmalig ab. Gespeicherte stündliche Einstrahlung für den damaligen Standort und die damalige Aufstellung fließt wieder in geeignete historische Abschnitte ein. Die Datengrundlage zeigt den lokalen Archivumfang, andere Anwesenheitsprofile und erhaltene Ausschlussgründe. Fehlende Grundlagen bleiben unbekannt; aus gespeicherter Laufzeit werden nicht pauschal Lernstunden.
+Der Roller kann aus kurzen ausreichend vollständig erfassten Ladungen lernen, obwohl er den übrigen Tag außer Reichweite ist. Energie je Ladung und Ladehäufigkeit bleiben getrennt. Nur vollständig überwachte Ladeweg-Tage oder geeignete bekannte Tage belegen die Häufigkeit; eine Funklücke ist keine Nullnutzung. Eine ausdrücklich gekennzeichnete Wochen- oder eigene Tagesannahme kann überbrücken, bis genügend Grundlagen vorliegen. Bei Rückkehr ersetzt eine konkret geplante Ladung aus frischen BMS-Werten die pauschale Annahme für denselben Zeitraum.
 
-Unter **Einstellungen → Daten & Sicherung → Verbrauchslernen und Diagnose** den historischen Abgleich erneut anfordern oder den lokal vorhandenen Mess- und Lernstand exportieren. Der Diagnoseexport funktioniert auch auf Anzeigehandys bei momentan nicht erreichbarer Zentrale und enthält die tatsächlich ausgewählte Anlage. Unabhängige Daten des Anzeigehandys bleiben getrennt.
+**E-Scooter → Verbrauch lernen** zeigt die Grundlage und führt zur vorläufigen Wochenannahme. Alle ausgewählten Kurzwahlen einschließlich eigener Dashboards verwenden die gemeinsame App-Akzentfarbe; sie bleibt beim Umordnen, bei Farbänderungen und abweichendem Dashboard-Design erhalten. Der historische Haushaltsabgleich aus 3.0.5 bleibt enthalten.
 
-**Über die vorhandene App aktualisieren: zuerst die Zentrale, danach alle Anzeigen auf 3.0.5.** Anschließend die Anzeige mit der Zentrale verbunden lassen, bis der erste historische Abgleich fertig ist. Keine Neuinstallation und kein Zurücksetzen nötig. Die ursprüngliche Updatesignatur bleibt erhalten. [Änderungen, Bedienung und Prüfgrenzen 3.0.5](docs/changes-3.0.5.md) · [Roller, manueller Relaisbetrieb und G5-Hintergrundfreigabe 3.0.4](docs/changes-3.0.4.md) · [Vollständige Historie](CHANGELOG.md).
+**Zuerst die Zentrale, danach alle Anzeigen auf 3.0.6 aktualisieren.** Über die vorhandene Installation installieren und anschließend den ersten Abgleich abwarten. Daten, Ladejournal, Kopplungen und Layouts bleiben erhalten. [Änderungen, Bedienung und Prüfgrenzen 3.0.6](docs/changes-3.0.6.md) · [Historisches Verbrauchslernen 3.0.5](docs/changes-3.0.5.md) · [Vollständige Historie](CHANGELOG.md).
