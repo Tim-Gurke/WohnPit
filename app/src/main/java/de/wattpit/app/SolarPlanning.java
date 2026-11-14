@@ -405,8 +405,9 @@ final class SolarPlanning extends SQLiteOpenHelper {
                 // Keep irreplaceable evidence if only part of an interval can be rebuilt.
                 try(Cursor existing=db.rawQuery("SELECT payload FROM observations WHERE source=? AND start=? AND end=?",new String[]{source,""+from,""+to})){
                     if(existing.moveToFirst()){JSONObject old=new JSONObject(existing.getString(0));
-                        if(old.optJSONObject("usage")!=null&&old.getJSONObject("usage").optLong("duration")>row.getJSONObject("usage").optLong("duration")&&row.getJSONObject("usage").getJSONObject("rejected").length()>0){
-                            if(!old.optBoolean("rebuildPending"))continue;
+                        JSONObject reasons=row.getJSONObject("usage").getJSONObject("rejected");boolean incomplete=false;
+                        for(String reason:new String[]{"weather","unknownSetup","controllerProfile","measurementGap","solarGap","missingValue"})incomplete|=reasons.optLong(reason)>0;
+                        if(incomplete&&old.optBoolean("rebuildPending")&&old.optJSONObject("usage")!=null&&old.getJSONObject("usage").optLong("duration")>row.getJSONObject("usage").optLong("duration")){
                             old.put("rebuildDiagnostic",row);ContentValues retained=new ContentValues();retained.put("payload",old.toString());db.update("observations",retained,"source=? AND start=? AND end=?",new String[]{source,""+from,""+to});continue;
                         }
                     }
